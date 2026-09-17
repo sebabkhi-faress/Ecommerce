@@ -66,21 +66,21 @@ export default function FlashDeals() {
 
             <div className="flex items-center gap-1 font-mono text-center">
               <div className="bg-[#0D0D11] border border-white/10 px-2.5 py-1.5 rounded-lg">
-                <span className="text-base sm:text-lg font-bold text-white block leading-none">
+                <span className="text-base sm:text-lg font-bold text-[var(--white-titanium)] block leading-none">
                   {String(timeLeft.days).padStart(2, '0')}
                 </span>
                 <span className="text-[9px] text-[#A1A1AA] uppercase">{t('deals.days')}</span>
               </div>
               <span className="text-[#FFAA2C] font-bold">:</span>
               <div className="bg-[#0D0D11] border border-white/10 px-2.5 py-1.5 rounded-lg">
-                <span className="text-base sm:text-lg font-bold text-white block leading-none">
+                <span className="text-base sm:text-lg font-bold text-[var(--white-titanium)] block leading-none">
                   {String(timeLeft.hours).padStart(2, '0')}
                 </span>
                 <span className="text-[9px] text-[#A1A1AA] uppercase">{t('deals.hours')}</span>
               </div>
               <span className="text-[#FFAA2C] font-bold">:</span>
               <div className="bg-[#0D0D11] border border-white/10 px-2.5 py-1.5 rounded-lg">
-                <span className="text-base sm:text-lg font-bold text-white block leading-none">
+                <span className="text-base sm:text-lg font-bold text-[var(--white-titanium)] block leading-none">
                   {String(timeLeft.minutes).padStart(2, '0')}
                 </span>
                 <span className="text-[9px] text-[#A1A1AA] uppercase">{t('deals.minutes')}</span>

@@ -2,6 +2,33 @@
 @import "tailwindcss";
 
 :root {
+  /* ===================================================
+     LIGHT MODE (DEFAULT)
+     Flagship Clean Tech Aesthetic: Crisp Porcelain, 
+     Pure White Surfaces, Deep Slate Typography & Warm Sunset
+     =================================================== */
+  --obsidian: #F8F9FA;
+  --charcoal: #FFFFFF;
+  --smoke: #F1F3F7;
+  --sunset: #FF6B00;
+  --sunset-hover: #E05E00;
+  --amber: #FFAA2C;
+  --white-titanium: #0F172A;
+  --silver-muted: #64748B;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --background: var(--obsidian);
+  --foreground: var(--white-titanium);
+
+  --font-latin-family: var(--font-latin), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-arabic-family: var(--font-arabic), 'Readex Pro', 'Cairo', -apple-system, sans-serif;
+  --font-mono-family: var(--font-mono), 'JetBrains Mono', monospace;
+}
+
+.dark, [data-theme="dark"] {
+  /* ===================================================
+     DARK MODE
+     Cyber Obsidian, Charcoal Glass & Warm Amber Glow
+     =================================================== */
   --obsidian: #0D0D11;
   --charcoal: #18181F;
   --smoke: #22222B;
@@ -10,23 +37,20 @@
   --amber: #FFAA2C;
   --white-titanium: #F5F5F7;
   --silver-muted: #A1A1AA;
+  --border-subtle: rgba(255, 255, 255, 0.1);
   --background: var(--obsidian);
   --foreground: var(--white-titanium);
-  
-  --font-latin-family: var(--font-latin), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-arabic-family: var(--font-arabic), 'Readex Pro', 'Cairo', -apple-system, sans-serif;
-  --font-mono-family: var(--font-mono), 'JetBrains Mono', monospace;
 }
 
 @theme {
-  --color-obsidian: #0D0D11;
-  --color-charcoal: #18181F;
-  --color-smoke: #22222B;
+  --color-obsidian: var(--obsidian);
+  --color-charcoal: var(--charcoal);
+  --color-smoke: var(--smoke);
   --color-sunset: #FF6B00;
   --color-sunset-hover: #E05E00;
   --color-amber: #FFAA2C;
-  --color-titanium: #F5F5F7;
-  --color-silver: #A1A1AA;
+  --color-titanium: var(--white-titanium);
+  --color-silver: var(--silver-muted);
   --font-latin: var(--font-latin-family);
   --font-arabic: var(--font-arabic-family);
   --font-mono: var(--font-mono-family);
@@ -38,8 +62,13 @@
 
 html {
   scroll-behavior: smooth;
-  background-color: #0D0D11;
-  color: #F5F5F7;
+  background-color: var(--obsidian);
+  color: var(--white-titanium);
+}
+
+body {
+  background-color: var(--obsidian);
+  color: var(--white-titanium);
 }
 
 /* LTR / French Typography (Plus Jakarta Sans) */
@@ -82,7 +111,7 @@ html[dir="rtl"] body,
   font-family: var(--font-mono-family) !important;
 }
 
-/* Custom Warm Glows & Glassmorphism */
+/* Custom Warm Glows & Glassmorphism (Dark Mode) */
 .warm-glass {
   background: rgba(24, 24, 31, 0.75);
   backdrop-filter: blur(16px);
@@ -118,7 +147,7 @@ html[dir="rtl"] body,
 }
 
 .text-gradient-warm {
-  background: linear-gradient(135deg, #F5F5F7 20%, #FFAA2C 60%, #FF6B00 100%);
+  background: linear-gradient(135deg, var(--white-titanium) 20%, #FFAA2C 60%, #FF6B00 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -141,20 +170,20 @@ html[dir="rtl"] body,
   background-size: 40px 40px;
 }
 
-/* Custom Warm Scrollbar */
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0D0D11;
+  background: var(--obsidian);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #22222B;
+  background: var(--smoke);
   border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -195,4 +224,215 @@ html[dir="rtl"] body,
 
 .animate-pulse-warm {
   animation: pulse-warm 4s ease-in-out infinite;
+}
+
+/* ===================================================
+   LIGHT MODE ADAPTATIONS (DEFAULT)
+   Active whenever .dark is NOT present on html
+   =================================================== */
+html:not(.dark) {
+  color-scheme: light;
+}
+
+/* Surface backgrounds */
+html:not(.dark) .bg-\[\#0D0D11\] {
+  background-color: #F8F9FA !important;
+}
+
+html:not(.dark) .bg-\[\#0D0D11\]\/85 {
+  background-color: rgba(248, 249, 250, 0.88) !important;
+}
+
+html:not(.dark) .bg-\[\#0D0D11\]\/70 {
+  background-color: rgba(248, 249, 250, 0.78) !important;
+}
+
+html:not(.dark) .bg-\[\#0D0D11\]\/80 {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+html:not(.dark) .bg-\[\#18181F\] {
+  background-color: #FFFFFF !important;
+}
+
+html:not(.dark) .bg-\[\#18181F\]\/95 {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+}
+
+html:not(.dark) .bg-\[\#18181F\]\/90 {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+
+html:not(.dark) .bg-\[\#18181F\]\/80 {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+}
+
+html:not(.dark) .bg-\[\#18181F\]\/70 {
+  background-color: rgba(255, 255, 255, 0.80) !important;
+}
+
+html:not(.dark) .bg-\[\#18181F\]\/60 {
+  background-color: rgba(255, 255, 255, 0.70) !important;
+}
+
+html:not(.dark) .bg-\[\#22222B\] {
+  background-color: #F1F3F7 !important;
+}
+
+html:not(.dark) .hover\:bg-\[\#22222B\]:hover {
+  background-color: #E8ECF2 !important;
+}
+
+html:not(.dark) .bg-\[\#14141B\] {
+  background-color: #F1F3F7 !important;
+}
+
+html:not(.dark) .bg-\[\#121217\] {
+  background-color: #EAECEF !important;
+}
+
+html:not(.dark) .from-\[\#22222B\] {
+  --tw-gradient-from: #F1F3F7 !important;
+}
+
+html:not(.dark) .from-\[\#22222B\]\/60 {
+  --tw-gradient-from: #F4F5F8 !important;
+}
+
+html:not(.dark) .to-\[\#0D0D11\] {
+  --tw-gradient-to: #E9ECEF !important;
+}
+
+html:not(.dark) .from-\[\#18181F\] {
+  --tw-gradient-from: #FFFFFF !important;
+}
+
+html:not(.dark) .to-\[\#121217\] {
+  --tw-gradient-to: #F1F3F7 !important;
+}
+
+/* Typography & Content */
+html:not(.dark) .text-\[\#F5F5F7\] {
+  color: #0F172A !important;
+}
+
+html:not(.dark) .text-\[\#A1A1AA\] {
+  color: #64748B !important;
+}
+
+html:not(.dark) .hover\:text-white:hover {
+  color: #0F172A !important;
+}
+
+html:not(.dark) .group:hover .group-hover\:text-white {
+  color: #0F172A !important;
+}
+
+/* Borders & Dividers */
+html:not(.dark) .border-white\/5,
+html:not(.dark) .border-white\/10,
+html:not(.dark) .border-white\/15,
+html:not(.dark) .border-white\/20,
+html:not(.dark) .border-white\/25 {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html:not(.dark) .border-white\/40,
+html:not(.dark) .border-white\/50 {
+  border-color: rgba(0, 0, 0, 0.16) !important;
+}
+
+html:not(.dark) .hover\:border-white\/20:hover,
+html:not(.dark) .hover\:border-white\/25:hover,
+html:not(.dark) .hover\:border-white\/30:hover {
+  border-color: rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Card Depth, Shadows & Elevation */
+html:not(.dark) .bg-\[\#18181F\] {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+html:not(.dark) .bg-\[\#18181F\]:hover {
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.08), 0 0 20px -5px rgba(255, 107, 0, 0.15);
+}
+
+html:not(.dark) .shadow-2xl {
+  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.08), 0 0 1px 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+html:not(.dark) .shadow-black\/80,
+html:not(.dark) .shadow-black\/60 {
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.08), 0 0 1px 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Form Inputs & Interactive Controls */
+html:not(.dark) input,
+html:not(.dark) select,
+html:not(.dark) textarea {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #E2E8F0 !important;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+html:not(.dark) select option {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+/* Hover States & Secondary Buttons */
+html:not(.dark) .hover\:bg-white\/10:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+html:not(.dark) .hover\:bg-white\/5:hover {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+html:not(.dark) .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Glassmorphism & Patterns in Light Mode */
+html:not(.dark) .warm-glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 30px -10px rgba(0, 0, 0, 0.06);
+}
+
+html:not(.dark) .warm-glass-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.06);
+}
+
+html:not(.dark) .bg-tech-dots {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+}
+
+html:not(.dark) .bg-tech-grid {
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+}
+
+html:not(.dark) .glow-aura {
+  background: radial-gradient(circle at center, rgba(255, 107, 0, 0.12) 0%, rgba(255, 170, 44, 0.04) 45%, transparent 70%);
+}
+
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: #FF6B00;
 }

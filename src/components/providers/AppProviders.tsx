@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { CartProvider } from '@/context/CartContext';
 import { OrderProvider } from '@/context/OrderContext';
@@ -14,21 +15,23 @@ import FloatingWhatsApp from '@/components/common/FloatingWhatsApp';
 
 export default function AppProviders({ children }: { children: React.ReactNode }) {
   return (
-    <LanguageProvider>
-      <CartProvider>
-        <OrderProvider>
-          <div className="min-h-screen flex flex-col bg-[#0D0D11] text-[#F5F5F7] selection:bg-[#FF6B00] selection:text-black">
-            <AnnouncementBar />
-            <Navbar />
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <MobileDock />
-            <CartDrawer />
-            <FastCheckoutModal />
-            <FloatingWhatsApp />
-          </div>
-        </OrderProvider>
-      </CartProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <CartProvider>
+          <OrderProvider>
+            <div className="min-h-screen flex flex-col bg-[var(--obsidian)] text-[var(--white-titanium)] selection:bg-[#FF6B00] selection:text-white transition-colors duration-200">
+              <AnnouncementBar />
+              <Navbar />
+              <main className="flex-1">{children}</main>
+              <Footer />
+              <MobileDock />
+              <CartDrawer />
+              <FastCheckoutModal />
+              <FloatingWhatsApp />
+            </div>
+          </OrderProvider>
+        </CartProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
+import { useTheme } from '@/context/ThemeContext';
 import { PRODUCTS, Product } from '@/data/products';
 import {
   Search,
@@ -16,11 +17,14 @@ import {
   ShieldAlert,
   Flame,
   LayoutDashboard,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 export default function Navbar() {
   const { lang, toggleLanguage, t } = useLanguage();
   const { totalItems, setIsCartOpen } = useCart();
+  const { theme, toggleTheme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -154,6 +158,20 @@ export default function Navbar() {
                 >
                   <span>FR</span>
                 </div>
+              </button>
+
+              {/* Theme Toggle Button (Light ⇄ Dark) */}
+              <button
+                onClick={toggleTheme}
+                className="relative flex items-center justify-center w-10 h-10 rounded-full bg-[#18181F] hover:bg-[#22222B] border border-white/10 hover:border-[#FFAA2C]/50 transition-all text-[#F5F5F7] group shadow-inner"
+                title={theme === 'light' ? (lang === 'ar' ? 'الوضع الداكن' : 'Mode sombre') : (lang === 'ar' ? 'الوضع الفاتح' : 'Mode clair')}
+                aria-label="Toggle theme"
+              >
+                {theme === 'light' ? (
+                  <Moon className="w-4 h-4 text-[#64748B] group-hover:text-[#0F172A] transition-colors" />
+                ) : (
+                  <Sun className="w-4 h-4 text-[#FFAA2C] group-hover:rotate-45 transition-transform" />
+                )}
               </button>
 
               {/* Cart Drawer Trigger Button */}

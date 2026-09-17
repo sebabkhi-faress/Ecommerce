@@ -72,7 +72,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         <Link href={`/products/${product.slug}`} className="block">
-          <h3 className="text-sm sm:text-base font-bold text-[#F5F5F7] group-hover:text-white transition-colors line-clamp-1">
+          <h3 className="text-sm sm:text-base font-bold text-[#F5F5F7] group-hover:text-[#FF6B00] transition-colors line-clamp-1">
             {lang === 'ar' ? product.nameAr : product.nameFr}
           </h3>
           <p className="text-xs text-[#A1A1AA] line-clamp-1 mt-0.5">
