@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
+import { useProducts } from '@/context/ProductContext';
 import { PRODUCTS, formatDZD } from '@/data/products';
 import {
   Zap,
@@ -19,7 +20,8 @@ import {
 export default function HeroSection() {
   const { lang, t } = useLanguage();
   const { openDirectCheckout } = useCart();
-  const heroProduct = PRODUCTS[0]; // Aura Pro 2
+  const { products } = useProducts();
+  const heroProduct = products[0] || PRODUCTS[0];
 
   return (
     <section className="relative pt-8 pb-16 md:pt-14 md:pb-24 overflow-hidden">

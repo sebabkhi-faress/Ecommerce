@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useProducts } from '@/context/ProductContext';
 import { PRODUCTS } from '@/data/products';
 import CodForm from '@/components/checkout/CodForm';
 import { ShieldCheck, Truck, Zap, ShoppingBag, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -11,6 +12,9 @@ import { ShieldCheck, Truck, Zap, ShoppingBag, ArrowLeft, ArrowRight } from 'luc
 export default function CheckoutPage() {
   const { cart } = useCart();
   const { lang, t } = useLanguage();
+  const { products } = useProducts();
+
+  const fallbackProduct = products[0] || PRODUCTS[0];
 
   // If cart is empty, fallback to the flagship product so user can still test/order
   const checkoutItems =
@@ -18,9 +22,9 @@ export default function CheckoutPage() {
       ? cart
       : [
           {
-            product: PRODUCTS[0],
+            product: fallbackProduct,
             quantity: 1,
-            selectedColor: PRODUCTS[0].colors[0]?.nameFr,
+            selectedColor: fallbackProduct.colors[0]?.nameFr,
           },
         ];
 

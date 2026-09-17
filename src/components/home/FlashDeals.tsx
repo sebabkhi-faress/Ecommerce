@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
-import { PRODUCTS } from '@/data/products';
+import { useProducts } from '@/context/ProductContext';
 import ProductCard from './ProductCard';
 import { Flame, Clock, Zap } from 'lucide-react';
 
 export default function FlashDeals() {
   const { lang, t } = useLanguage();
+  const { products } = useProducts();
 
   // Simulated countdown timer: 1 day, 8 hours, 45 minutes, 20 seconds
   const [timeLeft, setTimeLeft] = useState({
@@ -35,7 +36,7 @@ export default function FlashDeals() {
     return () => clearInterval(timer);
   }, []);
 
-  const flashProducts = PRODUCTS.filter((p) => p.isFlashDeal);
+  const flashProducts = products.filter((p) => p.isFlashDeal);
 
   return (
     <section id="deals" className="py-12 bg-[#121217]/60 border-y border-white/5 relative">

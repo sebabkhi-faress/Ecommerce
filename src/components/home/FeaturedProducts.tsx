@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
-import { PRODUCTS, Product } from '@/data/products';
+import { useProducts } from '@/context/ProductContext';
+import { Product } from '@/data/products';
 import ProductCard from './ProductCard';
 import { SlidersHorizontal, Sparkles } from 'lucide-react';
 
@@ -13,6 +14,7 @@ interface FeaturedProductsProps {
 
 export default function FeaturedProducts({ selectedCategory = 'all', onSelectCategory }: FeaturedProductsProps) {
   const { lang, t } = useLanguage();
+  const { products } = useProducts();
   const [internalCategory, setInternalCategory] = useState('all');
 
   const currentCategory = onSelectCategory ? selectedCategory : internalCategory;
@@ -35,8 +37,8 @@ export default function FeaturedProducts({ selectedCategory = 'all', onSelectCat
 
   const filteredProducts =
     currentCategory === 'all'
-      ? PRODUCTS
-      : PRODUCTS.filter((p) => p.category === currentCategory);
+      ? products
+      : products.filter((p) => p.category === currentCategory);
 
   return (
     <section id="products" className="py-16 bg-[#0D0D11]">

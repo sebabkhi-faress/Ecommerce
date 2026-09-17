@@ -27,16 +27,22 @@ import {
   RefreshCw,
   Database,
   UploadCloud,
+  Layers,
+  Trash2,
+  ExternalLink,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured, uploadProductImage } from '@/lib/supabase';
+import { useProducts } from '@/context/ProductContext';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { lang, t } = useLanguage();
   const { orders, updateOrderStatus, metrics, isSupabaseConnected, refreshOrders } = useOrders();
+  const { products, addProduct, deleteProduct, refreshProducts, isDbConnected: isProductsDbConnected } = useProducts();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminTab, setAdminTab] = useState<'orders' | 'products'>('orders');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [wilayaFilter, setWilayaFilter] = useState<string>('all');
@@ -45,7 +51,9 @@ export default function AdminDashboardPage() {
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [newProdNameFr, setNewProdNameFr] = useState('');
   const [newProdNameAr, setNewProdNameAr] = useState('');
-  const [newProdCategory, setNewProdCategory] = useState('earbuds');
+  const [newProdCategory, setNewProdCategory] = useState<
+    'earbuds' | 'headphones' | 'speakers' | 'chargers' | 'powerbanks'
+  >('earbuds');
   const [newProdPrice, setNewProdPrice] = useState('');
   const [newProdImage, setNewProdImage] = useState(
     'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=600&auto=format&fit=crop'
@@ -68,39 +76,30 @@ export default function AdminDashboardPage() {
     router.push('/admin/login');
   };
 
-  const handleAddProduct = (e: React.FormEvent) => {
+  const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSupabaseConfigured && supabase) {
-      const slug = newProdNameFr.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      supabase
-        .from('products')
-        .insert({
-          id: `prod-${Date.now()}`,
-          slug: slug || `prod-${Date.now()}`,
-          name_fr: newProdNameFr,
-          name_ar: newProdNameAr,
-          price: Number(newProdPrice) || 0,
-          category: newProdCategory,
-          images: [newProdImage],
-          stock_count: 15,
-          rating: 5.0,
-          reviews_count: 1,
-        })
-        .then(({ error }) => {
-          if (error) {
-            console.error('Error inserting product in Supabase:', error.message);
-          }
-        });
-    }
+    setUploadError(null);
+    const result = await addProduct({
+      nameFr: newProdNameFr,
+      nameAr: newProdNameAr,
+      price: Number(newProdPrice) || 0,
+      category: newProdCategory,
+      images: [newProdImage],
+      stockCount: 15,
+    });
 
-    setNewProdSuccess(true);
-    setTimeout(() => {
-      setNewProdSuccess(false);
-      setIsAddProductOpen(false);
-      setNewProdNameFr('');
-      setNewProdNameAr('');
-      setNewProdPrice('');
-    }, 1500);
+    if (result.success) {
+      setNewProdSuccess(true);
+      setTimeout(() => {
+        setNewProdSuccess(false);
+        setIsAddProductOpen(false);
+        setNewProdNameFr('');
+        setNewProdNameAr('');
+        setNewProdPrice('');
+      }, 1200);
+    } else {
+      setUploadError(result.error || 'Erreur lors de l’enregistrement');
+    }
   };
 
   // Filter orders based on queries
@@ -192,7 +191,7 @@ export default function AdminDashboardPage() {
             <button
               onClick={async () => {
                 setIsRefreshing(true);
-                await refreshOrders();
+                await Promise.all([refreshOrders(), refreshProducts()]);
                 setTimeout(() => setIsRefreshing(false), 500);
               }}
               className="p-2.5 rounded-xl bg-[#18181F] hover:bg-white/10 text-[#A1A1AA] hover:text-white border border-white/10 transition-colors"
@@ -277,189 +276,318 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          {/* Metric 4: Delivered Rate */}
+          {/* Metric 4: Total Products in DB */}
           <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-emerald-500/40 transition-colors">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{t('admin.delivered_orders')}</span>
+              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{lang === 'ar' ? 'المنتجات في المتجر' : 'Catalogue Produits'}</span>
               <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
-                <CheckCircle className="w-5 h-5" />
+                <Layers className="w-5 h-5" />
               </div>
             </div>
             <p className="text-2xl sm:text-3xl font-mono font-black text-emerald-400">
-              {metrics.deliveredCount}
+              {products.length}
             </p>
             <p className="text-[11px] text-emerald-400/80 mt-2">
-              {t('admin.delivered_desc')}
+              {lang === 'ar' ? 'منتجات متزامنة مع Supabase' : 'Synchronisés avec Supabase'}
             </p>
           </div>
         </div>
 
-        {/* Filter & Search Bar */}
-        <div className="bg-[#18181F] border border-white/10 rounded-2xl p-4 flex flex-col md:flex-row items-center gap-4">
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-[#A1A1AA] absolute left-3.5 top-3.5" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('admin.search_placeholder')}
-              className="w-full bg-[#14141B] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-[#F5F5F7] placeholder-[#A1A1AA]/60 outline-none focus:border-[#FF6B00]"
-            />
-          </div>
+        {/* Tab Navigation: Orders vs Products */}
+        <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+          <button
+            onClick={() => setAdminTab('orders')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+              adminTab === 'orders'
+                ? 'bg-[#FF6B00] text-black shadow-lg shadow-[#FF6B00]/30'
+                : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            <span>{lang === 'ar' ? `الطلبيات المستلمة (${orders.length})` : `Commandes (${orders.length})`}</span>
+          </button>
 
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-[#14141B] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-[#F5F5F7] outline-none"
-            >
-              <option value="all">{t('admin.all_statuses')}</option>
-              <option value="pending">{t('admin.status_pending')}</option>
-              <option value="confirmed">{t('admin.status_confirmed')}</option>
-              <option value="in_delivery">{t('admin.status_in_delivery')}</option>
-              <option value="delivered">{t('admin.status_delivered')}</option>
-              <option value="cancelled">{t('admin.status_cancelled')}</option>
-            </select>
-
-            {/* Wilaya Filter */}
-            <select
-              value={wilayaFilter}
-              onChange={(e) => setWilayaFilter(e.target.value)}
-              className="bg-[#14141B] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-[#F5F5F7] outline-none max-w-[180px]"
-            >
-              <option value="all">{t('admin.all_wilayas')}</option>
-              {WILAYAS.map((w) => (
-                <option key={w.code} value={w.code}>
-                  {w.code} - {lang === 'ar' ? w.nameAr : w.nameFr}
-                </option>
-              ))}
-            </select>
-          </div>
+          <button
+            onClick={() => setAdminTab('products')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+              adminTab === 'products'
+                ? 'bg-[#FFAA2C] text-black shadow-lg shadow-[#FFAA2C]/30'
+                : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>{lang === 'ar' ? `إدارة المنتجات (${products.length})` : `Catalogue Produits (${products.length})`}</span>
+          </button>
         </div>
 
-        {/* Orders Table */}
-        <div className="bg-[#18181F] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-          <div className="p-5 border-b border-white/10 flex items-center justify-between">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F7]">
-              {t('admin.recent_orders')} ({filteredOrders.length})
-            </h3>
-            <span className="text-xs text-[#FFAA2C] font-mono">
-              {t('admin.live_update')}
-            </span>
-          </div>
+        {adminTab === 'orders' ? (
+          <>
+            {/* Filter & Search Bar for Orders */}
+            <div className="bg-[#18181F] border border-white/10 rounded-2xl p-4 flex flex-col md:flex-row items-center gap-4">
+              <div className="relative flex-1 w-full">
+                <Search className="w-4 h-4 text-[#A1A1AA] absolute left-3.5 top-3.5" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('admin.search_placeholder')}
+                  className="w-full bg-[#14141B] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-[#F5F5F7] placeholder-[#A1A1AA]/60 outline-none focus:border-[#FF6B00]"
+                />
+              </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-white/10 bg-[#14141B] text-[#A1A1AA] font-mono text-[11px] uppercase">
-                  <th className="p-4">{t('admin.th_tracking')}</th>
-                  <th className="p-4">{t('admin.th_client')}</th>
-                  <th className="p-4">{t('admin.th_phone')}</th>
-                  <th className="p-4">{t('admin.th_wilaya')}</th>
-                  <th className="p-4">{t('admin.th_items')}</th>
-                  <th className="p-4">{t('admin.th_total')}</th>
-                  <th className="p-4">{t('admin.th_status')}</th>
-                  <th className="p-4 text-right">{t('admin.th_actions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {filteredOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="p-8 text-center text-[#A1A1AA]">
-                      {t('admin.no_orders')}
-                    </td>
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                {/* Status Filter */}
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="bg-[#14141B] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-[#F5F5F7] outline-none"
+                >
+                  <option value="all">{t('admin.all_statuses')}</option>
+                  <option value="pending">{t('admin.status_pending')}</option>
+                  <option value="confirmed">{t('admin.status_confirmed')}</option>
+                  <option value="in_delivery">{t('admin.status_in_delivery')}</option>
+                  <option value="delivered">{t('admin.status_delivered')}</option>
+                  <option value="cancelled">{t('admin.status_cancelled')}</option>
+                </select>
+
+                {/* Wilaya Filter */}
+                <select
+                  value={wilayaFilter}
+                  onChange={(e) => setWilayaFilter(e.target.value)}
+                  className="bg-[#14141B] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-[#F5F5F7] outline-none max-w-[180px]"
+                >
+                  <option value="all">{t('admin.all_wilayas')}</option>
+                  {WILAYAS.map((w) => (
+                    <option key={w.code} value={w.code}>
+                      {w.code} - {lang === 'ar' ? w.nameAr : w.nameFr}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Orders Table */}
+            <div className="bg-[#18181F] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+              <div className="p-5 border-b border-white/10 flex items-center justify-between">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F7]">
+                  {t('admin.recent_orders')} ({filteredOrders.length})
+                </h3>
+                <span className="text-xs text-[#FFAA2C] font-mono">
+                  {t('admin.live_update')}
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-[#14141B] text-[#A1A1AA] font-mono text-[11px] uppercase">
+                      <th className="p-4">{t('admin.th_tracking')}</th>
+                      <th className="p-4">{t('admin.th_client')}</th>
+                      <th className="p-4">{t('admin.th_phone')}</th>
+                      <th className="p-4">{t('admin.th_wilaya')}</th>
+                      <th className="p-4">{t('admin.th_items')}</th>
+                      <th className="p-4">{t('admin.th_total')}</th>
+                      <th className="p-4">{t('admin.th_status')}</th>
+                      <th className="p-4 text-right">{t('admin.th_actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-[#A1A1AA]">
+                          {t('admin.no_orders')}
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredOrders.map((order) => (
+                        <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="p-4 font-mono font-bold text-[#FF6B00]">
+                            {order.trackingCode}
+                          </td>
+                          <td className="p-4 font-semibold text-[#F5F5F7]">
+                            {order.fullName}
+                          </td>
+                          <td className="p-4 font-mono text-[#A1A1AA]">
+                            <a
+                              href={`tel:${order.phone}`}
+                              className="hover:text-[#FFAA2C] flex items-center gap-1"
+                            >
+                              <Phone className="w-3 h-3 text-[#FFAA2C]" />
+                              <span>{order.phone}</span>
+                            </a>
+                          </td>
+                          <td className="p-4">
+                            <div className="font-semibold text-[#FFAA2C]">
+                              {order.wilayaCode} - {lang === 'ar' ? order.wilayaNameAr : order.wilayaNameFr}
+                            </div>
+                            <div className="text-[11px] text-[#A1A1AA] truncate max-w-[160px]">
+                              {order.commune}
+                            </div>
+                            <div className="text-[10px] text-[#A1A1AA] flex items-center gap-1 mt-0.5">
+                              {order.deliveryMode === 'home' ? (
+                                <>
+                                  <Home className="w-3 h-3 text-[#FF6B00]" />
+                                  <span>{t('admin.home_delivery')}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Building2 className="w-3 h-3 text-[#FFAA2C]" />
+                                  <span>{t('admin.desk_delivery')}</span>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className="font-mono text-[#F5F5F7]">
+                              {order.items.reduce((s, i) => s + i.quantity, 0)} {lang === 'ar' ? 'منتج' : 'article(s)'}
+                            </span>
+                            <div className="text-[11px] text-[#A1A1AA] truncate max-w-[150px]">
+                              {lang === 'ar' ? (order.items[0]?.productNameAr || order.items[0]?.productNameFr) : order.items[0]?.productNameFr}
+                            </div>
+                          </td>
+                          <td className="p-4 font-mono font-black text-[#FF6B00] whitespace-nowrap">
+                            {formatDZD(order.total, lang)}
+                          </td>
+                          <td className="p-4 whitespace-nowrap">
+                            {getStatusBadge(order.status)}
+                          </td>
+                          <td className="p-4 text-right">
+                            <select
+                              value={order.status}
+                              onChange={(e) =>
+                                updateOrderStatus(order.id, e.target.value as OrderStatus)
+                              }
+                              className="bg-[#14141B] border border-white/15 rounded-lg px-2.5 py-1 text-[11px] font-mono text-white outline-none focus:border-[#FF6B00]"
+                            >
+                              <option value="pending">{t('admin.status_pending')}</option>
+                              <option value="confirmed">{t('admin.status_confirmed')}</option>
+                              <option value="in_delivery">{t('admin.status_in_delivery')}</option>
+                              <option value="delivered">{t('admin.status_delivered')}</option>
+                              <option value="cancelled">{t('admin.status_cancelled')}</option>
+                            </select>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        ) : (
+          /* Products Catalog Management Table */
+          <div className="bg-[#18181F] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+            <div className="p-5 border-b border-white/10 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F7]">
+                  {lang === 'ar' ? 'كتالوج المنتجات الحية' : 'Catalogue Produits en Direct'} ({products.length})
+                </h3>
+                <p className="text-xs text-[#A1A1AA] mt-0.5">
+                  {lang === 'ar' ? 'متزامن لحظياً مع جدول products في Supabase' : 'Synchronisé en temps réel avec la table products de Supabase'}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsAddProductOpen(true)}
+                className="px-3.5 py-2 bg-[#FF6B00] hover:bg-[#E05E00] text-black font-extrabold text-xs uppercase rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                <span>{t('admin.add_product')}</span>
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 bg-[#14141B] text-[#A1A1AA] font-mono text-[11px] uppercase">
+                    <th className="p-4">{lang === 'ar' ? 'المنتج' : 'Produit'}</th>
+                    <th className="p-4">{lang === 'ar' ? 'القسم' : 'Catégorie'}</th>
+                    <th className="p-4">{lang === 'ar' ? 'السعر' : 'Prix'}</th>
+                    <th className="p-4">{lang === 'ar' ? 'المخزون' : 'Stock'}</th>
+                    <th className="p-4">{lang === 'ar' ? 'الحالة' : 'Statut'}</th>
+                    <th className="p-4 text-right">{lang === 'ar' ? 'إجراءات' : 'Actions'}</th>
                   </tr>
-                ) : (
-                  filteredOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
-                      {/* Tracking Code */}
-                      <td className="p-4 font-mono font-bold text-[#FF6B00]">
-                        {order.trackingCode}
-                      </td>
-
-                      {/* Client */}
-                      <td className="p-4 font-semibold text-[#F5F5F7]">
-                        {order.fullName}
-                      </td>
-
-                      {/* Phone */}
-                      <td className="p-4 font-mono text-[#A1A1AA]">
-                        <a
-                          href={`tel:${order.phone}`}
-                          className="hover:text-[#FFAA2C] flex items-center gap-1"
-                        >
-                          <Phone className="w-3 h-3 text-[#FFAA2C]" />
-                          <span>{order.phone}</span>
-                        </a>
-                      </td>
-
-                      {/* Wilaya & Mode */}
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {products.map((product) => (
+                    <tr key={product.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="p-4">
-                        <div className="font-semibold text-[#FFAA2C]">
-                          {order.wilayaCode} - {lang === 'ar' ? order.wilayaNameAr : order.wilayaNameFr}
-                        </div>
-                        <div className="text-[11px] text-[#A1A1AA] truncate max-w-[160px]">
-                          {order.commune}
-                        </div>
-                        <div className="text-[10px] text-[#A1A1AA] flex items-center gap-1 mt-0.5">
-                          {order.deliveryMode === 'home' ? (
-                            <>
-                              <Home className="w-3 h-3 text-[#FF6B00]" />
-                              <span>{t('admin.home_delivery')}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Building2 className="w-3 h-3 text-[#FFAA2C]" />
-                              <span>{t('admin.desk_delivery')}</span>
-                            </>
-                          )}
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={product.images[0]}
+                            alt={product.nameFr}
+                            className="w-12 h-12 rounded-xl object-cover bg-black/40 border border-white/10 shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="font-bold text-[#F5F5F7] truncate max-w-xs sm:max-w-md">
+                              {lang === 'ar' ? product.nameAr : product.nameFr}
+                            </p>
+                            <p className="text-[11px] text-[#A1A1AA] font-mono truncate max-w-xs">
+                              /{product.slug}
+                            </p>
+                          </div>
                         </div>
                       </td>
 
-                      {/* Items */}
                       <td className="p-4">
-                        <span className="font-mono text-[#F5F5F7]">
-                          {order.items.reduce((s, i) => s + i.quantity, 0)} {lang === 'ar' ? 'منتج' : 'article(s)'}
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase bg-white/5 border border-white/10 text-[#FFAA2C]">
+                          {product.category}
                         </span>
-                        <div className="text-[11px] text-[#A1A1AA] truncate max-w-[150px]">
-                          {lang === 'ar' ? (order.items[0]?.productNameAr || order.items[0]?.productNameFr) : order.items[0]?.productNameFr}
-                        </div>
                       </td>
 
-                      {/* Total */}
-                      <td className="p-4 font-mono font-black text-[#FF6B00] whitespace-nowrap">
-                        {formatDZD(order.total, lang)}
+                      <td className="p-4 font-mono font-black text-[#FF6B00]">
+                        {formatDZD(product.price, lang)}
                       </td>
 
-                      {/* Status Badge */}
-                      <td className="p-4 whitespace-nowrap">
-                        {getStatusBadge(order.status)}
+                      <td className="p-4">
+                        <span className="font-mono text-emerald-400 font-bold">
+                          {product.stockCount} {lang === 'ar' ? 'قطعة' : 'pcs'}
+                        </span>
                       </td>
 
-                      {/* Status Selector */}
+                      <td className="p-4">
+                        {product.isFlashDeal ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FF6B00]/20 text-[#FF6B00] border border-[#FF6B00]/40">
+                            FLASH DEAL
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/5 text-[#A1A1AA]">
+                            STANDARD
+                          </span>
+                        )}
+                      </td>
+
                       <td className="p-4 text-right">
-                        <select
-                          value={order.status}
-                          onChange={(e) =>
-                            updateOrderStatus(order.id, e.target.value as OrderStatus)
-                          }
-                          className="bg-[#14141B] border border-white/15 rounded-lg px-2.5 py-1 text-[11px] font-mono text-white outline-none focus:border-[#FF6B00]"
-                        >
-                          <option value="pending">{t('admin.status_pending')}</option>
-                          <option value="confirmed">{t('admin.status_confirmed')}</option>
-                          <option value="in_delivery">{t('admin.status_in_delivery')}</option>
-                          <option value="delivered">{t('admin.status_delivered')}</option>
-                          <option value="cancelled">{t('admin.status_cancelled')}</option>
-                        </select>
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/products/${product.slug}`}
+                            target="_blank"
+                            className="p-2 rounded-lg bg-white/5 hover:bg-white/15 text-[#A1A1AA] hover:text-white transition-colors"
+                            title={lang === 'ar' ? 'عرض في المتجر' : 'Voir dans le magasin'}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
+
+                          <button
+                            onClick={async () => {
+                              if (confirm(lang === 'ar' ? 'هل أنت متأكد من حذف هذا المنتج من قاعدة البيانات؟' : 'Voulez-vous vraiment supprimer ce produit de la base de données ?')) {
+                                await deleteProduct(product.id);
+                              }
+                            }}
+                            className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors cursor-pointer"
+                            title={lang === 'ar' ? 'حذف المنتج' : 'Supprimer le produit'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Quick-Add Product Drawer Modal */}
@@ -530,7 +658,7 @@ export default function AdminDashboardPage() {
                       </label>
                       <select
                         value={newProdCategory}
-                        onChange={(e) => setNewProdCategory(e.target.value)}
+                        onChange={(e) => setNewProdCategory(e.target.value as any)}
                         className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white outline-none"
                       >
                         <option value="earbuds">{t('products.earbuds')}</option>

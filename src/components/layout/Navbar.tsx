@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
-import { PRODUCTS, Product } from '@/data/products';
+import { useProducts } from '@/context/ProductContext';
+import { Product } from '@/data/products';
 import {
   Search,
   ShoppingBag,
@@ -25,6 +26,7 @@ export default function Navbar() {
   const { lang, toggleLanguage, t } = useLanguage();
   const { totalItems, setIsCartOpen } = useCart();
   const { theme, toggleTheme } = useTheme();
+  const { products } = useProducts();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,7 +46,7 @@ export default function Navbar() {
       return;
     }
     const q = searchQuery.toLowerCase();
-    const matches = PRODUCTS.filter(
+    const matches = products.filter(
       (p) =>
         p.nameFr.toLowerCase().includes(q) ||
         p.nameAr.toLowerCase().includes(q) ||
@@ -52,7 +54,7 @@ export default function Navbar() {
         p.category.toLowerCase().includes(q)
     );
     setSearchResults(matches);
-  }, [searchQuery]);
+  }, [searchQuery, products]);
 
   return (
     <>

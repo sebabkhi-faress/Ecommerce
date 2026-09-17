@@ -3,10 +3,11 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getProductBySlug, getProductById, formatDZD } from '@/data/products';
+import { formatDZD } from '@/data/products';
 import { WILAYAS, getWilayaByCode } from '@/data/wilayas';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
+import { useProducts } from '@/context/ProductContext';
 import CodForm from '@/components/checkout/CodForm';
 import {
   Star,
@@ -24,6 +25,7 @@ import {
   Sparkles,
   Layers,
   MapPin,
+  Loader2,
 } from 'lucide-react';
 
 export default function ProductDetailPage() {
@@ -31,11 +33,12 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const { lang, t } = useLanguage();
   const { addToCart, openDirectCheckout } = useCart();
+  const { getProductBySlug, getProductById, isLoading } = useProducts();
 
   const idOrSlug = params.id as string;
   const product = useMemo(() => {
     return getProductBySlug(idOrSlug) || getProductById(idOrSlug);
-  }, [idOrSlug]);
+  }, [idOrSlug, getProductBySlug, getProductById]);
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
@@ -47,6 +50,15 @@ export default function ProductDetailPage() {
     () => getWilayaByCode(calcWilayaCode) || WILAYAS[15],
     [calcWilayaCode]
   );
+
+  if (isLoading && !product) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+        <Loader2 className="w-8 h-8 text-[#FF6B00] animate-spin mb-4" />
+        <p className="text-sm text-[#A1A1AA] font-mono">{lang === 'ar' ? 'جارٍ تحميل المنتج...' : 'Chargement du produit...'}</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
