@@ -26,8 +26,9 @@ import {
   TrendingUp,
   RefreshCw,
   Database,
+  UploadCloud,
 } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured, uploadProductImage } from '@/lib/supabase';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -50,6 +51,8 @@ export default function AdminDashboardPage() {
     'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=600&auto=format&fit=crop'
   );
   const [newProdSuccess, setNewProdSuccess] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     const auth = localStorage.getItem('electronics_admin_auth');
@@ -553,29 +556,71 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
 
-                  {/* Image URL & Instant Preview */}
-                  <div>
-                    <label className="block text-[#A1A1AA] mb-1 font-semibold">
-                      {t('admin.lbl_image')}
+                  {/* Image Upload to Supabase Bucket (products_images) & URL */}
+                  <div className="space-y-2">
+                    <label className="block text-[#A1A1AA] font-semibold">
+                      {lang === 'ar' ? 'صورة المنتج (رفع إلى Supabase Storage أو رابط)' : 'Image du produit (Téléversement Supabase ou Lien URL)'}
                     </label>
+
+                    {/* File Upload Button to products_images bucket */}
+                    <div>
+                      <label className="flex items-center justify-center gap-2 p-3 bg-[#18181F] hover:bg-[#22222B] border border-dashed border-white/20 hover:border-[#FF6B00] rounded-xl text-xs cursor-pointer transition-colors text-[#F5F5F7]">
+                        <UploadCloud className={`w-4 h-4 ${isUploading ? 'animate-bounce text-[#FF6B00]' : 'text-[#FFAA2C]'}`} />
+                        <span className="font-semibold">
+                          {isUploading
+                            ? (lang === 'ar' ? 'جارٍ رفع الصورة إلى products_images...' : 'Téléversement vers products_images...')
+                            : (lang === 'ar' ? 'رفع صورة من جهازك إلى products_images' : 'Téléverser un fichier vers products_images')}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={isUploading}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setIsUploading(true);
+                            setUploadError(null);
+                            const { url, error } = await uploadProductImage(file);
+                            setIsUploading(false);
+                            if (url) {
+                              setNewProdImage(url);
+                            } else if (error) {
+                              setUploadError(error);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                      {uploadError && (
+                        <p className="text-[11px] text-red-400 mt-1">{uploadError}</p>
+                      )}
+                    </div>
+
+                    {/* Direct URL input */}
                     <input
                       type="url"
                       required
                       value={newProdImage}
                       onChange={(e) => setNewProdImage(e.target.value)}
-                      className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white outline-none focus:border-[#FF6B00]"
+                      placeholder="https://..."
+                      className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#FF6B00]"
                     />
 
                     {newProdImage && (
-                      <div className="mt-3 flex items-center gap-3 p-2 bg-[#18181F] rounded-xl border border-white/10">
+                      <div className="mt-2 flex items-center gap-3 p-2 bg-[#18181F] rounded-xl border border-white/10">
                         <img
                           src={newProdImage}
                           alt="Preview"
-                          className="w-14 h-14 object-cover rounded-lg bg-black"
+                          className="w-14 h-14 object-cover rounded-lg bg-black shrink-0 border border-white/10"
                         />
-                        <span className="text-[11px] text-[#25D366]">
-                          {t('admin.img_validated')}
-                        </span>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[11px] text-[#25D366] font-semibold block">
+                            {t('admin.img_validated')}
+                          </span>
+                          <span className="text-[10px] text-[#A1A1AA] truncate block font-mono">
+                            {newProdImage}
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>

@@ -1,6 +1,7 @@
 -- ==============================================================================
--- ELECTRONICS DZ — SUPABASE DATABASE SCHEMA (PUBLIC SCHEMA)
--- Run this SQL in your Supabase Project: SQL Editor -> New query -> Run
+-- ELECTRONICS DZ — SUPABASE DATABASE SCHEMA (PUBLIC SCHEMA & STORAGE)
+-- Run this script in your Supabase SQL Editor:
+-- SQL Editor -> New Query -> Paste & Click Run
 -- ==============================================================================
 
 -- 1. ORDERS TABLE (Cash on Delivery / الدفع عند الاستلام)
@@ -51,31 +52,55 @@ CREATE TABLE IF NOT EXISTS public.products (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 3. ENABLE ROW LEVEL SECURITY (RLS) WITH PUBLIC ACCESS
-ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+-- 3. DISABLE ROW LEVEL SECURITY (NO RLS AS REQUESTED)
+ALTER TABLE public.orders DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.products DISABLE ROW LEVEL SECURITY;
 
--- Allow public anonymous reads, inserts and updates on orders
+-- Drop any previous table policies
 DROP POLICY IF EXISTS "Public can view orders" ON public.orders;
-CREATE POLICY "Public can view orders" ON public.orders FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Public can insert orders" ON public.orders;
-CREATE POLICY "Public can insert orders" ON public.orders FOR INSERT WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Public can update orders" ON public.orders;
-CREATE POLICY "Public can update orders" ON public.orders FOR UPDATE USING (true) WITH CHECK (true);
-
--- Allow public anonymous operations on products
 DROP POLICY IF EXISTS "Public can view products" ON public.products;
-CREATE POLICY "Public can view products" ON public.products FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Public can insert products" ON public.products;
-CREATE POLICY "Public can insert products" ON public.products FOR INSERT WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Public can update products" ON public.products;
-CREATE POLICY "Public can update products" ON public.products FOR UPDATE USING (true) WITH CHECK (true);
 
--- 4. ENABLE REALTIME BROADCASTING ON ORDERS & PRODUCTS
+-- 4. PUBLIC STORAGE BUCKET: products_images
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('products_images', 'products_images', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- Storage Policies for products_images bucket:
+
+-- Public View (SELECT)
+DROP POLICY IF EXISTS "Public View" ON storage.objects;
+CREATE POLICY "Public View"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'products_images');
+
+-- Auth Insert (INSERT)
+DROP POLICY IF EXISTS "Auth Insert" ON storage.objects;
+CREATE POLICY "Auth Insert"
+ON storage.objects FOR INSERT
+TO public
+WITH CHECK (bucket_id = 'products_images');
+
+-- Auth Update (UPDATE)
+DROP POLICY IF EXISTS "Auth Update" ON storage.objects;
+CREATE POLICY "Auth Update"
+ON storage.objects FOR UPDATE
+TO public
+USING (bucket_id = 'products_images')
+WITH CHECK (bucket_id = 'products_images');
+
+-- Auth Delete (DELETE)
+DROP POLICY IF EXISTS "Auth Delete" ON storage.objects;
+CREATE POLICY "Auth Delete"
+ON storage.objects FOR DELETE
+TO public
+USING (bucket_id = 'products_images');
+
+-- 5. ENABLE REALTIME BROADCASTING ON ORDERS & PRODUCTS
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -95,7 +120,7 @@ EXCEPTION
         NULL;
 END $$;
 
--- 5. INITIAL SEED DATA FOR ORDERS
+-- 6. INITIAL SEED DATA FOR ORDERS
 INSERT INTO public.orders (
     id, tracking_code, full_name, phone, wilaya_code, wilaya_name_fr, wilaya_name_ar,
     commune, delivery_mode, notes, subtotal, delivery_fee, total, status, created_at, items
