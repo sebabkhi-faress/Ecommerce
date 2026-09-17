@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Wilaya, getWilayaByCode } from '@/data/wilayas';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 export interface OrderItem {
   productId: string;
@@ -36,10 +36,12 @@ export interface Order {
 
 interface OrderContextType {
   orders: Order[];
+  isSupabaseConnected: boolean;
   createOrder: (orderData: Omit<Order, 'id' | 'trackingCode' | 'createdAt' | 'status'>) => Order;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   getOrderById: (orderId: string) => Order | undefined;
   getOrderByTrackingCode: (code: string) => Order | undefined;
+  refreshOrders: () => Promise<void>;
   metrics: {
     totalRevenue: number;
     ordersCount: number;
@@ -166,12 +168,62 @@ const INITIAL_ORDERS: Order[] = [
   },
 ];
 
+// Helper to map Supabase snake_case rows to Order interface
+function mapRowToOrder(row: any): Order {
+  return {
+    id: row.id,
+    trackingCode: row.tracking_code,
+    fullName: row.full_name,
+    phone: row.phone,
+    wilayaCode: row.wilaya_code,
+    wilayaNameFr: row.wilaya_name_fr,
+    wilayaNameAr: row.wilaya_name_ar,
+    commune: row.commune,
+    deliveryMode: row.delivery_mode,
+    notes: row.notes || undefined,
+    items: Array.isArray(row.items) ? row.items : [],
+    subtotal: Number(row.subtotal) || 0,
+    deliveryFee: Number(row.delivery_fee) || 0,
+    total: Number(row.total) || 0,
+    status: row.status as OrderStatus,
+    createdAt: row.created_at,
+  };
+}
+
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export function OrderProvider({ children }: { children: React.ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
 
-  useEffect(() => {
+  // Fetch orders from Supabase (or fallback to localStorage)
+  const fetchOrders = useCallback(async () => {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const mappedOrders = data.map(mapRowToOrder);
+          setOrders(mappedOrders);
+          setIsSupabaseConnected(true);
+          try {
+            localStorage.setItem('electronics_orders', JSON.stringify(mappedOrders));
+          } catch (e) {
+            // Ignore storage errors
+          }
+          return;
+        } else if (!error && data && data.length === 0) {
+          setIsSupabaseConnected(true);
+        }
+      } catch (err) {
+        console.warn('Supabase fetch failed, falling back to local data', err);
+      }
+    }
+
+    // Fallback to localStorage or INITIAL_ORDERS
     try {
       const saved = localStorage.getItem('electronics_orders');
       if (saved) {
@@ -181,17 +233,39 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('electronics_orders', JSON.stringify(INITIAL_ORDERS));
       }
     } catch (e) {
-      console.error('Failed to load orders', e);
       setOrders(INITIAL_ORDERS);
     }
   }, []);
 
-  const saveOrders = (newOrders: Order[]) => {
+  useEffect(() => {
+    fetchOrders();
+
+    // Subscribe to Realtime orders if Supabase is available
+    if (isSupabaseConfigured && supabase) {
+      const client = supabase;
+      const channel = client
+        .channel('public:orders')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders' },
+          () => {
+            fetchOrders();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        client.removeChannel(channel);
+      };
+    }
+  }, [fetchOrders]);
+
+  const saveLocalOrders = (newOrders: Order[]) => {
     setOrders(newOrders);
     try {
       localStorage.setItem('electronics_orders', JSON.stringify(newOrders));
     } catch (e) {
-      console.error('Failed to persist orders', e);
+      console.error('Failed to persist orders locally', e);
     }
   };
 
@@ -206,14 +280,62 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
     };
 
+    // 1. Immediately update local state for smooth UX
     const updated = [newOrder, ...orders];
-    saveOrders(updated);
+    saveLocalOrders(updated);
+
+    // 2. Persist to Supabase if connected
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('orders')
+        .insert({
+          id: newOrder.id,
+          tracking_code: newOrder.trackingCode,
+          full_name: newOrder.fullName,
+          phone: newOrder.phone,
+          wilaya_code: newOrder.wilayaCode,
+          wilaya_name_fr: newOrder.wilayaNameFr,
+          wilaya_name_ar: newOrder.wilayaNameAr,
+          commune: newOrder.commune,
+          delivery_mode: newOrder.deliveryMode,
+          notes: newOrder.notes || null,
+          items: newOrder.items,
+          subtotal: newOrder.subtotal,
+          delivery_fee: newOrder.deliveryFee,
+          total: newOrder.total,
+          status: newOrder.status,
+          created_at: newOrder.createdAt,
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error saving order to Supabase:', error.message);
+          }
+        });
+    }
+
     return newOrder;
   };
 
   const updateOrderStatus = (orderId: string, status: OrderStatus) => {
+    // 1. Immediate local update
     const updated = orders.map((ord) => (ord.id === orderId ? { ...ord, status } : ord));
-    saveOrders(updated);
+    saveLocalOrders(updated);
+
+    // 2. Persist to Supabase
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('orders')
+        .update({
+          status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', orderId)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error updating order status in Supabase:', error.message);
+          }
+        });
+    }
   };
 
   const getOrderById = (orderId: string) => {
@@ -235,10 +357,12 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     <OrderContext.Provider
       value={{
         orders,
+        isSupabaseConnected,
         createOrder,
         updateOrderStatus,
         getOrderById,
         getOrderByTrackingCode,
+        refreshOrders: fetchOrders,
         metrics: {
           totalRevenue,
           ordersCount: orders.length,

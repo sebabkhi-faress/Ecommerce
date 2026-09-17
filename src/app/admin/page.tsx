@@ -24,12 +24,16 @@ import {
   Building2,
   AlertCircle,
   TrendingUp,
+  RefreshCw,
+  Database,
 } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { lang, t } = useLanguage();
-  const { orders, updateOrderStatus, metrics } = useOrders();
+  const { orders, updateOrderStatus, metrics, isSupabaseConnected, refreshOrders } = useOrders();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,6 +67,29 @@ export default function AdminDashboardPage() {
 
   const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSupabaseConfigured && supabase) {
+      const slug = newProdNameFr.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      supabase
+        .from('products')
+        .insert({
+          id: `prod-${Date.now()}`,
+          slug: slug || `prod-${Date.now()}`,
+          name_fr: newProdNameFr,
+          name_ar: newProdNameAr,
+          price: Number(newProdPrice) || 0,
+          category: newProdCategory,
+          images: [newProdImage],
+          stock_count: 15,
+          rating: 5.0,
+          reviews_count: 1,
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error inserting product in Supabase:', error.message);
+          }
+        });
+    }
+
     setNewProdSuccess(true);
     setTimeout(() => {
       setNewProdSuccess(false);
@@ -132,10 +159,25 @@ export default function AdminDashboardPage() {
         {/* Top Bar with Admin Info & Logout */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
               <span className="text-xs font-mono font-bold text-[#FFAA2C] uppercase tracking-wider">
                 {t('admin.live_badge')}
+              </span>
+              <span className="text-white/20">•</span>
+              <span
+                className={`inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-0.5 rounded-full border ${
+                  isSupabaseConnected
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                }`}
+              >
+                <Database className="w-3 h-3" />
+                <span>
+                  {isSupabaseConnected
+                    ? (lang === 'ar' ? 'قاعدة بيانات Supabase متصلة' : 'Supabase DB Connecté')
+                    : (lang === 'ar' ? 'وضع التخزين المحلي (Local)' : 'Stockage Local')}
+                </span>
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-1">
@@ -143,7 +185,19 @@ export default function AdminDashboardPage() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              onClick={async () => {
+                setIsRefreshing(true);
+                await refreshOrders();
+                setTimeout(() => setIsRefreshing(false), 500);
+              }}
+              className="p-2.5 rounded-xl bg-[#18181F] hover:bg-white/10 text-[#A1A1AA] hover:text-white border border-white/10 transition-colors"
+              title={lang === 'ar' ? 'تحديث البيانات' : 'Rafraîchir les données'}
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#FF6B00]' : ''}`} />
+            </button>
+
             <button
               onClick={() => setIsAddProductOpen(true)}
               className="px-4 py-2.5 bg-[#FF6B00] hover:bg-[#E05E00] text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-[#FF6B00]/30 flex items-center gap-1.5 transition-all cursor-pointer"
