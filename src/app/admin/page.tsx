@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured, uploadProductImage } from '@/lib/supabase';
 import { useProducts } from '@/context/ProductContext';
+import { useAuth } from '@/context/AuthContext';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -62,18 +63,23 @@ export default function AdminDashboardPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  const { user, role: authRole, logout: authLogout } = useAuth();
+
   useEffect(() => {
-    const auth = localStorage.getItem('electronics_admin_auth');
-    if (!auth) {
-      router.push('/admin/login');
+    const legacyAuth = typeof window !== 'undefined' ? localStorage.getItem('electronics_admin_auth') : null;
+    if (authRole && authRole !== 'admin') {
+      router.push('/login');
+    } else if (!legacyAuth && !authRole) {
+      router.push('/login?redirect=/admin');
     } else {
       setIsAuthenticated(true);
     }
-  }, [router]);
+  }, [router, authRole]);
 
   const handleLogout = () => {
+    authLogout();
     localStorage.removeItem('electronics_admin_auth');
-    router.push('/admin/login');
+    router.push('/login');
   };
 
   const handleAddProduct = async (e: React.FormEvent) => {

@@ -5,15 +5,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
-import { Home, Grid, ShoppingBag, MessageSquare, Flame } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { Home, Grid, ShoppingBag, MessageSquare, Flame, User as UserIcon, Truck, LayoutDashboard } from 'lucide-react';
 
 export default function MobileDock() {
   const pathname = usePathname();
   const { lang, t } = useLanguage();
   const { totalItems, setIsCartOpen } = useCart();
+  const { user, role, isAuthenticated } = useAuth();
 
-  // If inside admin, do not show public dock
-  if (pathname.startsWith('/admin')) {
+  // If inside admin or delivery console, do not show public dock
+  if (pathname.startsWith('/admin') || pathname.startsWith('/delivery')) {
     return null;
   }
 
@@ -60,15 +62,31 @@ export default function MobileDock() {
           <span className="text-[10px] font-medium">{t('nav.categories')}</span>
         </Link>
 
-        <a
-          href="https://wa.me/213550000000?text=Salam%20Electronics%20DZ"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-full text-[#25D366]"
+        <Link
+          href={
+            !isAuthenticated
+              ? '/login'
+              : role === 'delivery'
+              ? '/delivery'
+              : role === 'admin'
+              ? '/admin'
+              : '/account'
+          }
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all ${
+            pathname === '/account' || pathname === '/login' ? 'text-[#FF6B00]' : 'text-[#A1A1AA]'
+          }`}
         >
-          <MessageSquare className="w-5 h-5" />
-          <span className="text-[10px] font-medium">WhatsApp</span>
-        </a>
+          {role === 'delivery' ? (
+            <Truck className="w-5 h-5 text-[#FFAA2C]" />
+          ) : role === 'admin' ? (
+            <LayoutDashboard className="w-5 h-5 text-[#FF6B00]" />
+          ) : (
+            <UserIcon className="w-5 h-5" />
+          )}
+          <span className="text-[10px] font-medium">
+            {!isAuthenticated ? (lang === 'ar' ? 'دخول' : 'Connexion') : role === 'delivery' ? 'Livreur' : (lang === 'ar' ? 'حسابي' : 'Compte')}
+          </span>
+        </Link>
       </div>
     </div>
   );

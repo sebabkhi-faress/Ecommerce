@@ -4,36 +4,43 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { Zap, Lock, Mail, Eye, EyeOff, ShieldCheck, ArrowLeft } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { lang, t } = useLanguage();
+  const { login } = useAuth();
   const [email, setEmail] = useState('admin@electronics.dz');
   const [password, setPassword] = useState('admin2026');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Verification check
-    setTimeout(() => {
-      if (email === 'admin@electronics.dz' && password === 'admin2026') {
-        localStorage.setItem('electronics_admin_auth', 'true');
+    const res = await login(email, password);
+    setLoading(false);
+
+    if (res.success && res.user) {
+      if (res.user.role === 'admin') {
         router.push('/admin');
+      } else if (res.user.role === 'delivery') {
+        router.push('/delivery');
       } else {
-        setError(
-          lang === 'ar'
-            ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
-            : 'Identifiants invalides. Utilisez admin@electronics.dz / admin2026'
-        );
-        setLoading(false);
+        router.push('/');
       }
-    }, 400);
+    } else {
+      setError(
+        res.error ||
+          (lang === 'ar'
+            ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
+            : 'Identifiants invalides')
+      );
+    }
   };
 
   return (

@@ -62,13 +62,38 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
   background-color: var(--obsidian);
   color: var(--white-titanium);
+  -webkit-overflow-scrolling: touch;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   background-color: var(--obsidian);
   color: var(--white-titanium);
+  overflow-x: hidden;
+}
+
+/* Fluid Custom Scrollbar with Warm Amber/Sunset Glow */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--obsidian);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 107, 0, 0.3);
+  border-radius: 9999px;
+  border: 1px solid var(--obsidian);
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FF6B00;
 }
 
 /* LTR / French Typography (Plus Jakarta Sans) */

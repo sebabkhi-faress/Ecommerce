@@ -21,11 +21,24 @@ CREATE TABLE IF NOT EXISTS public.orders (
     delivery_fee NUMERIC NOT NULL DEFAULT 0,
     total NUMERIC NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'in_delivery', 'delivered', 'cancelled')),
+    assigned_delivery_id TEXT,
+    assigned_delivery_name TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 2. PRODUCTS TABLE
+-- 2. USERS & ROLES TABLE (Admin, Delivery Guy, Customer)
+CREATE TABLE IF NOT EXISTS public.users (
+    id TEXT PRIMARY KEY DEFAULT ('usr-' || substr(md5(random()::text), 1, 8)),
+    email TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    name TEXT NOT NULL,
+    phone TEXT,
+    role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('admin', 'delivery', 'customer')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 3. PRODUCTS TABLE
 CREATE TABLE IF NOT EXISTS public.products (
     id TEXT PRIMARY KEY,
     slug TEXT NOT NULL UNIQUE,
@@ -52,9 +65,10 @@ CREATE TABLE IF NOT EXISTS public.products (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 3. DISABLE ROW LEVEL SECURITY (NO RLS AS REQUESTED)
+-- 4. DISABLE ROW LEVEL SECURITY (NO RLS AS REQUESTED)
 ALTER TABLE public.orders DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
 
 -- Drop any previous table policies
 DROP POLICY IF EXISTS "Public can view orders" ON public.orders;
@@ -114,6 +128,12 @@ BEGIN
         WHERE pubname = 'supabase_realtime' AND tablename = 'products'
     ) THEN
         ALTER PUBLICATION supabase_realtime ADD TABLE public.products;
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'users'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.users;
     END IF;
 EXCEPTION
     WHEN OTHERS THEN
@@ -351,3 +371,36 @@ ON CONFLICT (id) DO UPDATE SET
     price = EXCLUDED.price,
     images = EXCLUDED.images,
     category = EXCLUDED.category;
+
+-- 8. INITIAL SEED DATA FOR USERS & ROLES (Admin, Delivery Guy, Customer)
+INSERT INTO public.users (id, email, password, name, phone, role)
+VALUES
+(
+    'usr-admin-01',
+    'admin@electronics.dz',
+    'admin2026',
+    'Directeur Admin DZ',
+    '0550123456',
+    'admin'
+),
+(
+    'usr-delivery-01',
+    'delivery@electronics.dz',
+    'delivery2026',
+    'Karim Livreur Express',
+    '0661987654',
+    'delivery'
+),
+(
+    'usr-customer-01',
+    'client@electronics.dz',
+    'client2026',
+    'Amine Client VIP',
+    '0770334455',
+    'customer'
+)
+ON CONFLICT (email) DO UPDATE SET
+    password = EXCLUDED.password,
+    name = EXCLUDED.name,
+    phone = EXCLUDED.phone,
+    role = EXCLUDED.role;
