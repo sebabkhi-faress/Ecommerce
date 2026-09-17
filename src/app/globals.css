@@ -1,0 +1,198 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Readex+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --obsidian: #0D0D11;
+  --charcoal: #18181F;
+  --smoke: #22222B;
+  --sunset: #FF6B00;
+  --sunset-hover: #E05E00;
+  --amber: #FFAA2C;
+  --white-titanium: #F5F5F7;
+  --silver-muted: #A1A1AA;
+  --background: var(--obsidian);
+  --foreground: var(--white-titanium);
+  
+  --font-latin-family: var(--font-latin), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-arabic-family: var(--font-arabic), 'Readex Pro', 'Cairo', -apple-system, sans-serif;
+  --font-mono-family: var(--font-mono), 'JetBrains Mono', monospace;
+}
+
+@theme {
+  --color-obsidian: #0D0D11;
+  --color-charcoal: #18181F;
+  --color-smoke: #22222B;
+  --color-sunset: #FF6B00;
+  --color-sunset-hover: #E05E00;
+  --color-amber: #FFAA2C;
+  --color-titanium: #F5F5F7;
+  --color-silver: #A1A1AA;
+  --font-latin: var(--font-latin-family);
+  --font-arabic: var(--font-arabic-family);
+  --font-mono: var(--font-mono-family);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: #0D0D11;
+  color: #F5F5F7;
+}
+
+/* LTR / French Typography (Plus Jakarta Sans) */
+body,
+html[lang="fr"],
+html[lang="fr"] body,
+html[dir="ltr"],
+html[dir="ltr"] body,
+.font-latin {
+  font-family: 'Plus Jakarta Sans', var(--font-latin), -apple-system, BlinkMacSystemFont, sans-serif !important;
+  letter-spacing: -0.015em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* RTL / Arabic Modern Typography (Readex Pro & Cairo) */
+html[lang="ar"],
+html[lang="ar"] body,
+html[dir="rtl"],
+html[dir="rtl"] body,
+.font-arabic,
+[dir="rtl"] button,
+[dir="rtl"] input,
+[dir="rtl"] select,
+[dir="rtl"] textarea {
+  font-family: 'Readex Pro', var(--font-arabic), 'Cairo', -apple-system, sans-serif !important;
+  letter-spacing: 0 !important;
+  line-height: 1.55;
+}
+
+.font-arabic {
+  font-family: var(--font-arabic-family) !important;
+}
+
+.font-latin {
+  font-family: var(--font-latin-family) !important;
+}
+
+.font-mono {
+  font-family: var(--font-mono-family) !important;
+}
+
+/* Custom Warm Glows & Glassmorphism */
+.warm-glass {
+  background: rgba(24, 24, 31, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.warm-glass-card {
+  background: rgba(34, 34, 43, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glow-sunset {
+  box-shadow: 0 0 35px -5px rgba(255, 107, 0, 0.45);
+}
+
+.glow-sunset-sm {
+  box-shadow: 0 0 15px -3px rgba(255, 107, 0, 0.35);
+}
+
+.glow-amber {
+  box-shadow: 0 0 35px -5px rgba(255, 170, 44, 0.4);
+}
+
+.glow-amber-sm {
+  box-shadow: 0 0 15px -3px rgba(255, 170, 44, 0.3);
+}
+
+.glow-aura {
+  background: radial-gradient(circle at center, rgba(255, 107, 0, 0.15) 0%, rgba(255, 170, 44, 0.05) 45%, transparent 70%);
+}
+
+.text-gradient-warm {
+  background: linear-gradient(135deg, #F5F5F7 20%, #FFAA2C 60%, #FF6B00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-sunset {
+  background: linear-gradient(135deg, #FF6B00 0%, #FFAA2C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Dot matrix tech background pattern */
+.bg-tech-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.bg-tech-grid {
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Custom Warm Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0D0D11;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #22222B;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FF6B00;
+}
+
+/* Marquee Animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: 200%;
+  animation: marquee 25s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Pulse Glow Animation */
+@keyframes pulse-warm {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.04);
+  }
+}
+
+.animate-pulse-warm {
+  animation: pulse-warm 4s ease-in-out infinite;
+}
