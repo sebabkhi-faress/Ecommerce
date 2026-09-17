@@ -28,7 +28,7 @@ import {
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const { orders, updateOrderStatus, metrics } = useOrders();
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -49,7 +49,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     const auth = localStorage.getItem('electronics_admin_auth');
-    if (auth !== 'true') {
+    if (!auth) {
       router.push('/admin/login');
     } else {
       setIsAuthenticated(true);
@@ -70,9 +70,10 @@ export default function AdminDashboardPage() {
       setNewProdNameFr('');
       setNewProdNameAr('');
       setNewProdPrice('');
-    }, 1200);
+    }, 1500);
   };
 
+  // Filter orders based on queries
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       const matchesSearch =
@@ -93,31 +94,31 @@ export default function AdminDashboardPage() {
       case 'pending':
         return (
           <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            En attente
+            {t('admin.status_pending')}
           </span>
         );
       case 'confirmed':
         return (
           <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-            Confirmée
+            {t('admin.status_confirmed')}
           </span>
         );
       case 'in_delivery':
         return (
           <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-[#FF6B00]/10 text-[#FF6B00] border border-[#FF6B00]/20">
-            En cours d’acheminement
+            {t('admin.status_in_delivery')}
           </span>
         );
       case 'delivered':
         return (
           <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            Livrée & Encaissée
+            {t('admin.status_delivered')}
           </span>
         );
       case 'cancelled':
         return (
           <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-red-500/10 text-red-400 border border-red-500/20">
-            Annulée
+            {t('admin.status_cancelled')}
           </span>
         );
     }
@@ -134,11 +135,11 @@ export default function AdminDashboardPage() {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
               <span className="text-xs font-mono font-bold text-[#FFAA2C] uppercase tracking-wider">
-                ADMIN CONSOLE DZ • EN DIRECT
+                {t('admin.live_badge')}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-1">
-              Tableau de bord — Commandes COD
+              {t('admin.title')}
             </h1>
           </div>
 
@@ -148,20 +149,20 @@ export default function AdminDashboardPage() {
               className="px-4 py-2.5 bg-[#FF6B00] hover:bg-[#E05E00] text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-[#FF6B00]/30 flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
-              <span>Ajouter un produit</span>
+              <span>{t('admin.add_product')}</span>
             </button>
 
             <Link
               href="/"
               className="px-4 py-2.5 bg-[#18181F] hover:bg-[#22222B] text-xs font-semibold rounded-xl border border-white/10 text-[#A1A1AA] hover:text-white transition-colors"
             >
-              Boutique
+              {t('admin.store')}
             </Link>
 
             <button
               onClick={handleLogout}
               className="p-2.5 rounded-xl bg-[#18181F] hover:bg-red-500/20 text-[#A1A1AA] hover:text-red-400 border border-white/10 transition-colors"
-              title="Déconnexion"
+              title={t('admin.logout')}
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -173,24 +174,24 @@ export default function AdminDashboardPage() {
           {/* Metric 1: Total Revenue */}
           <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-[#FF6B00]/40 transition-colors">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">Revenu Global (DZD)</span>
+              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{t('admin.total_revenue')}</span>
               <div className="w-9 h-9 rounded-xl bg-[#FF6B00]/15 text-[#FF6B00] flex items-center justify-center">
                 <DollarSign className="w-5 h-5" />
               </div>
             </div>
             <p className="text-2xl sm:text-3xl font-mono font-black text-[#FF6B00]">
-              {formatDZD(metrics.totalRevenue, 'fr')}
+              {formatDZD(metrics.totalRevenue, lang)}
             </p>
             <p className="text-[11px] text-[#25D366] flex items-center gap-1 mt-2 font-medium">
               <TrendingUp className="w-3.5 h-3.5" />
-              <span>Chiffre d’affaires encaissé & en cours</span>
+              <span>{t('admin.revenue_desc')}</span>
             </p>
           </div>
 
           {/* Metric 2: Total Orders */}
           <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-[#FFAA2C]/40 transition-colors">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">Total Commandes</span>
+              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{t('admin.total_orders')}</span>
               <div className="w-9 h-9 rounded-xl bg-[#FFAA2C]/15 text-[#FFAA2C] flex items-center justify-center">
                 <Package className="w-5 h-5" />
               </div>
@@ -199,14 +200,14 @@ export default function AdminDashboardPage() {
               {metrics.ordersCount}
             </p>
             <p className="text-[11px] text-[#A1A1AA] mt-2">
-              Sur l’ensemble des 68 Wilayas
+              {t('admin.orders_desc')}
             </p>
           </div>
 
           {/* Metric 3: Pending Orders */}
           <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-amber-500/40 transition-colors">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">En Attente Confirmation</span>
+              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{t('admin.pending_orders')}</span>
               <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
                 <Clock className="w-5 h-5" />
               </div>
@@ -215,14 +216,14 @@ export default function AdminDashboardPage() {
               {metrics.pendingCount}
             </p>
             <p className="text-[11px] text-amber-400/80 mt-2">
-              Appels de confirmation à effectuer
+              {t('admin.pending_desc')}
             </p>
           </div>
 
           {/* Metric 4: Delivered Rate */}
           <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-emerald-500/40 transition-colors">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">Livrées avec Succès</span>
+              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{t('admin.delivered_orders')}</span>
               <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
                 <CheckCircle className="w-5 h-5" />
               </div>
@@ -231,7 +232,7 @@ export default function AdminDashboardPage() {
               {metrics.deliveredCount}
             </p>
             <p className="text-[11px] text-emerald-400/80 mt-2">
-              Colis remis et fonds reçus
+              {t('admin.delivered_desc')}
             </p>
           </div>
         </div>
@@ -244,7 +245,7 @@ export default function AdminDashboardPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher par nom, téléphone, wilaya, code suivi..."
+              placeholder={t('admin.search_placeholder')}
               className="w-full bg-[#14141B] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-[#F5F5F7] placeholder-[#A1A1AA]/60 outline-none focus:border-[#FF6B00]"
             />
           </div>
@@ -256,12 +257,12 @@ export default function AdminDashboardPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="bg-[#14141B] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-[#F5F5F7] outline-none"
             >
-              <option value="all">Tous les statuts</option>
-              <option value="pending">En attente</option>
-              <option value="confirmed">Confirmée</option>
-              <option value="in_delivery">En cours d’acheminement</option>
-              <option value="delivered">Livrée</option>
-              <option value="cancelled">Annulée</option>
+              <option value="all">{t('admin.all_statuses')}</option>
+              <option value="pending">{t('admin.status_pending')}</option>
+              <option value="confirmed">{t('admin.status_confirmed')}</option>
+              <option value="in_delivery">{t('admin.status_in_delivery')}</option>
+              <option value="delivered">{t('admin.status_delivered')}</option>
+              <option value="cancelled">{t('admin.status_cancelled')}</option>
             </select>
 
             {/* Wilaya Filter */}
@@ -270,10 +271,10 @@ export default function AdminDashboardPage() {
               onChange={(e) => setWilayaFilter(e.target.value)}
               className="bg-[#14141B] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-[#F5F5F7] outline-none max-w-[180px]"
             >
-              <option value="all">Toutes les wilayas (68)</option>
+              <option value="all">{t('admin.all_wilayas')}</option>
               {WILAYAS.map((w) => (
                 <option key={w.code} value={w.code}>
-                  {w.code} - {w.nameFr}
+                  {w.code} - {lang === 'ar' ? w.nameAr : w.nameFr}
                 </option>
               ))}
             </select>
@@ -284,10 +285,10 @@ export default function AdminDashboardPage() {
         <div className="bg-[#18181F] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
           <div className="p-5 border-b border-white/10 flex items-center justify-between">
             <h3 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F7]">
-              Commandes récentes ({filteredOrders.length})
+              {t('admin.recent_orders')} ({filteredOrders.length})
             </h3>
             <span className="text-xs text-[#FFAA2C] font-mono">
-              Mise à jour instantanée
+              {t('admin.live_update')}
             </span>
           </div>
 
@@ -295,21 +296,21 @@ export default function AdminDashboardPage() {
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-white/10 bg-[#14141B] text-[#A1A1AA] font-mono text-[11px] uppercase">
-                  <th className="p-4">Réf. Suivi</th>
-                  <th className="p-4">Client</th>
-                  <th className="p-4">Téléphone</th>
-                  <th className="p-4">Wilaya & Commune</th>
-                  <th className="p-4">Articles</th>
-                  <th className="p-4">Total (DZD)</th>
-                  <th className="p-4">Statut Actuel</th>
-                  <th className="p-4 text-right">Modifier Statut</th>
+                  <th className="p-4">{t('admin.th_tracking')}</th>
+                  <th className="p-4">{t('admin.th_client')}</th>
+                  <th className="p-4">{t('admin.th_phone')}</th>
+                  <th className="p-4">{t('admin.th_wilaya')}</th>
+                  <th className="p-4">{t('admin.th_items')}</th>
+                  <th className="p-4">{t('admin.th_total')}</th>
+                  <th className="p-4">{t('admin.th_status')}</th>
+                  <th className="p-4 text-right">{t('admin.th_actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filteredOrders.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-[#A1A1AA]">
-                      Aucune commande ne correspond aux filtres sélectionnés.
+                      {t('admin.no_orders')}
                     </td>
                   </tr>
                 ) : (
@@ -339,7 +340,7 @@ export default function AdminDashboardPage() {
                       {/* Wilaya & Mode */}
                       <td className="p-4">
                         <div className="font-semibold text-[#FFAA2C]">
-                          {order.wilayaCode} - {order.wilayaNameFr}
+                          {order.wilayaCode} - {lang === 'ar' ? order.wilayaNameAr : order.wilayaNameFr}
                         </div>
                         <div className="text-[11px] text-[#A1A1AA] truncate max-w-[160px]">
                           {order.commune}
@@ -348,12 +349,12 @@ export default function AdminDashboardPage() {
                           {order.deliveryMode === 'home' ? (
                             <>
                               <Home className="w-3 h-3 text-[#FF6B00]" />
-                              <span>À domicile</span>
+                              <span>{t('admin.home_delivery')}</span>
                             </>
                           ) : (
                             <>
                               <Building2 className="w-3 h-3 text-[#FFAA2C]" />
-                              <span>Stop Desk</span>
+                              <span>{t('admin.desk_delivery')}</span>
                             </>
                           )}
                         </div>
@@ -362,16 +363,16 @@ export default function AdminDashboardPage() {
                       {/* Items */}
                       <td className="p-4">
                         <span className="font-mono text-[#F5F5F7]">
-                          {order.items.reduce((s, i) => s + i.quantity, 0)} article(s)
+                          {order.items.reduce((s, i) => s + i.quantity, 0)} {lang === 'ar' ? 'منتج' : 'article(s)'}
                         </span>
                         <div className="text-[11px] text-[#A1A1AA] truncate max-w-[150px]">
-                          {order.items[0]?.productNameFr}
+                          {lang === 'ar' ? (order.items[0]?.productNameAr || order.items[0]?.productNameFr) : order.items[0]?.productNameFr}
                         </div>
                       </td>
 
                       {/* Total */}
                       <td className="p-4 font-mono font-black text-[#FF6B00] whitespace-nowrap">
-                        {formatDZD(order.total, 'fr')}
+                        {formatDZD(order.total, lang)}
                       </td>
 
                       {/* Status Badge */}
@@ -388,11 +389,11 @@ export default function AdminDashboardPage() {
                           }
                           className="bg-[#14141B] border border-white/15 rounded-lg px-2.5 py-1 text-[11px] font-mono text-white outline-none focus:border-[#FF6B00]"
                         >
-                          <option value="pending">En attente</option>
-                          <option value="confirmed">Confirmée</option>
-                          <option value="in_delivery">En cours</option>
-                          <option value="delivered">Livrée</option>
-                          <option value="cancelled">Annulée</option>
+                          <option value="pending">{t('admin.status_pending')}</option>
+                          <option value="confirmed">{t('admin.status_confirmed')}</option>
+                          <option value="in_delivery">{t('admin.status_in_delivery')}</option>
+                          <option value="delivered">{t('admin.status_delivered')}</option>
+                          <option value="cancelled">{t('admin.status_cancelled')}</option>
                         </select>
                       </td>
                     </tr>
@@ -416,7 +417,7 @@ export default function AdminDashboardPage() {
             <div className="relative bg-[#14141B] border border-white/15 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl">
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/10">
                 <h3 className="text-base font-black text-[#F5F5F7] uppercase tracking-wider">
-                  Ajouter un produit (FR & AR)
+                  {t('admin.modal_add_title')}
                 </h3>
                 <button
                   onClick={() => setIsAddProductOpen(false)}
@@ -429,14 +430,14 @@ export default function AdminDashboardPage() {
               {newProdSuccess ? (
                 <div className="p-8 text-center space-y-2">
                   <CheckCircle className="w-12 h-12 text-[#25D366] mx-auto animate-bounce" />
-                  <p className="text-sm font-bold text-white">Produit ajouté avec succès au catalogue !</p>
+                  <p className="text-sm font-bold text-white">{t('admin.add_success')}</p>
                 </div>
               ) : (
                 <form onSubmit={handleAddProduct} className="space-y-4 text-xs">
                   {/* Name FR */}
                   <div>
                     <label className="block text-[#A1A1AA] mb-1 font-semibold">
-                      Nom du produit (Français) *
+                      {t('admin.lbl_name_fr')}
                     </label>
                     <input
                       type="text"
@@ -451,7 +452,7 @@ export default function AdminDashboardPage() {
                   {/* Name AR */}
                   <div>
                     <label className="block text-[#A1A1AA] mb-1 font-semibold">
-                      اسم المنتج (باللغة العربية) *
+                      {t('admin.lbl_name_ar')}
                     </label>
                     <input
                       type="text"
@@ -468,24 +469,24 @@ export default function AdminDashboardPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[#A1A1AA] mb-1 font-semibold">
-                        Catégorie
+                        {t('admin.lbl_category')}
                       </label>
                       <select
                         value={newProdCategory}
                         onChange={(e) => setNewProdCategory(e.target.value)}
                         className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white outline-none"
                       >
-                        <option value="earbuds">Écouteurs</option>
-                        <option value="headphones">Casques</option>
-                        <option value="speakers">Enceintes</option>
-                        <option value="chargers">Chargeurs GaN</option>
-                        <option value="powerbanks">Power Banks</option>
+                        <option value="earbuds">{t('products.earbuds')}</option>
+                        <option value="headphones">{t('products.headphones')}</option>
+                        <option value="speakers">{t('products.speakers')}</option>
+                        <option value="chargers">{t('products.chargers')}</option>
+                        <option value="powerbanks">{t('products.powerbanks')}</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="block text-[#A1A1AA] mb-1 font-semibold">
-                        Prix en DZD *
+                        {t('admin.lbl_price')}
                       </label>
                       <input
                         type="number"
@@ -501,7 +502,7 @@ export default function AdminDashboardPage() {
                   {/* Image URL & Instant Preview */}
                   <div>
                     <label className="block text-[#A1A1AA] mb-1 font-semibold">
-                      URL de l’image
+                      {t('admin.lbl_image')}
                     </label>
                     <input
                       type="url"
@@ -519,7 +520,7 @@ export default function AdminDashboardPage() {
                           className="w-14 h-14 object-cover rounded-lg bg-black"
                         />
                         <span className="text-[11px] text-[#25D366]">
-                          ✓ Aperçu instantané validé
+                          {t('admin.img_validated')}
                         </span>
                       </div>
                     )}
@@ -529,7 +530,7 @@ export default function AdminDashboardPage() {
                     type="submit"
                     className="w-full py-3 bg-[#FF6B00] hover:bg-[#E05E00] text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 transition-all cursor-pointer mt-4"
                   >
-                    Valider et Enregistrer
+                    {t('admin.btn_save')}
                   </button>
                 </form>
               )}

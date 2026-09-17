@@ -19,7 +19,8 @@ export default function Testimonials() {
       commentAr:
         'استلمت الطلب في أقل من 24 ساعة في حيدرة! الصوت مذهل والتصميم الشفاف فريد جداً يشبه هواتف Nothing. دفعت للموزع كاش بعد التأكد من العلبة.',
       rating: 5,
-      date: 'Hier',
+      dateFr: 'Hier',
+      dateAr: 'أمس',
     },
     {
       name: 'Amel K.',
@@ -32,7 +33,8 @@ export default function Testimonials() {
       commentAr:
         'سماعة رأس احترافية ممتازة للعمل عن بعد والرحلات. مريحة جداً على الأذنين وعزل الصوت متقن والبطارية تصمد معي أسبوعاً كاملاً.',
       rating: 5,
-      date: 'Il y a 3 jours',
+      dateFr: 'Il y a 3 jours',
+      dateAr: 'منذ 3 أيام',
     },
     {
       name: 'Riad B.',
@@ -45,7 +47,8 @@ export default function Testimonials() {
       commentAr:
         'يشحن حاسوبي المحمول وهاتفي معاً بسرعة فائقة وبدون أي سخونة. خامة راقية والكابل الكيفلار المرفق متين جداً.',
       rating: 5,
-      date: 'Il y a 5 jours',
+      dateFr: 'Il y a 5 jours',
+      dateAr: 'منذ 5 أيام',
     },
   ];
 
@@ -54,7 +57,7 @@ export default function Testimonials() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#FFAA2C]">
-            COMMUNAUTÉ TECH DZ
+            {t('testimonials.eyebrow')}
           </span>
           <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-[#F5F5F7]">
             {t('testimonials.title')}
@@ -80,7 +83,9 @@ export default function Testimonials() {
                       />
                     ))}
                   </div>
-                  <span className="text-[11px] font-mono text-[#A1A1AA]">{rev.date}</span>
+                  <span className="text-[11px] font-mono text-[#A1A1AA]">
+                    {lang === 'ar' ? rev.dateAr : rev.dateFr}
+                  </span>
                 </div>
 
                 <p className="text-xs sm:text-sm text-[#F5F5F7] leading-relaxed italic mb-4">

@@ -8,7 +8,7 @@ import { Zap, Lock, Mail, Eye, EyeOff, ShieldCheck, ArrowLeft } from 'lucide-rea
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const [email, setEmail] = useState('admin@electronics.dz');
   const [password, setPassword] = useState('admin2026');
   const [showPassword, setShowPassword] = useState(false);
@@ -48,7 +48,7 @@ export default function AdminLoginPage() {
           className="inline-flex items-center gap-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors mb-6"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>{lang === 'ar' ? 'العودة للمتجر الرئيسي' : 'Retour à la boutique'}</span>
+          <span>{t('admin.back_shop')}</span>
         </Link>
 
         {/* Centered Glass Card with Warm Gradient Border */}
@@ -60,19 +60,17 @@ export default function AdminLoginPage() {
                 <Lock className="w-6 h-6 text-black" />
               </div>
               <h1 className="text-xl font-black text-[#F5F5F7] tracking-tight">
-                {lang === 'ar' ? 'بوابة إدارة ELECTRONICS' : 'PORTAIL ADMIN ELECTRONICS'}
+                {t('admin.login_title')}
               </h1>
               <p className="text-xs text-[#A1A1AA]">
-                {lang === 'ar'
-                  ? 'تسجيل الدخول لإدارة الطلبات والمنتجات'
-                  : 'Gestion logistique des 68 Wilayas & Commandes COD'}
+                {t('admin.login_subtitle')}
               </p>
             </div>
 
             {/* Quick Credentials Helper Box */}
             <div className="p-3 bg-[#18181F] border border-white/5 rounded-xl text-[11px] text-[#FFAA2C] flex items-center justify-between">
               <div>
-                <span className="font-semibold block">Identifiants par défaut :</span>
+                <span className="font-semibold block">{t('admin.default_creds')}</span>
                 <span className="font-mono text-[#A1A1AA]">admin@electronics.dz / admin2026</span>
               </div>
               <ShieldCheck className="w-4 h-4 text-[#25D366]" />
@@ -89,7 +87,7 @@ export default function AdminLoginPage() {
               <div>
                 <label className="block text-xs font-semibold text-[#F5F5F7] mb-1.5 flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5 text-[#FFAA2C]" />
-                  <span>Email Administrateur</span>
+                  <span>{t('admin.email_label')}</span>
                 </label>
                 <input
                   type="email"
@@ -103,7 +101,7 @@ export default function AdminLoginPage() {
               <div>
                 <label className="block text-xs font-semibold text-[#F5F5F7] mb-1.5 flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-[#FFAA2C]" />
-                  <span>Mot de passe</span>
+                  <span>{t('admin.password_label')}</span>
                 </label>
                 <div className="relative">
                   <input
@@ -131,11 +129,7 @@ export default function AdminLoginPage() {
               >
                 <Zap className="w-4 h-4 fill-black" />
                 <span>
-                  {loading
-                    ? 'Connexion...'
-                    : lang === 'ar'
-                    ? 'تسجيل الدخول للوحة التحكم'
-                    : 'Accéder au Dashboard'}
+                  {loading ? t('admin.logging_in') : t('admin.btn_login')}
                 </span>
               </button>
             </form>

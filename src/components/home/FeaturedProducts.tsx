@@ -45,7 +45,7 @@ export default function FeaturedProducts({ selectedCategory = 'all', onSelectCat
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div className="space-y-1">
             <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#FFAA2C]">
-              2026 FLAGSHIP LINEUP
+              {t('products.eyebrow')}
             </span>
             <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-[#F5F5F7]">
               {t('products.featured_title')}

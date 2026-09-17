@@ -101,7 +101,7 @@ export default function HeroSection() {
               {/* Product floating tag */}
               <div className="absolute top-6 left-6 z-20 flex items-center gap-2">
                 <span className="px-3 py-1 rounded-full bg-[#FF6B00] text-black font-extrabold text-[10px] uppercase tracking-wider shadow-lg shadow-[#FF6B00]/40">
-                  FLAGSHIP 2026
+                  {t('hero.flagship_badge')}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-black/60 border border-white/10 text-white font-mono text-[11px]">
                   {formatDZD(heroProduct.price, lang)}

@@ -76,7 +76,7 @@ export default function Navbar() {
                     ELECTRONICS<span className="text-[#FF6B00] animate-pulse">.</span>
                   </span>
                   <span className="text-[9px] font-mono uppercase tracking-widest text-[#FFAA2C]/80 -mt-1 font-semibold">
-                    ALGERIA 2026
+                    {lang === 'ar' ? 'الجزائر 2026' : 'ALGERIA 2026'}
                   </span>
                 </div>
               </Link>
@@ -113,7 +113,7 @@ export default function Navbar() {
                   className="flex items-center gap-1 px-3 py-1.5 text-xs font-mono text-[#A1A1AA] hover:text-[#FFAA2C] border border-white/10 hover:border-[#FFAA2C]/30 rounded-full transition-colors bg-[#18181F]/60"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>Admin</span>
+                  <span>{t('nav.admin')}</span>
                 </Link>
               </nav>
             </div>
@@ -218,7 +218,7 @@ export default function Navbar() {
               {searchQuery.trim() === '' ? (
                 <div className="py-8 text-center text-[#A1A1AA] text-sm">
                   <p className="font-mono text-xs uppercase tracking-widest text-[#FFAA2C] mb-2">
-                    RECHERCHE RAPIDE PAR PRODUIT OU CATÉGORIE
+                    {lang === 'ar' ? 'بحث سريع عن المنتجات أو الأقسام' : 'RECHERCHE RAPIDE PAR PRODUIT OU CATÉGORIE'}
                   </p>
                   <div className="flex flex-wrap justify-center gap-2 mt-4">
                     {['Aura Pro 2', 'Apex Studio 90', 'GaN 120W', 'MagSafe', 'IPX7'].map((tag) => (
@@ -265,7 +265,7 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div className="py-8 text-center text-[#A1A1AA] text-sm">
-                  Aucun produit trouvé pour &ldquo;{searchQuery}&rdquo;
+                  {lang === 'ar' ? `لا توجد نتائج لـ "${searchQuery}"` : `Aucun produit trouvé pour "${searchQuery}"`}
                 </div>
               )}
             </div>

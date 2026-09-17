@@ -27,7 +27,7 @@ export default function CategoryGrid({ onSelectCategory, activeCategory }: Categ
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#FFAA2C]">
-            HARDWARE ECOSYSTEM
+            {t('categories.eyebrow')}
           </span>
           <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-[#F5F5F7]">
             {t('categories.title')}

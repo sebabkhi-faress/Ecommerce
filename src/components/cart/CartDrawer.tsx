@@ -44,7 +44,7 @@ export default function CartDrawer() {
               <div>
                 <h3 className="text-sm font-bold tracking-wide uppercase">{t('cart.title')}</h3>
                 <p className="text-xs text-[#A1A1AA]">
-                  {totalItems} {totalItems > 1 ? 'articles' : 'article'}
+                  {totalItems} {totalItems > 1 ? (lang === 'ar' ? 'منتجات' : 'articles') : (lang === 'ar' ? 'منتج' : 'article')}
                 </p>
               </div>
             </div>
@@ -124,7 +124,7 @@ export default function CartDrawer() {
                   <button
                     onClick={() => removeFromCart(item.product.id)}
                     className="absolute top-2.5 right-2.5 p-1 text-[#A1A1AA] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Supprimer"
+                    title={t('cart.delete')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -146,14 +146,14 @@ export default function CartDrawer() {
                 <div className="flex justify-between text-[#A1A1AA]">
                   <span>{t('checkout.delivery_fee')}</span>
                   <span className="text-[#FFAA2C] font-semibold">
-                    {lang === 'ar' ? 'يُحسب حسب الولاية' : 'Calculé selon la wilaya'}
+                    {t('cart.calculated_by_wilaya')}
                   </span>
                 </div>
               </div>
 
               <div className="pt-2 border-t border-white/10 flex justify-between items-baseline">
                 <span className="text-xs uppercase tracking-wider text-[#A1A1AA] font-bold">
-                  {lang === 'ar' ? 'المجموع المقدر' : 'Total estimé'}
+                  {t('cart.estimated_total')}
                 </span>
                 <span className="text-lg font-mono font-black text-[#FF6B00]">
                   {formatDZD(subtotal, lang)}
@@ -175,7 +175,7 @@ export default function CartDrawer() {
 
               <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#A1A1AA]">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#25D366]" />
-                <span>{lang === 'ar' ? 'الدفع نقداً عند استلام الطرد' : 'Paiement en espèces à la livraison'}</span>
+                <span>{t('cart.cash_guarantee')}</span>
               </div>
             </div>
           )}

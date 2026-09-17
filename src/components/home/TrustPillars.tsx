@@ -12,28 +12,28 @@ export default function TrustPillars() {
       icon: Truck,
       title: t('trust.p1_title'),
       desc: t('trust.p1_desc'),
-      tag: '24-48H DZ',
+      tag: t('trust.p1_tag'),
       color: '#FF6B00',
     },
     {
       icon: ShieldCheck,
       title: t('trust.p2_title'),
       desc: t('trust.p2_desc'),
-      tag: '100% COD',
+      tag: t('trust.p2_tag'),
       color: '#FFAA2C',
     },
     {
       icon: RefreshCw,
       title: t('trust.p3_title'),
       desc: t('trust.p3_desc'),
-      tag: '1 AN SAV',
+      tag: t('trust.p3_tag'),
       color: '#25D366',
     },
     {
       icon: Headphones,
       title: t('trust.p4_title'),
       desc: t('trust.p4_desc'),
-      tag: '7J/7 DZ',
+      tag: t('trust.p4_tag'),
       color: '#3B82F6',
     },
   ];
@@ -43,7 +43,7 @@ export default function TrustPillars() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#FFAA2C]">
-            COMMERCE SÉCURISÉ & LOCAL
+            {t('trust.eyebrow')}
           </span>
           <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-[#F5F5F7]">
             {t('trust.title')}

@@ -19,12 +19,12 @@ export default function AnnouncementBar() {
             <span className="text-black/60">•</span>
             <span className="flex items-center gap-1 font-semibold text-[11px] bg-black/15 px-2 py-0.5 rounded-full">
               <ShieldCheck className="w-3 h-3 text-black" />
-              COD ALGERIA 2026
+              {t('announcement.badge_cod')}
             </span>
             <span className="text-black/60">•</span>
             <span className="flex items-center gap-1 font-semibold text-[11px]">
               <Sparkles className="w-3 h-3 text-black" />
-              NOTHING TECH × APPLE DARK AESTHETIC
+              {t('announcement.badge_aesthetic')}
             </span>
           </div>
         ))}

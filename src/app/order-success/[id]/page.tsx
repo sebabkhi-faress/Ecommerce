@@ -57,7 +57,7 @@ export default function OrderSuccessPage() {
 
           <div className="space-y-2">
             <span className="text-xs font-mono font-bold tracking-widest text-[#25D366] uppercase">
-              PAIEMENT À LA LIVRAISON CONFIRMÉ
+              {t('success.badge')}
             </span>
             <h1 className="text-2xl sm:text-4xl font-black text-[#F5F5F7]">
               {t('success.title')}
@@ -79,7 +79,7 @@ export default function OrderSuccessPage() {
               <button
                 onClick={copyTracking}
                 className="p-1.5 rounded-lg hover:bg-white/10 text-[#A1A1AA] hover:text-white transition-colors"
-                title="Copier le code"
+                title={t('success.copy_tooltip')}
               >
                 {copied ? <Check className="w-4 h-4 text-[#25D366]" /> : <Copy className="w-4 h-4" />}
               </button>
@@ -93,18 +93,18 @@ export default function OrderSuccessPage() {
             {/* Delivery Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6 border-b border-white/10 text-xs">
               <div>
-                <p className="text-[#A1A1AA] mb-1">Destinataire :</p>
+                <p className="text-[#A1A1AA] mb-1">{t('success.recipient')}</p>
                 <p className="font-bold text-[#F5F5F7] text-sm">{order.fullName}</p>
                 <p className="font-mono text-[#A1A1AA] mt-0.5">{order.phone}</p>
               </div>
               <div>
-                <p className="text-[#A1A1AA] mb-1">Lieu de livraison :</p>
+                <p className="text-[#A1A1AA] mb-1">{t('success.delivery_location')}</p>
                 <p className="font-bold text-[#FFAA2C]">
-                  {order.wilayaCode} - {order.wilayaNameFr} ({order.wilayaNameAr})
+                  {order.wilayaCode} - {lang === 'ar' ? order.wilayaNameAr : order.wilayaNameFr}
                 </p>
                 <p className="text-[#F5F5F7] mt-0.5">{order.commune}</p>
                 <p className="text-[11px] text-[#A1A1AA] mt-0.5 capitalize">
-                  Mode : {order.deliveryMode === 'home' ? 'À domicile' : 'Stop Desk (Point relais)'}
+                  {t('success.mode')} {order.deliveryMode === 'home' ? t('success.home_delivery') : t('success.desk_delivery')}
                 </p>
               </div>
             </div>
@@ -112,7 +112,7 @@ export default function OrderSuccessPage() {
             {/* Items Purchased */}
             <div className="space-y-3">
               <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[#FFAA2C]">
-                Articles commandés
+                {t('success.ordered_items')}
               </h3>
               <div className="space-y-2">
                 {order.items.map((it, idx) => (
@@ -133,7 +133,7 @@ export default function OrderSuccessPage() {
                           {lang === 'ar' ? it.productNameAr : it.productNameFr}
                         </p>
                         <p className="text-[11px] text-[#A1A1AA]">
-                          Qté : {it.quantity} {it.selectedColor && `• ${it.selectedColor}`}
+                          {t('success.qty')} {it.quantity} {it.selectedColor && `• ${it.selectedColor}`}
                         </p>
                       </div>
                     </div>
@@ -148,17 +148,17 @@ export default function OrderSuccessPage() {
             {/* Total breakdown */}
             <div className="bg-[#18181F] rounded-2xl p-4 space-y-2 text-xs border border-white/5">
               <div className="flex justify-between text-[#A1A1AA]">
-                <span>Sous-total articles :</span>
+                <span>{t('success.subtotal')}</span>
                 <span className="font-mono font-bold text-white">{formatDZD(order.subtotal, lang)}</span>
               </div>
               <div className="flex justify-between text-[#A1A1AA]">
-                <span>Frais de livraison ({order.wilayaNameFr}) :</span>
+                <span>{t('success.delivery_fee_label')} ({lang === 'ar' ? order.wilayaNameAr : order.wilayaNameFr}) :</span>
                 <span className="font-mono font-bold text-[#FFAA2C]">
                   {formatDZD(order.deliveryFee, lang)}
                 </span>
               </div>
               <div className="pt-2 border-t border-white/10 flex justify-between items-baseline">
-                <span className="text-xs font-black uppercase text-[#F5F5F7]">Total en espèces :</span>
+                <span className="text-xs font-black uppercase text-[#F5F5F7]">{t('success.total_cash')}</span>
                 <span className="text-xl font-mono font-black text-[#FF6B00]">
                   {formatDZD(order.total, lang)}
                 </span>

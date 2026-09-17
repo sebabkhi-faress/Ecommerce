@@ -146,7 +146,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
         <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#FFAA2C] flex items-center justify-between">
           <span>{t('checkout.order_summary')}</span>
           <span className="text-[11px] text-[#A1A1AA] lowercase">
-            {items.reduce((s, i) => s + i.quantity, 0)} article(s)
+            {items.reduce((s, i) => s + i.quantity, 0)} {t('checkout.articles_count')}
           </span>
         </h4>
 
@@ -163,7 +163,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
                   {lang === 'ar' ? item.product.nameAr : item.product.nameFr}
                 </p>
                 <div className="flex items-center gap-2 text-[11px] text-[#A1A1AA]">
-                  <span>Qté : {item.quantity}</span>
+                  <span>{t('checkout.qty_label')} {item.quantity}</span>
                   {item.selectedColor && <span>• {item.selectedColor}</span>}
                 </div>
               </div>
@@ -295,7 +295,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
                   {t('checkout.home_delivery')}
                 </p>
                 <p className="text-[11px] font-mono text-[#FFAA2C] font-semibold mt-0.5">
-                  +{selectedWilaya.homeDeliveryFee} DZD ({selectedWilaya.estimatedDays}j)
+                  +{selectedWilaya.homeDeliveryFee} DZD ({selectedWilaya.estimatedDays} {t('checkout.days')})
                 </p>
               </div>
             </button>
@@ -323,7 +323,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
                   {t('checkout.desk_delivery')}
                 </p>
                 <p className="text-[11px] font-mono text-[#FFAA2C] font-semibold mt-0.5">
-                  +{selectedWilaya.deskDeliveryFee} DZD ({selectedWilaya.estimatedDays}j)
+                  +{selectedWilaya.deskDeliveryFee} DZD ({selectedWilaya.estimatedDays} {t('checkout.days')})
                 </p>
               </div>
             </button>
@@ -354,7 +354,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
           </span>
         </div>
         <div className="flex justify-between text-[#A1A1AA]">
-          <span>{t('checkout.delivery_fee')} ({selectedWilaya.nameFr})</span>
+          <span>{t('checkout.delivery_fee')} ({lang === 'ar' ? selectedWilaya.nameAr : selectedWilaya.nameFr})</span>
           <span className="font-mono font-bold text-[#FFAA2C]">
             {formatDZD(deliveryFee, lang)}
           </span>
@@ -384,7 +384,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
         <p className="text-[11px] text-[#A1A1AA]">{t('checkout.security_note')}</p>
         <p className="text-[11px] text-[#25D366] flex items-center justify-center gap-1">
           <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Vérification du colis avant paiement garantie</span>
+          <span>{t('checkout.inspect_guarantee')}</span>
         </p>
       </div>
     </form>

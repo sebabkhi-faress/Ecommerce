@@ -63,7 +63,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="space-y-2 mt-2">
         <div className="flex items-center justify-between text-[11px]">
           <span className="text-[#FFAA2C] font-mono uppercase tracking-wider font-semibold">
-            {product.category}
+            {t(`products.${product.category}`) || product.category}
           </span>
           <span className="flex items-center gap-1 text-[#25D366] font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-[#25D366] animate-pulse" />

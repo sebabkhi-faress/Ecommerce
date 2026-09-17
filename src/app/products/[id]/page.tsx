@@ -51,13 +51,13 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-        <h2 className="text-xl font-bold text-white mb-2">Produit non trouvé</h2>
-        <p className="text-sm text-[#A1A1AA] mb-6">Le produit que vous recherchez n’existe pas ou a été déplacé.</p>
+        <h2 className="text-xl font-bold text-white mb-2">{t('pdp.not_found_title')}</h2>
+        <p className="text-sm text-[#A1A1AA] mb-6">{t('pdp.not_found_desc')}</p>
         <Link
           href="/"
           className="px-6 py-2.5 bg-[#FF6B00] text-black font-bold rounded-xl text-xs"
         >
-          Retour à l’accueil
+          {t('pdp.back_home')}
         </Link>
       </div>
     );
@@ -75,7 +75,7 @@ export default function ProductDetailPage() {
             <span>{t('pdp.back')}</span>
           </Link>
           <span>/</span>
-          <span className="capitalize text-[#FFAA2C] font-mono">{product.category}</span>
+          <span className="capitalize text-[#FFAA2C] font-mono">{t(`products.${product.category}`) || product.category}</span>
           <span>/</span>
           <span className="text-[#F5F5F7] truncate max-w-xs">
             {lang === 'ar' ? product.nameAr : product.nameFr}
@@ -101,7 +101,7 @@ export default function ProductDetailPage() {
                   </span>
                 )}
                 <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white font-mono text-[11px]">
-                  100% ORIGINAL
+                  {t('products.original_badge')}
                 </span>
               </div>
             </div>
@@ -235,22 +235,22 @@ export default function ProductDetailPage() {
 
                     <div className="grid grid-cols-2 gap-3 pt-2">
                       <div className="bg-[#14141B] p-3 rounded-xl border border-white/5">
-                        <p className="text-[11px] text-[#A1A1AA]">Livraison à Domicile :</p>
+                        <p className="text-[11px] text-[#A1A1AA]">{t('pdp.delivery_home')}</p>
                         <p className="text-sm font-mono font-bold text-[#FF6B00] mt-0.5">
                           {selectedWilaya.homeDeliveryFee} DZD
                         </p>
                         <p className="text-[10px] text-[#A1A1AA] mt-0.5">
-                          Délai : {selectedWilaya.estimatedDays} jours ouvrés
+                          {t('pdp.delivery_delay')} {selectedWilaya.estimatedDays} {t('pdp.business_days')}
                         </p>
                       </div>
 
                       <div className="bg-[#14141B] p-3 rounded-xl border border-white/5">
-                        <p className="text-[11px] text-[#A1A1AA]">Stop Desk (Bureau) :</p>
+                        <p className="text-[11px] text-[#A1A1AA]">{t('pdp.delivery_desk')}</p>
                         <p className="text-sm font-mono font-bold text-[#FFAA2C] mt-0.5">
                           {selectedWilaya.deskDeliveryFee} DZD
                         </p>
                         <p className="text-[10px] text-[#A1A1AA] mt-0.5">
-                          Délai : {selectedWilaya.estimatedDays} jours ouvrés
+                          {t('pdp.delivery_delay')} {selectedWilaya.estimatedDays} {t('pdp.business_days')}
                         </p>
                       </div>
                     </div>
@@ -276,7 +276,7 @@ export default function ProductDetailPage() {
 
                 <span className="flex items-center gap-1 text-[#25D366] font-semibold">
                   <span className="w-2 h-2 rounded-full bg-[#25D366] animate-ping" />
-                  {t('products.in_stock')} ({product.stockCount} {lang === 'ar' ? 'قطع' : 'restantes'})
+                  {t('products.in_stock')} ({product.stockCount} {t('pdp.remaining_pieces')})
                 </span>
               </div>
 
@@ -303,7 +303,7 @@ export default function ProductDetailPage() {
                   )}
                 </div>
                 <span className="text-xs font-mono text-[#FFAA2C] bg-[#FFAA2C]/10 px-2.5 py-1 rounded-full font-bold">
-                  {lang === 'ar' ? 'دفع عند الاستلام' : 'Paiement COD'}
+                  {t('pdp.cod_badge')}
                 </span>
               </div>
 
@@ -365,7 +365,7 @@ export default function ProductDetailPage() {
               <div className="flex items-center gap-2 pb-4 mb-4 border-b border-white/10">
                 <Zap className="w-4 h-4 text-[#FF6B00]" />
                 <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[#F5F5F7]">
-                  {lang === 'ar' ? 'طلب فوري مباشر دون مغادرة الصفحة' : 'Formulaire de commande express immédiate'}
+                  {t('pdp.fast_order_title')}
                 </h3>
               </div>
 
@@ -386,7 +386,7 @@ export default function ProductDetailPage() {
       {/* Sticky Bottom Order Bar for Mobile */}
       <div className="fixed bottom-0 inset-x-0 z-30 p-3 bg-[#18181F]/95 backdrop-blur-xl border-t border-white/10 sm:hidden flex items-center justify-between gap-3 shadow-2xl">
         <div>
-          <span className="text-[10px] text-[#A1A1AA] uppercase block">{lang === 'ar' ? 'السعر' : 'Prix'} :</span>
+          <span className="text-[10px] text-[#A1A1AA] uppercase block">{t('pdp.price_label')}</span>
           <span className="text-base font-mono font-black text-[#FF6B00]">
             {formatDZD(product.price, lang)}
           </span>

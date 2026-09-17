@@ -33,11 +33,11 @@ export default function Footer() {
             <div className="pt-2 flex flex-wrap gap-2 text-xs">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#18181F] border border-white/10 text-[#F5F5F7]">
                 <Truck className="w-3.5 h-3.5 text-[#FF6B00]" />
-                <span>68 Wilayas Express</span>
+                <span>{t('footer.wilayas_badge')}</span>
               </span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#18181F] border border-white/10 text-[#F5F5F7]">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#FFAA2C]" />
-                <span>100% Cash on Delivery</span>
+                <span>{t('footer.cod_badge')}</span>
               </span>
             </div>
           </div>
@@ -108,12 +108,12 @@ export default function Footer() {
           {/* Col 5: Contact & Location DZ */}
           <div>
             <h4 className="text-xs font-mono font-bold tracking-widest uppercase text-[#F5F5F7] mb-4">
-              Algérie & Contact
+              {t('footer.contact_title')}
             </h4>
             <div className="space-y-2.5 text-xs">
               <p className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-[#FF6B00] shrink-0 mt-0.5" />
-                <span>Bab Ezzouar & Hydra, Alger, Algérie</span>
+                <span>{t('footer.address')}</span>
               </p>
               <p className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-[#FFAA2C] shrink-0" />
@@ -121,7 +121,7 @@ export default function Footer() {
               </p>
               <p className="flex items-center gap-2">
                 <Headphones className="w-4 h-4 text-[#25D366] shrink-0" />
-                <span>7j/7 : 08:30 — 21:00</span>
+                <span>{t('footer.opening_hours')}</span>
               </p>
             </div>
           </div>
@@ -133,9 +133,9 @@ export default function Footer() {
             {t('footer.copyright')}
           </p>
           <div className="flex items-center gap-3 font-mono text-[11px] text-[#FFAA2C]">
-            <span>DZ • COD PAYMENT</span>
+            <span>{t('footer.bottom_cod')}</span>
             <span>•</span>
-            <span>NOTHING TECH AESTHETIC</span>
+            <span>{t('footer.bottom_aesthetic')}</span>
           </div>
         </div>
       </div>

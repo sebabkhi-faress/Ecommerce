@@ -46,7 +46,7 @@ export default function FlashDeals() {
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF6B00]/20 border border-[#FF6B00]/40 text-[#FF6B00] text-xs font-mono font-bold uppercase">
                 <Flame className="w-3.5 h-3.5 fill-[#FF6B00]" />
-                <span>LIMITED TIME OFFER</span>
+                <span>{t('deals.limited_offer')}</span>
               </span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-[#F5F5F7]">

@@ -34,22 +34,20 @@ export default function CheckoutPage() {
             className="inline-flex items-center gap-1.5 text-xs text-[#A1A1AA] hover:text-white transition-colors mb-2"
           >
             {lang === 'ar' ? <ArrowRight className="w-3.5 h-3.5" /> : <ArrowLeft className="w-3.5 h-3.5" />}
-            <span>{lang === 'ar' ? 'العودة للمتجر' : 'Retour à la boutique'}</span>
+            <span>{t('checkout.return_shop')}</span>
           </Link>
 
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 rounded-full bg-[#FF6B00]/20 border border-[#FF6B00]/40 text-[#FF6B00] text-xs font-mono font-bold uppercase">
-              EXPRESS COD CHECKOUT
+              {t('checkout.express_badge')}
             </span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-black text-[#F5F5F7] tracking-tight">
-            {lang === 'ar' ? 'إتمام الطلب — الدفع عند الاستلام' : 'Validation de commande — Paiement à la livraison'}
+            {t('checkout.order_title')}
           </h1>
           <p className="text-xs sm:text-sm text-[#A1A1AA]">
-            {lang === 'ar'
-              ? 'أدخل معلومات التوصيل الخاصة بك وسيتم إرسال طلبيتك إلى أي ولاية في الجزائر فوراً.'
-              : 'Renseignez vos coordonnées de livraison. Votre commande sera expédiée avec suivi dans toute l’Algérie.'}
+            {t('checkout.order_subtitle')}
           </p>
         </div>
 
@@ -57,9 +55,7 @@ export default function CheckoutPage() {
           <div className="mb-6 p-4 rounded-2xl bg-[#FFAA2C]/10 border border-[#FFAA2C]/30 text-xs text-[#FFAA2C] flex items-center gap-2">
             <Zap className="w-4 h-4 shrink-0" />
             <span>
-              {lang === 'ar'
-                ? 'ملاحظة: تم تحميل المنتج الأكثر طلباً تلقائياً (Aura Pro 2). يمكنك تعديل السلة في أي وقت.'
-                : 'Note : Votre panier était vide, nous avons pré-sélectionné le flagship Aura Pro 2 pour votre commande.'}
+              {t('checkout.cart_empty_note')}
             </span>
           </div>
         )}
