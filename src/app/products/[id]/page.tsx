@@ -26,6 +26,7 @@ import {
   Layers,
   MapPin,
   Loader2,
+  Phone,
 } from 'lucide-react';
 
 export default function ProductDetailPage() {
@@ -97,6 +98,59 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Left Column: Interactive Gallery */}
           <div className="lg:col-span-7 space-y-4">
+            {/* Mobile-First Attention Hook Banner (Title + Rating + Price + Brand) - Screenshot Matching */}
+            <div className="lg:hidden bg-[#14141B] border border-white/15 rounded-3xl p-4 shadow-xl space-y-2.5">
+              <div className="flex items-start justify-between gap-3">
+                {/* Product Title & Offer Hook */}
+                <div className="space-y-1 flex-1">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FF6B00]/20 text-[#FFAA2C] border border-[#FF6B00]/30 text-[10px] font-mono font-bold uppercase tracking-wider">
+                    {lang === 'ar' ? 'عرض خاص محدود ⚡' : 'OFFRE LIMITÉE ⚡'}
+                  </span>
+                  <h1 className="text-xl font-black text-[#F5F5F7] leading-tight">
+                    {lang === 'ar' ? product.nameAr : product.nameFr} ⚡
+                  </h1>
+                </div>
+
+                {/* Store Logo / Badge right corner */}
+                <div className="shrink-0">
+                  <div className="px-3 py-1.5 rounded-2xl bg-black/90 border border-white/20 text-center shadow-lg">
+                    <span className="text-xs font-black tracking-widest text-[#FFAA2C] block">
+                      ELECTRONICS
+                    </span>
+                    <span className="text-[9px] font-mono text-white/70 block uppercase">
+                      DZ STORE
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stars & Big Bold Price Row */}
+              <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center text-[#FFAA2C]">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-[#FFAA2C] text-[#FFAA2C]" />
+                    ))}
+                  </div>
+                  <span className="text-xs font-mono font-bold text-[#A1A1AA]">
+                    ({product.reviewsCount || 48})
+                  </span>
+                </div>
+
+                {/* Big Bold Price */}
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-mono font-black text-[#FF6B00]">
+                    {formatDZD(product.price, lang)}
+                  </span>
+                  {product.originalPrice && (
+                    <span className="text-xs font-mono text-[#A1A1AA]/60 line-through">
+                      {formatDZD(product.originalPrice, lang)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Main Stage Image */}
             <div className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-b from-[#18181F] to-[#121217] border border-white/10 p-4 flex items-center justify-center group shadow-2xl">
               <img
@@ -373,7 +427,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Direct 1-Click Embedded COD Form for frictionless ordering */}
-            <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 shadow-2xl">
+            <div id="fast-cod-form" className="bg-[#18181F] border border-white/10 rounded-3xl p-6 shadow-2xl scroll-mt-20">
               <div className="flex items-center gap-2 pb-4 mb-4 border-b border-white/10">
                 <Zap className="w-4 h-4 text-[#FF6B00]" />
                 <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[#F5F5F7]">
@@ -395,21 +449,32 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
-      {/* Sticky Bottom Order Bar for Mobile */}
-      <div className="fixed bottom-0 inset-x-0 z-30 p-3 bg-[#18181F]/95 backdrop-blur-xl border-t border-white/10 sm:hidden flex items-center justify-between gap-3 shadow-2xl">
-        <div>
-          <span className="text-[10px] text-[#A1A1AA] uppercase block">{t('pdp.price_label')}</span>
-          <span className="text-base font-mono font-black text-[#FF6B00]">
-            {formatDZD(product.price, lang)}
-          </span>
-        </div>
+      {/* Sticky Bottom Order Bar for Mobile - Exact Screenshot Layout */}
+      <div className="fixed bottom-0 inset-x-0 z-50 p-3 bg-[#14141B]/95 backdrop-blur-xl border-t border-white/15 sm:hidden flex items-center gap-3 shadow-2xl">
+        {/* Quick Call / WhatsApp button */}
+        <a
+          href="tel:0550123456"
+          className="w-12 h-12 rounded-2xl bg-[#25D366] hover:bg-[#1EBE5D] text-black flex items-center justify-center shadow-lg shadow-[#25D366]/30 shrink-0 transition-transform active:scale-95"
+          title={lang === 'ar' ? 'اتصل بنا هاتفياً' : 'Appel direct'}
+          aria-label="Appeler"
+        >
+          <Phone className="w-5 h-5 fill-black text-black" />
+        </a>
 
+        {/* Big Orange / Golden CTA Button */}
         <button
-          onClick={() => openDirectCheckout(product, quantity, selectedColor?.nameFr)}
-          className="flex-1 py-3 px-4 bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/40 flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+          onClick={() => {
+            const formElement = document.getElementById('fast-cod-form');
+            if (formElement) {
+              formElement.scrollIntoView({ behavior: 'smooth' });
+            } else {
+              openDirectCheckout(product, quantity, selectedColor?.nameFr);
+            }
+          }}
+          className="flex-1 py-3.5 px-4 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-[#FF6B00]/40 flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
         >
           <Zap className="w-4 h-4 fill-black" />
-          <span>{t('pdp.sticky_buy')}</span>
+          <span>{lang === 'ar' ? 'اشتري الآن (الدفع عند الاستلام)' : 'Acheter maintenant (COD)'}</span>
         </button>
       </div>
     </div>

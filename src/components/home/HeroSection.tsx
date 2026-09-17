@@ -15,6 +15,8 @@ import {
   Flame,
   CheckCircle2,
   Sparkles,
+  Star,
+  Phone,
 } from 'lucide-react';
 
 export default function HeroSection() {
@@ -30,7 +32,106 @@ export default function HeroSection() {
       <div className="absolute top-1/3 right-10 w-[400px] h-[400px] bg-[#FFAA2C]/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        {/* MOBILE-FIRST PRODUCT & PRICE ATTENTION SHOWCASE (Matching screenshot for instant conversion) */}
+        <div className="lg:hidden space-y-4 mb-8">
+          {/* Top Hook Card (Offer Hook + 5 Stars + Price + Brand Badge) */}
+          <div className="bg-[#14141B] border border-white/15 rounded-3xl p-4 shadow-2xl space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1 flex-1">
+                <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FF6B00]/20 text-[#FFAA2C] border border-[#FF6B00]/30 text-[10px] font-mono font-bold uppercase tracking-wider">
+                  {lang === 'ar' ? 'العرض الحصري الأكثر طلباً في الجزائر 🔥' : 'OFFRE PHARE EN ALGÉRIE 🔥'}
+                </span>
+                <h1 className="text-xl font-black text-[#F5F5F7] leading-tight">
+                  {lang === 'ar' ? heroProduct.nameAr : heroProduct.nameFr} ⚡
+                </h1>
+              </div>
+
+              {/* Store Logo Badge */}
+              <div className="shrink-0">
+                <div className="px-3 py-1.5 rounded-2xl bg-black border border-white/20 text-center shadow-lg">
+                  <span className="text-xs font-black tracking-widest text-[#FFAA2C] block">
+                    ELECTRONICS
+                  </span>
+                  <span className="text-[9px] font-mono text-white/70 block uppercase">
+                    OFFICIAL DZ
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Stars & Big Bold Price */}
+            <div className="flex items-center justify-between pt-2 border-t border-white/10">
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center text-[#FFAA2C]">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-[#FFAA2C] text-[#FFAA2C]" />
+                  ))}
+                </div>
+                <span className="text-xs font-mono font-bold text-[#A1A1AA]">
+                  (4.9/5 • 3,500+)
+                </span>
+              </div>
+
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-mono font-black text-[#FF6B00]">
+                  {formatDZD(heroProduct.price, lang)}
+                </span>
+                {heroProduct.originalPrice && (
+                  <span className="text-xs font-mono text-[#A1A1AA]/60 line-through">
+                    {formatDZD(heroProduct.originalPrice, lang)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Large Hero Image Stage (Full Viewport Focus) */}
+          <div className="relative aspect-[4/5] max-h-[460px] w-full rounded-3xl overflow-hidden bg-gradient-to-b from-[#18181F] to-[#0D0D11] border border-white/15 p-3 flex items-center justify-center shadow-2xl">
+            <img
+              src={heroProduct.images[0]}
+              alt={heroProduct.nameFr}
+              className="w-full h-full object-cover rounded-2xl"
+            />
+            {/* Guarantee Tag */}
+            <div className="absolute bottom-3 inset-x-3 flex items-center justify-between pointer-events-none">
+              <span className="px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-[10px] font-bold text-[#25D366]">
+                ✓ {lang === 'ar' ? 'معاينة الطرد قبل الدفع' : 'Vérification avant paiement'}
+              </span>
+              <span className="px-3 py-1 rounded-full bg-[#FF6B00]/90 text-black text-[10px] font-black uppercase">
+                {lang === 'ar' ? '68 ولاية الدفع عند الاستلام' : '68 Wilayas COD'}
+              </span>
+            </div>
+          </div>
+
+          {/* Action Row matching Screenshot Bottom CTA */}
+          <div className="flex items-center gap-2.5 pt-1">
+            <a
+              href="tel:0550123456"
+              className="w-12 h-12 rounded-2xl bg-[#25D366] hover:bg-[#1EBE5D] text-black flex items-center justify-center shadow-lg shadow-[#25D366]/30 shrink-0 active:scale-95 transition-transform"
+              title={lang === 'ar' ? 'اتصال فوري' : 'Appel direct'}
+            >
+              <Phone className="w-5 h-5 fill-black text-black" />
+            </a>
+
+            <button
+              onClick={() => openDirectCheckout(heroProduct)}
+              className="flex-1 py-3.5 px-4 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl shadow-[#FF6B00]/40 flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+            >
+              <Zap className="w-4 h-4 fill-black" />
+              <span>{lang === 'ar' ? 'اشتري الآن (الدفع عند الاستلام)' : 'Acheter maintenant (COD)'}</span>
+            </button>
+          </div>
+
+          <Link
+            href={`/products/${heroProduct.id || heroProduct.slug}`}
+            className="block text-center text-xs text-[#FFAA2C] hover:underline font-mono pt-1"
+          >
+            {lang === 'ar' ? 'عرض كافة تفاصيل ومواصفات المنتج ←' : 'Voir toutes les caractéristiques techniques →'}
+          </Link>
+        </div>
+
+        {/* DESKTOP HERO LAYOUT */}
+        <div className="hidden lg:grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left Column: Headlines & CTAs */}
           <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
             {/* Launch Badge */}

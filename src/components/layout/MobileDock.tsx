@@ -14,8 +14,12 @@ export default function MobileDock() {
   const { totalItems, setIsCartOpen } = useCart();
   const { user, role, isAuthenticated } = useAuth();
 
-  // If inside admin or delivery console, do not show public dock
-  if (pathname.startsWith('/admin') || pathname.startsWith('/delivery')) {
+  // If inside admin, delivery console, or product page, do not show public dock (PDP has dedicated Buy Bar)
+  if (
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/delivery') ||
+    pathname.startsWith('/products/')
+  ) {
     return null;
   }
 
