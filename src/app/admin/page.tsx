@@ -156,6 +156,12 @@ export default function AdminDashboardPage() {
             {t('admin.status_cancelled')}
           </span>
         );
+      case 'retour':
+        return (
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+            🔄 {t('admin.status_retour')}
+          </span>
+        );
     }
   };
 
@@ -354,6 +360,7 @@ export default function AdminDashboardPage() {
                   <option value="in_delivery">{t('admin.status_in_delivery')}</option>
                   <option value="delivered">{t('admin.status_delivered')}</option>
                   <option value="cancelled">{t('admin.status_cancelled')}</option>
+                  <option value="retour">{t('admin.status_retour')}</option>
                 </select>
 
                 {/* Wilaya Filter */}
@@ -411,7 +418,12 @@ export default function AdminDashboardPage() {
                             {order.trackingCode}
                           </td>
                           <td className="p-4 font-semibold text-[#F5F5F7]">
-                            {order.fullName}
+                            <div>{order.fullName}</div>
+                            {order.notes && (
+                              <div className="text-[10px] text-[#FFAA2C] mt-0.5 max-w-[180px] truncate font-normal" title={order.notes}>
+                                📝 {order.notes}
+                              </div>
+                            )}
                           </td>
                           <td className="p-4 font-mono text-[#A1A1AA]">
                             <a
@@ -470,6 +482,7 @@ export default function AdminDashboardPage() {
                               <option value="in_delivery">{t('admin.status_in_delivery')}</option>
                               <option value="delivered">{t('admin.status_delivered')}</option>
                               <option value="cancelled">{t('admin.status_cancelled')}</option>
+                              <option value="retour">{t('admin.status_retour')}</option>
                             </select>
                           </td>
                         </tr>

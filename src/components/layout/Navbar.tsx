@@ -131,7 +131,7 @@ export default function Navbar() {
                     className="flex items-center gap-1 px-3 py-1.5 text-xs font-mono text-[#FFAA2C] hover:text-[#FF6B00] border border-[#FFAA2C]/30 rounded-full transition-colors bg-[#FFAA2C]/10"
                   >
                     <Truck className="w-3.5 h-3.5" />
-                    <span>{lang === 'ar' ? 'التوصيل' : 'Livreur'}</span>
+                    <span>{lang === 'ar' ? 'اللوجستيك والتوصيل' : 'Livraisons & Retours'}</span>
                   </Link>
                 ) : role === 'customer' ? (
                   <Link
@@ -249,7 +249,7 @@ export default function Navbar() {
                           className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#FFAA2C] hover:bg-white/5 rounded-xl transition-colors"
                         >
                           <Truck className="w-4 h-4 text-[#FFAA2C]" />
-                          <span>{lang === 'ar' ? 'فضاء التوصيل السريع' : 'Espace Livreur Express'}</span>
+                          <span>{lang === 'ar' ? 'لوحة التوصيل والرتور' : 'Livraisons & Retours (Dashboard)'}</span>
                         </Link>
                       )}
 

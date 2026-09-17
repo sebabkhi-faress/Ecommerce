@@ -13,7 +13,7 @@ export interface OrderItem {
   image?: string;
 }
 
-export type OrderStatus = 'pending' | 'confirmed' | 'in_delivery' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'confirmed' | 'in_delivery' | 'delivered' | 'cancelled' | 'retour';
 
 export interface Order {
   id: string;
@@ -38,7 +38,7 @@ interface OrderContextType {
   orders: Order[];
   isSupabaseConnected: boolean;
   createOrder: (orderData: Omit<Order, 'id' | 'trackingCode' | 'createdAt' | 'status'>) => Order;
-  updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  updateOrderStatus: (orderId: string, status: OrderStatus, reason?: string) => void;
   getOrderById: (orderId: string) => Order | undefined;
   getOrderByTrackingCode: (code: string) => Order | undefined;
   refreshOrders: () => Promise<void>;
@@ -46,7 +46,10 @@ interface OrderContextType {
     totalRevenue: number;
     ordersCount: number;
     pendingCount: number;
+    confirmedCount: number;
+    inDeliveryCount: number;
     deliveredCount: number;
+    retourCount: number;
   };
 }
 
@@ -165,6 +168,33 @@ const INITIAL_ORDERS: Order[] = [
     total: 7000,
     status: 'pending',
     createdAt: '2026-09-17T18:10:00Z',
+  },
+  {
+    id: 'ord-105',
+    trackingCode: 'DZ-31902-COD',
+    fullName: 'Amine Benali',
+    phone: '0561884422',
+    wilayaCode: '06',
+    wilayaNameFr: 'Béjaïa',
+    wilayaNameAr: 'بجاية',
+    commune: 'Akbou Centre',
+    deliveryMode: 'home',
+    notes: 'Motif retour: Client injoignable au téléphone après 3 tentatives d\'appel',
+    items: [
+      {
+        productId: 'prod-3',
+        productNameFr: 'Horizon Ultra — Smartwatch AMOLED Titane',
+        productNameAr: 'هورايزون ألترا — ساعة ذكية تيتانيوم شاشة أموليد',
+        price: 18500,
+        quantity: 1,
+        selectedColor: 'Titane Naturel',
+      },
+    ],
+    subtotal: 18500,
+    deliveryFee: 500,
+    total: 19000,
+    status: 'retour',
+    createdAt: '2026-09-15T09:20:00Z',
   },
 ];
 
@@ -316,19 +346,33 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     return newOrder;
   };
 
-  const updateOrderStatus = (orderId: string, status: OrderStatus) => {
+  const updateOrderStatus = (orderId: string, status: OrderStatus, reason?: string) => {
     // 1. Immediate local update
-    const updated = orders.map((ord) => (ord.id === orderId ? { ...ord, status } : ord));
+    const updated = orders.map((ord) => {
+      if (ord.id !== orderId) return ord;
+      const updatedNotes = reason
+        ? ord.notes
+          ? `${ord.notes} | Motif retour: ${reason}`
+          : `Motif retour: ${reason}`
+        : ord.notes;
+      return { ...ord, status, notes: updatedNotes };
+    });
     saveLocalOrders(updated);
 
     // 2. Persist to Supabase
     if (isSupabaseConfigured && supabase) {
+      const target = updated.find((o) => o.id === orderId);
+      const updatePayload: Record<string, any> = {
+        status,
+        updated_at: new Date().toISOString(),
+      };
+      if (target?.notes) {
+        updatePayload.notes = target.notes;
+      }
+
       supabase
         .from('orders')
-        .update({
-          status,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq('id', orderId)
         .then(({ error }) => {
           if (error) {
@@ -347,11 +391,14 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
   };
 
   const totalRevenue = orders
-    .filter((o) => o.status !== 'cancelled')
+    .filter((o) => o.status !== 'cancelled' && o.status !== 'retour')
     .reduce((sum, o) => sum + o.total, 0);
 
   const pendingCount = orders.filter((o) => o.status === 'pending').length;
+  const confirmedCount = orders.filter((o) => o.status === 'confirmed').length;
+  const inDeliveryCount = orders.filter((o) => o.status === 'in_delivery').length;
   const deliveredCount = orders.filter((o) => o.status === 'delivered').length;
+  const retourCount = orders.filter((o) => o.status === 'retour').length;
 
   return (
     <OrderContext.Provider
@@ -367,7 +414,10 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
           totalRevenue,
           ordersCount: orders.length,
           pendingCount,
+          confirmedCount,
+          inDeliveryCount,
           deliveredCount,
+          retourCount,
         },
       }}
     >

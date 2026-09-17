@@ -20,12 +20,16 @@ CREATE TABLE IF NOT EXISTS public.orders (
     subtotal NUMERIC NOT NULL DEFAULT 0,
     delivery_fee NUMERIC NOT NULL DEFAULT 0,
     total NUMERIC NOT NULL DEFAULT 0,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'in_delivery', 'delivered', 'cancelled')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'in_delivery', 'delivered', 'cancelled', 'retour')),
     assigned_delivery_id TEXT,
     assigned_delivery_name TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Migration safety for existing tables: ensure 'retour' is permitted
+ALTER TABLE public.orders DROP CONSTRAINT IF EXISTS orders_status_check;
+ALTER TABLE public.orders ADD CONSTRAINT orders_status_check CHECK (status IN ('pending', 'confirmed', 'in_delivery', 'delivered', 'cancelled', 'retour'));
 
 -- 2. USERS & ROLES TABLE (Admin, Delivery Guy, Customer)
 CREATE TABLE IF NOT EXISTS public.users (
