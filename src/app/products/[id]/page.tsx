@@ -338,17 +338,22 @@ export default function ProductDetailPage() {
                       <label className="block text-[#A1A1AA] mb-1.5 font-medium">
                         {t('pdp.choose_wilaya')}
                       </label>
-                      <select
-                        value={calcWilayaCode}
-                        onChange={(e) => setCalcWilayaCode(e.target.value)}
-                        className="w-full bg-[#14141B] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-xs text-[#F5F5F7] outline-none"
-                      >
-                        {WILAYAS.map((w) => (
-                          <option key={w.code} value={w.code} className="bg-[#18181F]">
-                            {w.code} - {w.nameFr} ({w.nameAr})
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={calcWilayaCode}
+                          onChange={(e) => setCalcWilayaCode(e.target.value)}
+                          className="w-full appearance-none bg-[#14141B] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-base sm:text-xs text-[#F5F5F7] outline-none cursor-pointer"
+                        >
+                          {WILAYAS.map((w) => (
+                            <option key={w.code} value={w.code} className="bg-[#18181F] text-[#F5F5F7] py-1.5">
+                              {w.code} - {w.nameFr} ({w.nameAr})
+                            </option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 ltr:right-2.5 rtl:left-2.5 flex items-center text-[#A1A1AA]">
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </div>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-2">

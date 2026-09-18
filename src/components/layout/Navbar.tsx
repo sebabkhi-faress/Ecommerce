@@ -230,57 +230,68 @@ export default function Navbar() {
 
                   {/* Dropdown Menu */}
                   {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-[#18181F] border border-white/15 rounded-2xl p-2 shadow-2xl z-50 animate-fadeIn space-y-1">
-                      <div className="px-3 py-2 border-b border-white/10">
-                        <p className="font-bold text-xs text-[#F5F5F7] truncate">{user.name}</p>
-                        <p className="text-[10px] text-[#A1A1AA] truncate font-mono">{user.email}</p>
-                        <span className="inline-block mt-1 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FF6B00]/15 text-[#FF6B00] uppercase">
-                          {role === 'admin' ? '👑 Admin' : role === 'delivery' ? '🚚 Livreur' : '👤 Client'}
-                        </span>
-                      </div>
+                    <>
+                      {/* Mobile tap-outside backdrop */}
+                      <div
+                        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px] sm:bg-transparent sm:backdrop-blur-none"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      />
+                      <div
+                        className={`absolute mt-2 w-60 sm:w-56 max-w-[calc(100vw-24px)] bg-[#18181F] border border-white/15 rounded-2xl p-2 shadow-2xl z-50 animate-fadeIn space-y-1 ${
+                          lang === 'ar' ? 'left-0 right-auto' : 'right-0 left-auto'
+                        }`}
+                      >
+                        <div className="px-3 py-2 border-b border-white/10">
+                          <p className="font-bold text-xs text-[#F5F5F7] truncate">{user.name}</p>
+                          <p className="text-[10px] text-[#A1A1AA] truncate font-mono">{user.email}</p>
+                          <span className="inline-block mt-1 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FF6B00]/15 text-[#FF6B00] uppercase">
+                            {role === 'admin' ? '👑 Admin' : role === 'delivery' ? '🚚 Livreur' : '👤 Client'}
+                          </span>
+                        </div>
 
-                      {role === 'admin' && (
+                        {role === 'admin' && (
+                          <Link
+                            href="/admin"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#F5F5F7] hover:bg-white/5 rounded-xl transition-colors"
+                          >
+                            <LayoutDashboard className="w-4 h-4 text-[#FF6B00]" />
+                            <span>{lang === 'ar' ? 'لوحة تحكم المدير' : 'Tableau de bord Admin'}</span>
+                          </Link>
+                        )}
+
+                        {(role === 'delivery' || role === 'admin') && (
+                          <Link
+                            href="/delivery"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#FFAA2C] hover:bg-white/5 rounded-xl transition-colors"
+                          >
+                            <Truck className="w-4 h-4 text-[#FFAA2C]" />
+                            <span>{lang === 'ar' ? 'لوحة التوصيل والرتور' : 'Livraisons & Retours (Dashboard)'}</span>
+                          </Link>
+                        )}
+
                         <Link
-                          href="/admin"
+                          href="/account"
                           onClick={() => setIsUserMenuOpen(false)}
                           className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#F5F5F7] hover:bg-white/5 rounded-xl transition-colors"
                         >
-                          <LayoutDashboard className="w-4 h-4 text-[#FF6B00]" />
-                          <span>{lang === 'ar' ? 'لوحة تحكم المدير' : 'Tableau de bord Admin'}</span>
+                          <UserIcon className="w-4 h-4 text-[#25D366]" />
+                          <span>{lang === 'ar' ? 'حسابي وطلبياتي' : 'Mon Compte & Commandes'}</span>
                         </Link>
-                      )}
 
-                      {(role === 'delivery' || role === 'admin') && (
-                        <Link
-                          href="/delivery"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#FFAA2C] hover:bg-white/5 rounded-xl transition-colors"
+                        <button
+                          onClick={() => {
+                            logout();
+                            setIsUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer text-left rtl:text-right"
                         >
-                          <Truck className="w-4 h-4 text-[#FFAA2C]" />
-                          <span>{lang === 'ar' ? 'لوحة التوصيل والرتور' : 'Livraisons & Retours (Dashboard)'}</span>
-                        </Link>
-                      )}
-
-                      <Link
-                        href="/account"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#F5F5F7] hover:bg-white/5 rounded-xl transition-colors"
-                      >
-                        <UserIcon className="w-4 h-4 text-[#25D366]" />
-                        <span>{lang === 'ar' ? 'حسابي وطلبياتي' : 'Mon Compte & Commandes'}</span>
-                      </Link>
-
-                      <button
-                        onClick={() => {
-                          logout();
-                          setIsUserMenuOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer text-left"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>{lang === 'ar' ? 'تسجيل الخروج' : 'Déconnexion'}</span>
-                      </button>
-                    </div>
+                          <LogOut className="w-4 h-4" />
+                          <span>{lang === 'ar' ? 'تسجيل الخروج' : 'Déconnexion'}</span>
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
               ) : (

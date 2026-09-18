@@ -18,6 +18,7 @@ import {
   Phone,
   User,
   MapPin,
+  ChevronDown,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -190,7 +191,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder={t('checkout.full_name_placeholder')}
-            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-4 py-3 text-sm text-[#F5F5F7] placeholder-[#A1A1AA]/50 outline-none transition-colors"
+            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-4 py-3.5 text-base sm:text-sm text-[#F5F5F7] placeholder-[#A1A1AA]/50 outline-none transition-colors"
           />
         </div>
 
@@ -206,6 +207,8 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
               type="tel"
               required
               dir="ltr"
+              inputMode="tel"
+              autoComplete="tel"
               value={phone}
               onChange={(e) => {
                 setPhone(e.target.value);
@@ -214,9 +217,9 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
               placeholder={t('checkout.phone_placeholder')}
               className={`w-full bg-[#18181F] border ${
                 phoneError ? 'border-red-500' : 'border-white/15 focus:border-[#FF6B00]'
-              } rounded-xl px-4 py-3 text-sm text-[#F5F5F7] font-mono placeholder-[#A1A1AA]/50 outline-none transition-colors`}
+              } rounded-xl px-4 py-3.5 text-base sm:text-sm text-[#F5F5F7] font-mono placeholder-[#A1A1AA]/50 outline-none transition-colors`}
             />
-            <span className="absolute right-3 top-3.5 text-xs text-[#A1A1AA] font-mono">
+            <span className="absolute right-3 top-3.5 text-xs text-[#A1A1AA] font-mono pointer-events-none">
               DZ +213
             </span>
           </div>
@@ -237,17 +240,22 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
             <span>{t('checkout.wilaya')}</span>
             <span className="text-[#FF6B00]">*</span>
           </label>
-          <select
-            value={selectedWilayaCode}
-            onChange={(e) => setSelectedWilayaCode(e.target.value)}
-            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-4 py-3 text-sm text-[#F5F5F7] outline-none transition-colors"
-          >
-            {WILAYAS.map((w) => (
-              <option key={w.code} value={w.code} className="bg-[#18181F] text-[#F5F5F7]">
-                {w.code} — {w.nameFr} ({w.nameAr})
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedWilayaCode}
+              onChange={(e) => setSelectedWilayaCode(e.target.value)}
+              className="w-full appearance-none bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-4 py-3.5 ltr:pr-10 rtl:pl-10 text-base sm:text-sm text-[#F5F5F7] outline-none transition-colors cursor-pointer"
+            >
+              {WILAYAS.map((w) => (
+                <option key={w.code} value={w.code} className="bg-[#18181F] text-[#F5F5F7] py-2">
+                  {w.code} — {w.nameFr} ({w.nameAr})
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 ltr:right-3.5 rtl:left-3.5 flex items-center text-[#A1A1AA]">
+              <ChevronDown className="w-4 h-4" />
+            </div>
+          </div>
         </div>
 
         {/* Commune / Detailed Address */}
@@ -262,7 +270,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
             value={commune}
             onChange={(e) => setCommune(e.target.value)}
             placeholder={t('checkout.commune_placeholder')}
-            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-4 py-3 text-sm text-[#F5F5F7] placeholder-[#A1A1AA]/50 outline-none transition-colors"
+            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-4 py-3.5 text-base sm:text-sm text-[#F5F5F7] placeholder-[#A1A1AA]/50 outline-none transition-colors"
           />
         </div>
 
@@ -340,7 +348,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder={t('checkout.notes_placeholder')}
-            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-4 py-2.5 text-xs text-[#F5F5F7] placeholder-[#A1A1AA]/40 outline-none transition-colors"
+            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-4 py-3 sm:py-2.5 text-base sm:text-xs text-[#F5F5F7] placeholder-[#A1A1AA]/40 outline-none transition-colors"
           />
         </div>
       </div>

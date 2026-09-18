@@ -32,6 +32,7 @@ import {
   X,
   AlertTriangle,
   FileText,
+  ChevronDown,
 } from 'lucide-react';
 
 const COMMON_RETURN_REASONS = [
@@ -378,18 +379,23 @@ export default function DeliveryDashboardPage() {
               />
             </div>
 
-            <select
-              value={wilayaFilter}
-              onChange={(e) => setWilayaFilter(e.target.value)}
-              className="w-full sm:w-auto bg-[#14141B] border border-white/10 rounded-xl px-3 py-2 text-xs text-[#F5F5F7] outline-none"
-            >
-              <option value="all">{lang === 'ar' ? 'جميع الولايات (68)' : 'Toutes les wilayas (68)'}</option>
-              {WILAYAS.map((w) => (
-                <option key={w.code} value={w.code}>
-                  {w.code} - {lang === 'ar' ? w.nameAr : w.nameFr}
-                </option>
-              ))}
-            </select>
+            <div className="relative w-full sm:w-auto">
+              <select
+                value={wilayaFilter}
+                onChange={(e) => setWilayaFilter(e.target.value)}
+                className="w-full appearance-none bg-[#14141B] border border-white/10 rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-base sm:text-xs text-[#F5F5F7] outline-none cursor-pointer"
+              >
+                <option value="all" className="bg-[#18181F] text-[#F5F5F7]">{lang === 'ar' ? 'جميع الولايات (68)' : 'Toutes les wilayas (68)'}</option>
+                {WILAYAS.map((w) => (
+                  <option key={w.code} value={w.code} className="bg-[#18181F] text-[#F5F5F7]">
+                    {w.code} - {lang === 'ar' ? w.nameAr : w.nameFr}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 ltr:right-2.5 rtl:left-2.5 flex items-center text-[#A1A1AA]">
+                <ChevronDown className="w-3.5 h-3.5" />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -594,26 +600,31 @@ export default function DeliveryDashboardPage() {
                       <span className="text-[11px] font-mono text-[#A1A1AA]">
                         {lang === 'ar' ? 'تغيير الحالة:' : 'Changer statut :'}
                       </span>
-                      <select
-                        disabled={isUpdating}
-                        value={order.status}
-                        onChange={(e) => {
-                          const val = e.target.value as OrderStatus;
-                          if (val === 'retour') {
-                            handleOpenRetourModal(order);
-                          } else {
-                            handleQuickStatus(order.id, val);
-                          }
-                        }}
-                        className="bg-[#18181F] border border-white/20 rounded-xl px-3 py-1.5 text-xs font-mono text-white outline-none focus:border-[#FF6B00] cursor-pointer"
-                      >
-                        <option value="pending">{lang === 'ar' ? 'قيد الانتظار' : 'En attente'}</option>
-                        <option value="confirmed">{lang === 'ar' ? 'مؤكدة' : 'Confirmée'}</option>
-                        <option value="in_delivery">{lang === 'ar' ? 'قيد التوصيل' : 'En cours de livraison'}</option>
-                        <option value="delivered">{lang === 'ar' ? 'تم التسليم والقبض' : 'Livrée & Encaissée'}</option>
-                        <option value="retour">🔄 {lang === 'ar' ? 'مرتجع (Retour)' : 'Retour (Colis retourné)'}</option>
-                        <option value="cancelled">{lang === 'ar' ? 'ملغية' : 'Annulée'}</option>
-                      </select>
+                      <div className="relative inline-block">
+                        <select
+                          disabled={isUpdating}
+                          value={order.status}
+                          onChange={(e) => {
+                            const val = e.target.value as OrderStatus;
+                            if (val === 'retour') {
+                              handleOpenRetourModal(order);
+                            } else {
+                              handleQuickStatus(order.id, val);
+                            }
+                          }}
+                          className="appearance-none bg-[#18181F] border border-white/20 rounded-xl px-3 py-2 ltr:pr-8 rtl:pl-8 text-base sm:text-xs font-mono text-white outline-none focus:border-[#FF6B00] cursor-pointer"
+                        >
+                          <option value="pending" className="bg-[#18181F] text-[#F5F5F7]">{lang === 'ar' ? 'قيد الانتظار' : 'En attente'}</option>
+                          <option value="confirmed" className="bg-[#18181F] text-[#F5F5F7]">{lang === 'ar' ? 'مؤكدة' : 'Confirmée'}</option>
+                          <option value="in_delivery" className="bg-[#18181F] text-[#F5F5F7]">{lang === 'ar' ? 'قيد التوصيل' : 'En cours de livraison'}</option>
+                          <option value="delivered" className="bg-[#18181F] text-[#F5F5F7]">{lang === 'ar' ? 'تم التسليم والقبض' : 'Livrée & Encaissée'}</option>
+                          <option value="retour" className="bg-[#18181F] text-[#F5F5F7]">🔄 {lang === 'ar' ? 'مرتجع (Retour)' : 'Retour (Colis retourné)'}</option>
+                          <option value="cancelled" className="bg-[#18181F] text-[#F5F5F7]">{lang === 'ar' ? 'ملغية' : 'Annulée'}</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 ltr:right-2.5 rtl:left-2.5 flex items-center text-[#A1A1AA]">
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </div>
+                      </div>
                     </div>
 
                     {/* Quick 1-Click Operations */}

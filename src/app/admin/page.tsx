@@ -31,6 +31,7 @@ import {
   Trash2,
   ExternalLink,
   ShieldCheck,
+  ChevronDown,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured, uploadProductImage } from '@/lib/supabase';
 import { useProducts } from '@/context/ProductContext';
@@ -353,35 +354,45 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="grid grid-cols-2 gap-2.5 w-full md:w-auto md:flex md:items-center">
                 {/* Status Filter */}
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-[#14141B] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-[#F5F5F7] outline-none"
-                >
-                  <option value="all">{t('admin.all_statuses')}</option>
-                  <option value="pending">{t('admin.status_pending')}</option>
-                  <option value="confirmed">{t('admin.status_confirmed')}</option>
-                  <option value="in_delivery">{t('admin.status_in_delivery')}</option>
-                  <option value="delivered">{t('admin.status_delivered')}</option>
-                  <option value="cancelled">{t('admin.status_cancelled')}</option>
-                  <option value="retour">{t('admin.status_retour')}</option>
-                </select>
+                <div className="relative flex-1">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full appearance-none bg-[#14141B] border border-white/10 rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-base sm:text-xs text-[#F5F5F7] outline-none cursor-pointer"
+                  >
+                    <option value="all" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.all_statuses')}</option>
+                    <option value="pending" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_pending')}</option>
+                    <option value="confirmed" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_confirmed')}</option>
+                    <option value="in_delivery" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_in_delivery')}</option>
+                    <option value="delivered" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_delivered')}</option>
+                    <option value="cancelled" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_cancelled')}</option>
+                    <option value="retour" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_retour')}</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 ltr:right-2.5 rtl:left-2.5 flex items-center text-[#A1A1AA]">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </div>
+                </div>
 
                 {/* Wilaya Filter */}
-                <select
-                  value={wilayaFilter}
-                  onChange={(e) => setWilayaFilter(e.target.value)}
-                  className="bg-[#14141B] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-[#F5F5F7] outline-none max-w-[180px]"
-                >
-                  <option value="all">{t('admin.all_wilayas')}</option>
-                  {WILAYAS.map((w) => (
-                    <option key={w.code} value={w.code}>
-                      {w.code} - {lang === 'ar' ? w.nameAr : w.nameFr}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative flex-1">
+                  <select
+                    value={wilayaFilter}
+                    onChange={(e) => setWilayaFilter(e.target.value)}
+                    className="w-full appearance-none bg-[#14141B] border border-white/10 rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-base sm:text-xs text-[#F5F5F7] outline-none cursor-pointer md:max-w-[180px]"
+                  >
+                    <option value="all" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.all_wilayas')}</option>
+                    {WILAYAS.map((w) => (
+                      <option key={w.code} value={w.code} className="bg-[#18181F] text-[#F5F5F7]">
+                        {w.code} - {lang === 'ar' ? w.nameAr : w.nameFr}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 ltr:right-2.5 rtl:left-2.5 flex items-center text-[#A1A1AA]">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -476,20 +487,25 @@ export default function AdminDashboardPage() {
                             {getStatusBadge(order.status)}
                           </td>
                           <td className="p-4 text-right">
-                            <select
-                              value={order.status}
-                              onChange={(e) =>
-                                updateOrderStatus(order.id, e.target.value as OrderStatus)
-                              }
-                              className="bg-[#14141B] border border-white/15 rounded-lg px-2.5 py-1 text-[11px] font-mono text-white outline-none focus:border-[#FF6B00]"
-                            >
-                              <option value="pending">{t('admin.status_pending')}</option>
-                              <option value="confirmed">{t('admin.status_confirmed')}</option>
-                              <option value="in_delivery">{t('admin.status_in_delivery')}</option>
-                              <option value="delivered">{t('admin.status_delivered')}</option>
-                              <option value="cancelled">{t('admin.status_cancelled')}</option>
-                              <option value="retour">{t('admin.status_retour')}</option>
-                            </select>
+                            <div className="relative inline-block">
+                              <select
+                                value={order.status}
+                                onChange={(e) =>
+                                  updateOrderStatus(order.id, e.target.value as OrderStatus)
+                                }
+                                className="appearance-none bg-[#14141B] border border-white/15 rounded-lg px-2.5 py-1.5 ltr:pr-7 rtl:pl-7 text-xs font-mono text-white outline-none focus:border-[#FF6B00] cursor-pointer"
+                              >
+                                <option value="pending" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_pending')}</option>
+                                <option value="confirmed" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_confirmed')}</option>
+                                <option value="in_delivery" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_in_delivery')}</option>
+                                <option value="delivered" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_delivered')}</option>
+                                <option value="cancelled" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_cancelled')}</option>
+                                <option value="retour" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_retour')}</option>
+                              </select>
+                              <div className="pointer-events-none absolute inset-y-0 ltr:right-2 rtl:left-2 flex items-center text-[#A1A1AA]">
+                                <ChevronDown className="w-3 h-3" />
+                              </div>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -681,17 +697,22 @@ export default function AdminDashboardPage() {
                       <label className="block text-[#A1A1AA] mb-1 font-semibold">
                         {t('admin.lbl_category')}
                       </label>
-                      <select
-                        value={newProdCategory}
-                        onChange={(e) => setNewProdCategory(e.target.value as any)}
-                        className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white outline-none"
-                      >
-                        <option value="earbuds">{t('products.earbuds')}</option>
-                        <option value="headphones">{t('products.headphones')}</option>
-                        <option value="speakers">{t('products.speakers')}</option>
-                        <option value="chargers">{t('products.chargers')}</option>
-                        <option value="powerbanks">{t('products.powerbanks')}</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={newProdCategory}
+                          onChange={(e) => setNewProdCategory(e.target.value as any)}
+                          className="w-full appearance-none bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-base sm:text-xs text-white outline-none cursor-pointer"
+                        >
+                          <option value="earbuds" className="bg-[#18181F] text-[#F5F5F7]">{t('products.earbuds')}</option>
+                          <option value="headphones" className="bg-[#18181F] text-[#F5F5F7]">{t('products.headphones')}</option>
+                          <option value="speakers" className="bg-[#18181F] text-[#F5F5F7]">{t('products.speakers')}</option>
+                          <option value="chargers" className="bg-[#18181F] text-[#F5F5F7]">{t('products.chargers')}</option>
+                          <option value="powerbanks" className="bg-[#18181F] text-[#F5F5F7]">{t('products.powerbanks')}</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 ltr:right-2.5 rtl:left-2.5 flex items-center text-[#A1A1AA]">
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </div>
+                      </div>
                     </div>
 
                     <div>
