@@ -66,8 +66,12 @@ CREATE TABLE IF NOT EXISTS public.products (
     is_flash_deal BOOLEAN NOT NULL DEFAULT false,
     badge_fr TEXT,
     badge_ar TEXT,
+    sizes JSONB NOT NULL DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Migration safety for existing products table
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS sizes JSONB NOT NULL DEFAULT '[]'::jsonb;
 
 -- 4. DISABLE ROW LEVEL SECURITY (NO RLS AS REQUESTED)
 ALTER TABLE public.orders DISABLE ROW LEVEL SECURITY;

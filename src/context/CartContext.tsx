@@ -7,11 +7,12 @@ export interface CartItem {
   product: Product;
   quantity: number;
   selectedColor?: string;
+  selectedSize?: string;
 }
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: Product, quantity?: number, selectedColor?: string) => void;
+  addToCart: (product: Product, quantity?: number, selectedColor?: string, selectedSize?: string) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -19,8 +20,8 @@ interface CartContextType {
   setIsCartOpen: (open: boolean) => void;
   totalItems: number;
   subtotal: number;
-  directCheckoutItem: { product: Product; quantity: number; selectedColor?: string } | null;
-  openDirectCheckout: (product: Product, quantity?: number, selectedColor?: string) => void;
+  directCheckoutItem: { product: Product; quantity: number; selectedColor?: string; selectedSize?: string } | null;
+  openDirectCheckout: (product: Product, quantity?: number, selectedColor?: string, selectedSize?: string) => void;
   closeDirectCheckout: () => void;
 }
 
@@ -33,6 +34,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     product: Product;
     quantity: number;
     selectedColor?: string;
+    selectedSize?: string;
   } | null>(null);
 
   // Load cart from localStorage
@@ -56,10 +58,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [cart]);
 
-  const addToCart = (product: Product, quantity = 1, selectedColor?: string) => {
+  const addToCart = (product: Product, quantity = 1, selectedColor?: string, selectedSize?: string) => {
     setCart((prev) => {
       const existingIndex = prev.findIndex(
-        (item) => item.product.id === product.id && item.selectedColor === (selectedColor || product.colors[0]?.nameFr)
+        (item) => item.product.id === product.id &&
+          item.selectedColor === (selectedColor || product.colors[0]?.nameFr) &&
+          item.selectedSize === (selectedSize || product.sizes?.[0])
       );
       if (existingIndex > -1) {
         const updated = [...prev];
@@ -72,6 +76,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           product,
           quantity,
           selectedColor: selectedColor || product.colors[0]?.nameFr,
+          selectedSize: selectedSize || product.sizes?.[0],
         },
       ];
     });
@@ -96,11 +101,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCart([]);
   };
 
-  const openDirectCheckout = (product: Product, quantity = 1, selectedColor?: string) => {
+  const openDirectCheckout = (product: Product, quantity = 1, selectedColor?: string, selectedSize?: string) => {
     setDirectCheckoutItem({
       product,
       quantity,
       selectedColor: selectedColor || product.colors[0]?.nameFr,
+      selectedSize: selectedSize || product.sizes?.[0],
     });
   };
 

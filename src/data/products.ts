@@ -29,6 +29,7 @@ export interface Product {
   featuresAr: string[];
   specs: { labelFr: string; labelAr: string; value: string }[];
   colors: ProductColor[];
+  sizes?: string[];
   images: string[];
 }
 

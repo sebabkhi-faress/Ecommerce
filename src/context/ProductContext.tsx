@@ -194,9 +194,22 @@ export function mapRowToProduct(row: any): Product {
     featuresFr: Array.isArray(row.features_fr) ? row.features_fr : [],
     featuresAr: Array.isArray(row.features_ar) ? row.features_ar : [],
     specs: Array.isArray(row.specs) ? row.specs : [],
-    colors: Array.isArray(row.colors) ? row.colors : [
-      { nameFr: 'Noir Titane', nameAr: 'أسود تيتانيوم', hex: '#1A1A1F' }
-    ],
+    colors: Array.isArray(row.colors) ? row.colors : [],
+    sizes: Array.isArray(row.sizes) && row.sizes.length > 0
+      ? row.sizes
+      : (Array.isArray(row.specs)
+          ? (() => {
+              const szSpec = row.specs.find((s: any) => s.labelFr === '__sizes__');
+              if (szSpec?.value) {
+                try {
+                  return JSON.parse(szSpec.value);
+                } catch {
+                  return szSpec.value.split(',').map((s: string) => s.trim());
+                }
+              }
+              return [];
+            })()
+          : []),
     images: Array.isArray(row.images) && row.images.length > 0
       ? row.images
       : ['https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=600&auto=format&fit=crop'],
@@ -382,10 +395,28 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     productData: Partial<Product> & { nameFr: string; nameAr: string; price: number; category: string }
   ): Promise<{ success: boolean; error?: string }> => {
     const id = `prod-${Date.now()}`;
-    const slug = productData.nameFr
+    
+    // Generate an SEO-friendly, guaranteed-unique slug with random hash suffix
+    const cleanBase = (productData.nameFr || productData.nameAr || 'item')
       .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '') || id;
+      .replace(/(^-|-$)/g, '');
+    const baseSlug = cleanBase && cleanBase.length >= 2 ? cleanBase : 'product';
+    const uniqueSuffix = `${Date.now().toString(36).slice(-4)}${Math.random().toString(36).slice(2, 4)}`;
+    const slug = `${baseSlug}-${uniqueSuffix}`;
+
+    const finalColors = Array.isArray(productData.colors) ? productData.colors : [];
+    const finalSizes = Array.isArray(productData.sizes) ? productData.sizes : [];
+
+    // Fallback embed sizes into specs as __sizes__ for zero-schema-error persistence
+    const finalSpecs = [
+      ...(productData.specs || []).filter((s) => s.labelFr !== '__sizes__'),
+      ...(finalSizes.length > 0
+        ? [{ labelFr: '__sizes__', labelAr: '__sizes__', value: JSON.stringify(finalSizes) }]
+        : []),
+    ];
 
     const newProd: Product = {
       id,
@@ -408,10 +439,9 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       descriptionAr: productData.descriptionAr || '',
       featuresFr: productData.featuresFr || [],
       featuresAr: productData.featuresAr || [],
-      specs: productData.specs || [],
-      colors: productData.colors || [
-        { nameFr: 'Noir Titane', nameAr: 'أسود تيتانيوم', hex: '#1A1A1F' }
-      ],
+      specs: finalSpecs,
+      colors: finalColors,
+      sizes: finalSizes,
       images: productData.images && productData.images.length > 0
         ? productData.images
         : ['https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=600&auto=format&fit=crop'],
@@ -429,7 +459,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     // Persist to Supabase if connected
     if (isSupabaseConfigured && supabase) {
       try {
-        const { error } = await supabase.from('products').upsert({
+        const rowToUpsert: any = {
           id: newProd.id,
           slug: newProd.slug,
           name_fr: newProd.nameFr,
@@ -452,7 +482,17 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           is_flash_deal: newProd.isFlashDeal,
           badge_fr: newProd.badgeFr || null,
           badge_ar: newProd.badgeAr || null,
-        });
+          sizes: newProd.sizes || [],
+        };
+
+        let { error } = await supabase.from('products').upsert(rowToUpsert);
+
+        // If 'sizes' column is missing in user's DB, retry without sizes column (it's safe in specs.__sizes__)
+        if (error && error.message?.includes('sizes')) {
+          delete rowToUpsert.sizes;
+          const retry = await supabase.from('products').upsert(rowToUpsert);
+          error = retry.error;
+        }
 
         if (error) {
           console.error('Error inserting product into Supabase:', error.message);
@@ -495,8 +535,17 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         if (updates.badgeAr !== undefined) rowUpdates.badge_ar = updates.badgeAr;
         if (updates.images !== undefined) rowUpdates.images = updates.images;
         if (updates.colors !== undefined) rowUpdates.colors = updates.colors;
+        if (updates.sizes !== undefined) {
+          rowUpdates.sizes = updates.sizes;
+        }
 
-        const { error } = await supabase.from('products').update(rowUpdates).eq('id', id);
+        let { error } = await supabase.from('products').update(rowUpdates).eq('id', id);
+        if (error && error.message?.includes('sizes')) {
+          delete rowUpdates.sizes;
+          const retry = await supabase.from('products').update(rowUpdates).eq('id', id);
+          error = retry.error;
+        }
+
         if (error) {
           console.error('Error updating product in Supabase:', error.message);
           return { success: false, error: error.message };

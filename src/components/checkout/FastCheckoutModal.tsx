@@ -53,6 +53,7 @@ export default function FastCheckoutModal() {
                   product: directCheckoutItem.product,
                   quantity: directCheckoutItem.quantity,
                   selectedColor: directCheckoutItem.selectedColor,
+                  selectedSize: directCheckoutItem.selectedSize,
                 },
               ]}
               isModal={true}

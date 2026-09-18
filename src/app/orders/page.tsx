@@ -418,6 +418,11 @@ export default function CustomerOrdersPage() {
                                   {item.selectedColor && (
                                     <span>• {item.selectedColor}</span>
                                   )}
+                                  {item.selectedSize && (
+                                    <span className="px-1.5 py-0.5 rounded bg-[#FF6B00]/20 border border-[#FF6B00]/30 text-[10px] text-[#FF6B00] font-mono font-bold">
+                                      {item.selectedSize}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                               <div className="text-right shrink-0">

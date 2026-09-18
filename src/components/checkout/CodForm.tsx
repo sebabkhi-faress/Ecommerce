@@ -29,6 +29,7 @@ interface CodFormProps {
     product: Product;
     quantity: number;
     selectedColor?: string;
+    selectedSize?: string;
   }[];
   onSuccess?: (orderId: string) => void;
   isModal?: boolean;
@@ -176,6 +177,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
         price: item.unitPrice,
         quantity: item.quantity,
         selectedColor: item.selectedColor,
+        selectedSize: item.selectedSize,
         image: item.product.images[0],
       }));
 
@@ -291,6 +293,11 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
                     </button>
                   </div>
                   {item.selectedColor && <span>• {item.selectedColor}</span>}
+                  {item.selectedSize && (
+                    <span className="px-1.5 py-0.5 rounded bg-[#FF6B00]/20 border border-[#FF6B00]/30 text-[10px] text-[#FF6B00] font-mono font-bold">
+                      {item.selectedSize}
+                    </span>
+                  )}
                   {item.hasDiscount && (
                     <span className="px-1.5 py-0.5 rounded bg-[#FF6B00]/20 text-[#FFAA2C] font-mono text-[10px] font-bold border border-[#FF6B00]/30">
                       -{item.promo?.discountPercent}%

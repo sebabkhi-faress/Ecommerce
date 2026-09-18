@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useOrders, Order, OrderStatus, useDeliveryFees, WilayaDeliveryFee } from '@/context/OrderContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { WILAYAS } from '@/data/wilayas';
-import { formatDZD, Product } from '@/data/products';
+import { formatDZD, Product, ProductColor } from '@/data/products';
 import {
   DollarSign,
   Package,
@@ -58,6 +58,7 @@ import {
   AlertTriangle,
   ArrowRight,
   ArrowLeft,
+  Loader2,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured, uploadProductImage } from '@/lib/supabase';
 import { useProducts, usePromotions, Promotion } from '@/context/ProductContext';
@@ -157,6 +158,12 @@ export default function AdminDashboardPage() {
   const [editTaglineAr, setEditTaglineAr] = useState('');
   const [editDescFr, setEditDescFr] = useState('');
   const [editDescAr, setEditDescAr] = useState('');
+  const [editColors, setEditColors] = useState<ProductColor[]>([]);
+  const [editSizes, setEditSizes] = useState<string[]>([]);
+  const [editCustomColorNameFr, setEditCustomColorNameFr] = useState('');
+  const [editCustomColorNameAr, setEditCustomColorNameAr] = useState('');
+  const [editCustomColorHex, setEditCustomColorHex] = useState('#000000');
+  const [editCustomSizeInput, setEditCustomSizeInput] = useState('');
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -173,6 +180,11 @@ export default function AdminDashboardPage() {
     setEditTaglineAr(p.taglineAr || '');
     setEditDescFr(p.descriptionFr || '');
     setEditDescAr(p.descriptionAr || '');
+    setEditColors(p.colors ? JSON.parse(JSON.stringify(p.colors)) : []);
+    setEditSizes(p.sizes ? [...p.sizes] : []);
+    setEditCustomColorNameFr('');
+    setEditCustomColorNameAr('');
+    setEditCustomSizeInput('');
     setEditError(null);
   };
 
@@ -201,6 +213,8 @@ export default function AdminDashboardPage() {
       taglineAr: editTaglineAr.trim(),
       descriptionFr: editDescFr.trim(),
       descriptionAr: editDescAr.trim(),
+      colors: editColors,
+      sizes: editSizes,
     };
 
     const res = await updateProduct(editingProduct.id, updates);
@@ -336,6 +350,7 @@ export default function AdminDashboardPage() {
 
   // Quick Add Product Drawer state
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
   const [newProdStep, setNewProdStep] = useState<1 | 2 | 3>(1);
   const [newProdNameFr, setNewProdNameFr] = useState('');
   const [newProdNameAr, setNewProdNameAr] = useState('');
@@ -350,10 +365,20 @@ export default function AdminDashboardPage() {
   const [newProdIsFlashDeal, setNewProdIsFlashDeal] = useState(false);
   const [newProdBadge, setNewProdBadge] = useState('');
   const [newProdImage, setNewProdImage] = useState('');
+  const [newProdColors, setNewProdColors] = useState<ProductColor[]>([]);
+  const [newProdSizes, setNewProdSizes] = useState<string[]>([]);
+  const [customColorNameFr, setCustomColorNameFr] = useState('');
+  const [customColorNameAr, setCustomColorNameAr] = useState('');
+  const [customColorHex, setCustomColorHex] = useState('#000000');
+  const [customSizeInput, setCustomSizeInput] = useState('');
   const [newProdSuccess, setNewProdSuccess] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [showOptionalFields, setShowOptionalFields] = useState(false);
+
+  // Submitting states for Category and Promo
+  const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
+  const [isSubmittingPromo, setIsSubmittingPromo] = useState(false);
 
   const { user, role: authRole, logout: authLogout } = useAuth();
 
@@ -528,57 +553,69 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    const nameFr = newProdNameFr.trim() || newProdNameAr.trim();
-    const nameAr = newProdNameAr.trim() || newProdNameFr.trim();
-    const priceNum = Number(newProdPrice);
-    const stockNum = Number(newProdStock);
-    const origPriceNum = newProdOriginalPrice ? Number(newProdOriginalPrice) : undefined;
+    setIsSubmittingProduct(true);
+    try {
+      const nameFr = newProdNameFr.trim() || newProdNameAr.trim();
+      const nameAr = newProdNameAr.trim() || newProdNameFr.trim();
+      const priceNum = Number(newProdPrice);
+      const stockNum = Number(newProdStock);
+      const origPriceNum = newProdOriginalPrice ? Number(newProdOriginalPrice) : undefined;
 
-    const result = await addProduct({
-      nameFr,
-      nameAr,
-      price: priceNum,
-      originalPrice: origPriceNum && origPriceNum > priceNum ? origPriceNum : undefined,
-      category: newProdCategory,
-      stockCount: stockNum,
-      images: [newProdImage],
-      taglineFr: newProdTaglineFr.trim() || undefined,
-      taglineAr: newProdTaglineAr.trim() || undefined,
-      descriptionFr: newProdDescFr.trim() || undefined,
-      descriptionAr: newProdDescAr.trim() || undefined,
-      isFlashDeal: newProdIsFlashDeal,
-      badgeFr: newProdBadge.trim() || (newProdIsFlashDeal ? 'PROMO' : undefined),
-      badgeAr: newProdBadge.trim() || (newProdIsFlashDeal ? 'تخفيض' : undefined),
-    });
+      const result = await addProduct({
+        nameFr,
+        nameAr,
+        price: priceNum,
+        originalPrice: origPriceNum && origPriceNum > priceNum ? origPriceNum : undefined,
+        category: newProdCategory,
+        stockCount: stockNum,
+        images: [newProdImage],
+        taglineFr: newProdTaglineFr.trim() || undefined,
+        taglineAr: newProdTaglineAr.trim() || undefined,
+        descriptionFr: newProdDescFr.trim() || undefined,
+        descriptionAr: newProdDescAr.trim() || undefined,
+        isFlashDeal: newProdIsFlashDeal,
+        badgeFr: newProdBadge.trim() || (newProdIsFlashDeal ? 'PROMO' : undefined),
+        badgeAr: newProdBadge.trim() || (newProdIsFlashDeal ? 'تخفيض' : undefined),
+        colors: newProdColors,
+        sizes: newProdSizes,
+      });
 
-    if (result.success) {
-      setNewProdSuccess(true);
-      showToast(
-        lang === 'ar' ? 'تمت إضافة المنتج بنجاح' : 'Produit ajouté avec succès',
-        'success',
-        lang === 'ar' ? `تم نشر ${nameAr || nameFr} في المتجر` : `${nameFr} est maintenant disponible`
-      );
-      setTimeout(() => {
-        setNewProdSuccess(false);
-        setIsAddProductOpen(false);
-        setNewProdStep(1);
-        // Reset form fields
-        setNewProdNameFr('');
-        setNewProdNameAr('');
-        setNewProdPrice('');
-        setNewProdOriginalPrice('');
-        setNewProdStock('20');
-        setNewProdImage('');
-        setNewProdTaglineFr('');
-        setNewProdTaglineAr('');
-        setNewProdDescFr('');
-        setNewProdDescAr('');
-        setNewProdIsFlashDeal(false);
-        setNewProdBadge('');
-        setShowOptionalFields(false);
-      }, 1000);
-    } else {
-      setUploadError(result.error || (lang === 'ar' ? 'حدث خطأ أثناء حفظ المنتج' : 'Erreur lors de l’enregistrement'));
+      if (result.success) {
+        setNewProdSuccess(true);
+        showToast(
+          lang === 'ar' ? 'تمت إضافة المنتج بنجاح' : 'Produit ajouté avec succès',
+          'success',
+          lang === 'ar' ? `تم نشر ${nameAr || nameFr} في المتجر` : `${nameFr} est maintenant disponible`
+        );
+        setTimeout(() => {
+          setNewProdSuccess(false);
+          setIsAddProductOpen(false);
+          setNewProdStep(1);
+          // Reset form fields
+          setNewProdNameFr('');
+          setNewProdNameAr('');
+          setNewProdPrice('');
+          setNewProdOriginalPrice('');
+          setNewProdStock('20');
+          setNewProdImage('');
+          setNewProdTaglineFr('');
+          setNewProdTaglineAr('');
+          setNewProdDescFr('');
+          setNewProdDescAr('');
+          setNewProdIsFlashDeal(false);
+          setNewProdBadge('');
+          setNewProdColors([]);
+          setNewProdSizes([]);
+          setCustomColorNameFr('');
+          setCustomColorNameAr('');
+          setCustomSizeInput('');
+          setShowOptionalFields(false);
+        }, 1000);
+      } else {
+        setUploadError(result.error || (lang === 'ar' ? 'حدث خطأ أثناء حفظ المنتج' : 'Erreur lors de l’enregistrement'));
+      }
+    } finally {
+      setIsSubmittingProduct(false);
     }
   };
 
@@ -591,28 +628,33 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    const res = await addCategory({
-      slug: newCatSlug,
-      nameFr: newCatNameFr,
-      nameAr: newCatNameAr,
-      descriptionFr: newCatDescFr,
-      descriptionAr: newCatDescAr,
-      icon: newCatIcon,
-    });
+    setIsSubmittingCategory(true);
+    try {
+      const res = await addCategory({
+        slug: newCatSlug,
+        nameFr: newCatNameFr,
+        nameAr: newCatNameAr,
+        descriptionFr: newCatDescFr,
+        descriptionAr: newCatDescAr,
+        icon: newCatIcon,
+      });
 
-    if (res.success) {
-      setNewCatSuccess(true);
-      setTimeout(() => {
-        setNewCatSuccess(false);
-        setIsAddCategoryOpen(false);
-        setNewCatSlug('');
-        setNewCatNameFr('');
-        setNewCatNameAr('');
-        setNewCatDescFr('');
-        setNewCatDescAr('');
-      }, 1000);
-    } else {
-      setNewCatError(res.error || 'Erreur lors de la création');
+      if (res.success) {
+        setNewCatSuccess(true);
+        setTimeout(() => {
+          setNewCatSuccess(false);
+          setIsAddCategoryOpen(false);
+          setNewCatSlug('');
+          setNewCatNameFr('');
+          setNewCatNameAr('');
+          setNewCatDescFr('');
+          setNewCatDescAr('');
+        }, 1000);
+      } else {
+        setNewCatError(res.error || 'Erreur lors de la création');
+      }
+    } finally {
+      setIsSubmittingCategory(false);
     }
   };
 
@@ -781,30 +823,35 @@ export default function AdminDashboardPage() {
       ? (newPromoTargetId || (categories[0]?.slug || 'earbuds'))
       : (newPromoTargetId || (products[0]?.id || ''));
 
-    const res = await addPromotion({
-      name: trimmedName,
-      targetType: newPromoTargetType,
-      targetId,
-      discountType: newPromoDiscountType,
-      discountValue: val,
-      startAt: startDate,
-      endAt: endDate,
-      isActive: true,
-      bannerTextFr: newPromoBannerFr.trim() || undefined,
-      bannerTextAr: newPromoBannerAr.trim() || undefined,
-    });
+    setIsSubmittingPromo(true);
+    try {
+      const res = await addPromotion({
+        name: trimmedName,
+        targetType: newPromoTargetType,
+        targetId,
+        discountType: newPromoDiscountType,
+        discountValue: val,
+        startAt: startDate,
+        endAt: endDate,
+        isActive: true,
+        bannerTextFr: newPromoBannerFr.trim() || undefined,
+        bannerTextAr: newPromoBannerAr.trim() || undefined,
+      });
 
-    if (res.success) {
-      setNewPromoSuccess(true);
-      setTimeout(() => {
-        setNewPromoSuccess(false);
-        setIsAddPromoOpen(false);
-        setNewPromoName('');
-        setNewPromoBannerFr('');
-        setNewPromoBannerAr('');
-      }, 1200);
-    } else {
-      setNewPromoError(res.error || 'Erreur lors de la création de la promotion');
+      if (res.success) {
+        setNewPromoSuccess(true);
+        setTimeout(() => {
+          setNewPromoSuccess(false);
+          setIsAddPromoOpen(false);
+          setNewPromoName('');
+          setNewPromoBannerFr('');
+          setNewPromoBannerAr('');
+        }, 1200);
+      } else {
+        setNewPromoError(res.error || 'Erreur lors de la création de la promotion');
+      }
+    } finally {
+      setIsSubmittingPromo(false);
     }
   };
 
@@ -1653,12 +1700,26 @@ export default function AdminDashboardPage() {
                             </div>
                           </td>
                           <td className="p-4">
-                            <span className="font-mono text-[#F5F5F7]">
+                            <span className="font-mono text-[#F5F5F7] font-bold">
                               {order.items.reduce((s, i) => s + i.quantity, 0)} {lang === 'ar' ? 'منتج' : 'article(s)'}
                             </span>
-                            <div className="text-[11px] text-[#A1A1AA] truncate max-w-[150px]">
+                            <div className="text-[11px] text-[#A1A1AA] truncate max-w-[180px]">
                               {lang === 'ar' ? (order.items[0]?.productNameAr || order.items[0]?.productNameFr) : order.items[0]?.productNameFr}
                             </div>
+                            {(order.items[0]?.selectedColor || order.items[0]?.selectedSize) && (
+                              <div className="flex flex-wrap items-center gap-1 mt-1">
+                                {order.items[0]?.selectedColor && (
+                                  <span className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] text-[#FFAA2C] font-semibold">
+                                    {order.items[0].selectedColor}
+                                  </span>
+                                )}
+                                {order.items[0]?.selectedSize && (
+                                  <span className="px-1.5 py-0.5 rounded bg-[#FF6B00]/20 border border-[#FF6B00]/30 text-[10px] text-[#FF6B00] font-mono font-bold">
+                                    {order.items[0].selectedSize}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </td>
                           <td className="p-4 font-mono font-black text-[#FF6B00] whitespace-nowrap">
                             {formatDZD(order.total, lang)}
@@ -2811,9 +2872,17 @@ export default function AdminDashboardPage() {
 
                   <button
                     type="submit"
-                    className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-blue-600/30 transition-all cursor-pointer mt-4"
+                    disabled={isSubmittingCategory}
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-blue-600/30 transition-all cursor-pointer mt-4 flex items-center justify-center gap-2"
                   >
-                    {lang === 'ar' ? 'حفظ القسم' : 'Enregistrer la catégorie'}
+                    {isSubmittingCategory ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>{lang === 'ar' ? 'جارٍ الحفظ...' : 'Enregistrement...'}</span>
+                      </>
+                    ) : (
+                      <span>{lang === 'ar' ? 'حفظ القسم' : 'Enregistrer la catégorie'}</span>
+                    )}
                   </button>
                 </form>
               )}
@@ -3255,11 +3324,20 @@ export default function AdminDashboardPage() {
 
                         <button
                           type="submit"
-                          disabled={isUploading}
+                          disabled={isUploading || isSubmittingProduct}
                           className="flex-1 py-2.5 bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] hover:from-[#E05E00] hover:to-[#FF9900] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                          <CheckCircle className="w-4 h-4 stroke-[2.5]" />
-                          <span>{lang === 'ar' ? 'حفظ ونشر الآن' : 'Enregistrer'}</span>
+                          {isSubmittingProduct ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span>{lang === 'ar' ? 'جارٍ النشر...' : 'Publication...'}</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-4 h-4 stroke-[2.5]" />
+                              <span>{lang === 'ar' ? 'حفظ ونشر الآن' : 'Enregistrer'}</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -3272,12 +3350,310 @@ export default function AdminDashboardPage() {
                         <div className="flex items-center gap-2">
                           <Sparkles className="w-4 h-4 text-[#FFAA2C]" />
                           <span className="text-xs font-bold text-[#FFAA2C]">
-                            {lang === 'ar' ? 'الخطوة 3: تفاصيل تسويقية اختيارية' : 'Étape 3 : Détails marketing (Optionnels)'}
+                            {lang === 'ar' ? 'الخطوة 3: المقاسات والألوان وتفاصيل إضافية' : 'Étape 3 : Tailles, Couleurs & Détails (Optionnels)'}
                           </span>
                         </div>
                         <p className="text-[11px] text-[#A1A1AA] mt-0.5">
-                          {lang === 'ar' ? 'يمكنك ترك هذه الحقول فارغة وحفظ المنتج مباشرة' : 'Ces champs sont facultatifs, vous pouvez enregistrer directement'}
+                          {lang === 'ar' ? 'حدد مقاسات الملابس/الأحذية وألوان المنتج بسهولة' : 'Configurez les tailles et couleurs disponibles pour ce produit'}
                         </p>
+                      </div>
+
+                      {/* VARIANTS: SIZES & COLORS */}
+                      <div className="bg-[#18181F] border border-white/15 rounded-2xl p-3.5 sm:p-4 space-y-4 shadow-lg">
+                        <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                          <div className="flex items-center gap-2">
+                            <Sliders className="w-4 h-4 text-[#FF6B00]" />
+                            <span className="font-bold text-white text-xs">
+                              {lang === 'ar' ? 'خيارات المقاسات والألوان (Variants)' : 'Tailles & Couleurs disponibles'}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-[#FFAA2C] bg-[#FFAA2C]/10 border border-[#FFAA2C]/20 px-2 py-0.5 rounded-full font-mono">
+                            {lang === 'ar' ? 'إدارة سريعة' : 'Sélecteur rapide'}
+                          </span>
+                        </div>
+
+                        {/* SIZES MANAGER */}
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-xs font-bold text-[#FFAA2C]">
+                              {lang === 'ar' ? 'المقاسات (ملابس، أحذية، أحجام) :' : 'Tailles (Vêtements, Chaussures, etc.) :'}
+                            </label>
+                            {newProdSizes.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setNewProdSizes([])}
+                                className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                              >
+                                {lang === 'ar' ? 'مسح الكل' : 'Tout effacer'}
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Quick Preset Buttons */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5 text-[10px] text-[#A1A1AA] flex-wrap">
+                              <span className="shrink-0">{lang === 'ar' ? 'ملابس :' : 'Vêtements :'}</span>
+                              <div className="flex flex-wrap gap-1">
+                                {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'].map((s) => {
+                                  const isSelected = newProdSizes.includes(s);
+                                  return (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      onClick={() => {
+                                        if (isSelected) {
+                                          setNewProdSizes(newProdSizes.filter((x) => x !== s));
+                                        } else {
+                                          setNewProdSizes([...newProdSizes, s]);
+                                        }
+                                      }}
+                                      className={`px-2 py-0.5 rounded-lg border text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                                        isSelected
+                                          ? 'bg-[#FF6B00] text-black border-[#FF6B00] shadow-sm'
+                                          : 'bg-white/5 text-[#F5F5F7] border-white/10 hover:border-white/30'
+                                      }`}
+                                    >
+                                      {s}
+                                    </button>
+                                  );
+                                })}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const clothingAll = ['S', 'M', 'L', 'XL', 'XXL'];
+                                    const merged = Array.from(new Set([...newProdSizes, ...clothingAll]));
+                                    setNewProdSizes(merged);
+                                  }}
+                                  className="px-2 py-0.5 rounded-lg bg-[#FFAA2C]/15 border border-[#FFAA2C]/30 text-[#FFAA2C] text-[10px] font-bold hover:bg-[#FFAA2C]/25 cursor-pointer"
+                                >
+                                  {lang === 'ar' ? '+ الكل (S-XXL)' : '+ Tout (S-XXL)'}
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 text-[10px] text-[#A1A1AA] flex-wrap">
+                              <span className="shrink-0">{lang === 'ar' ? 'أحذية :' : 'Pointures :'}</span>
+                              <div className="flex flex-wrap gap-1">
+                                {['38', '39', '40', '41', '42', '43', '44', '45'].map((s) => {
+                                  const isSelected = newProdSizes.includes(s);
+                                  return (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      onClick={() => {
+                                        if (isSelected) {
+                                          setNewProdSizes(newProdSizes.filter((x) => x !== s));
+                                        } else {
+                                          setNewProdSizes([...newProdSizes, s]);
+                                        }
+                                      }}
+                                      className={`px-2 py-0.5 rounded-lg border text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                                        isSelected
+                                          ? 'bg-[#FF6B00] text-black border-[#FF6B00] shadow-sm'
+                                          : 'bg-white/5 text-[#F5F5F7] border-white/10 hover:border-white/30'
+                                      }`}
+                                    >
+                                      {s}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Custom Size Input */}
+                          <div className="flex gap-2 pt-1">
+                            <input
+                              type="text"
+                              value={customSizeInput}
+                              onChange={(e) => setCustomSizeInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const val = customSizeInput.trim().toUpperCase();
+                                  if (val && !newProdSizes.includes(val)) {
+                                    setNewProdSizes([...newProdSizes, val]);
+                                    setCustomSizeInput('');
+                                  }
+                                }
+                              }}
+                              placeholder={lang === 'ar' ? 'أو اكتب مقاس مخصص (مثال: 4XL, 128GB)...' : 'Taille personnalisée (ex: 4XL, 128Go)...'}
+                              className="flex-1 bg-[#14141B] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-1.5 text-xs text-white outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = customSizeInput.trim().toUpperCase();
+                                if (val && !newProdSizes.includes(val)) {
+                                    setNewProdSizes([...newProdSizes, val]);
+                                  setCustomSizeInput('');
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shrink-0"
+                            >
+                              {lang === 'ar' ? '+ إضافة' : '+ Ajouter'}
+                            </button>
+                          </div>
+
+                          {/* Active Selected Sizes display */}
+                          {newProdSizes.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {newProdSizes.map((s) => (
+                                <span
+                                  key={s}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FF6B00]/15 border border-[#FF6B00]/40 text-[#FFAA2C] font-mono font-bold text-xs"
+                                >
+                                  <span>{s}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setNewProdSizes(newProdSizes.filter((x) => x !== s))}
+                                    className="text-[#A1A1AA] hover:text-white cursor-pointer"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* COLORS MANAGER */}
+                        <div className="space-y-2.5 pt-3 border-t border-white/10">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-xs font-bold text-[#FFAA2C]">
+                              {lang === 'ar' ? 'الألوان المتوفرة :' : 'Couleurs disponibles :'}
+                            </label>
+                            {newProdColors.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setNewProdColors([])}
+                                className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                              >
+                                {lang === 'ar' ? 'مسح الكل' : 'Tout effacer'}
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Quick Preset Colors */}
+                          <div className="flex flex-wrap gap-1.5">
+                            {[
+                              { nameFr: 'Noir', nameAr: 'أسود', hex: '#000000' },
+                              { nameFr: 'Blanc', nameAr: 'أبيض', hex: '#FFFFFF' },
+                              { nameFr: 'Gris', nameAr: 'رمادي', hex: '#64748B' },
+                              { nameFr: 'Bleu Marine', nameAr: 'أزرق داكن', hex: '#1E3A8A' },
+                              { nameFr: 'Rouge', nameAr: 'أحمر', hex: '#DC2626' },
+                              { nameFr: 'Vert', nameAr: 'أخضر', hex: '#16A34A' },
+                              { nameFr: 'Doré', nameAr: 'ذهبي', hex: '#D97706' },
+                              { nameFr: 'Marron', nameAr: 'بني', hex: '#78350F' },
+                            ].map((c) => {
+                              const isSelected = newProdColors.some((x) => x.nameFr === c.nameFr || x.hex === c.hex);
+                              return (
+                                <button
+                                  key={c.nameFr}
+                                  type="button"
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setNewProdColors(newProdColors.filter((x) => x.nameFr !== c.nameFr && x.hex !== c.hex));
+                                    } else {
+                                      setNewProdColors([...newProdColors, c]);
+                                    }
+                                  }}
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-semibold transition-all cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-white/20 border-[#FF6B00] text-white shadow-sm ring-1 ring-[#FF6B00]'
+                                      : 'bg-white/5 text-[#A1A1AA] border-white/10 hover:border-white/30'
+                                  }`}
+                                >
+                                  <span
+                                    className="w-3 h-3 rounded-full border border-white/30 shrink-0"
+                                    style={{ backgroundColor: c.hex }}
+                                  />
+                                  <span>{lang === 'ar' ? c.nameAr : c.nameFr}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Custom Color Creator */}
+                          <div className="grid grid-cols-12 gap-2 pt-1 items-center">
+                            <div className="col-span-2 sm:col-span-2">
+                              <input
+                                type="color"
+                                value={customColorHex}
+                                onChange={(e) => setCustomColorHex(e.target.value)}
+                                className="w-full h-8 rounded-xl bg-transparent border border-white/15 cursor-pointer p-0.5"
+                                title={lang === 'ar' ? 'اختر درجة اللون' : 'Sélectionner une nuance'}
+                              />
+                            </div>
+                            <div className="col-span-4 sm:col-span-4">
+                              <input
+                                type="text"
+                                value={customColorNameFr}
+                                onChange={(e) => setCustomColorNameFr(e.target.value)}
+                                placeholder="Nom (FR, ex: Kaki)"
+                                className="w-full bg-[#14141B] border border-white/15 focus:border-[#FF6B00] rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                              />
+                            </div>
+                            <div className="col-span-4 sm:col-span-4">
+                              <input
+                                type="text"
+                                dir="rtl"
+                                value={customColorNameAr}
+                                onChange={(e) => setCustomColorNameAr(e.target.value)}
+                                placeholder="الاسم (AR)"
+                                className="w-full bg-[#14141B] border border-white/15 focus:border-[#FF6B00] rounded-xl px-2.5 py-1.5 text-xs text-white outline-none text-right"
+                              />
+                            </div>
+                            <div className="col-span-2 sm:col-span-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (customColorNameFr.trim() || customColorNameAr.trim()) {
+                                    setNewProdColors([
+                                      ...newProdColors,
+                                      {
+                                        nameFr: customColorNameFr.trim() || customColorNameAr.trim(),
+                                        nameAr: customColorNameAr.trim() || customColorNameFr.trim(),
+                                        hex: customColorHex,
+                                      },
+                                    ]);
+                                    setCustomColorNameFr('');
+                                    setCustomColorNameAr('');
+                                  }
+                                }}
+                                className="w-full py-1.5 bg-white/10 hover:bg-white/15 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-center"
+                                title={lang === 'ar' ? 'إضافة لون مخصص' : 'Ajouter couleur'}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Active Selected Colors display */}
+                          {newProdColors.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {newProdColors.map((c, idx) => (
+                                <span
+                                  key={idx}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 border border-white/15 text-white text-xs font-semibold"
+                                >
+                                  <span
+                                    className="w-3 h-3 rounded-full border border-white/40 shrink-0"
+                                    style={{ backgroundColor: c.hex }}
+                                  />
+                                  <span>{lang === 'ar' ? c.nameAr : c.nameFr}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setNewProdColors(newProdColors.filter((_, i) => i !== idx))}
+                                    className="text-[#A1A1AA] hover:text-white cursor-pointer ml-1"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Taglines */}
@@ -3395,11 +3771,20 @@ export default function AdminDashboardPage() {
 
                         <button
                           type="submit"
-                          disabled={isUploading}
+                          disabled={isUploading || isSubmittingProduct}
                           className="flex-1 py-3 bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] hover:from-[#E05E00] hover:to-[#FF9900] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                          <Plus className="w-4 h-4 stroke-[3]" />
-                          <span>{lang === 'ar' ? 'حفظ وإضافة المنتج للمتجر' : 'Enregistrer le Produit'}</span>
+                          {isSubmittingProduct ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span>{lang === 'ar' ? 'جارٍ الحفظ والإضافة...' : 'Enregistrement...'}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-4 h-4 stroke-[3]" />
+                              <span>{lang === 'ar' ? 'حفظ وإضافة المنتج للمتجر' : 'Enregistrer le Produit'}</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -3566,6 +3951,240 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setEditIsFlashDeal(e.target.checked)}
                     className="w-4 h-4 rounded text-[#FF6B00] accent-[#FF6B00] cursor-pointer"
                   />
+                </div>
+
+                {/* Edit Product Sizes & Colors */}
+                <div className="bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-2xl p-3.5 space-y-3.5">
+                  <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-2">
+                    <span className="font-bold text-[#0F172A] dark:text-[#F5F5F7] text-xs flex items-center gap-1.5">
+                      <Sliders className="w-3.5 h-3.5 text-[#FF6B00]" />
+                      <span>{lang === 'ar' ? 'المقاسات والألوان المتوفرة' : 'Tailles & Couleurs disponibles'}</span>
+                    </span>
+                  </div>
+
+                  {/* SIZES */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-[#475569] dark:text-[#FFAA2C]">
+                        {lang === 'ar' ? 'المقاسات :' : 'Tailles :'}
+                      </label>
+                      {editSizes.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setEditSizes([])}
+                          className="text-[10px] text-red-500 hover:underline cursor-pointer"
+                        >
+                          {lang === 'ar' ? 'مسح الكل' : 'Effacer'}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-1">
+                      {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'].map((s) => {
+                        const isSelected = editSizes.includes(s);
+                        return (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                setEditSizes(editSizes.filter((x) => x !== s));
+                              } else {
+                                setEditSizes([...editSizes, s]);
+                              }
+                            }}
+                            className={`px-2 py-0.5 rounded-lg border text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#FF6B00] text-black border-[#FF6B00]'
+                                : 'bg-black/5 dark:bg-white/5 text-[#475569] dark:text-[#F5F5F7] border-black/10 dark:border-white/10'
+                            }`}
+                          >
+                            {s}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex gap-2 pt-0.5">
+                      <input
+                        type="text"
+                        value={editCustomSizeInput}
+                        onChange={(e) => setEditCustomSizeInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const val = editCustomSizeInput.trim().toUpperCase();
+                            if (val && !editSizes.includes(val)) {
+                              setEditSizes([...editSizes, val]);
+                              setEditCustomSizeInput('');
+                            }
+                          }
+                        }}
+                        placeholder="Taille personnalisée..."
+                        className="flex-1 bg-slate-50 dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-xl px-2.5 py-1 text-xs text-[#0F172A] dark:text-white outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = editCustomSizeInput.trim().toUpperCase();
+                          if (val && !editSizes.includes(val)) {
+                            setEditSizes([...editSizes, val]);
+                            setEditCustomSizeInput('');
+                          }
+                        }}
+                        className="px-3 py-1 bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-[#0F172A] dark:text-white font-bold rounded-xl text-xs cursor-pointer"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {editSizes.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        {editSizes.map((s) => (
+                          <span
+                            key={s}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#FF6B00]/15 border border-[#FF6B00]/40 text-[#FF6B00] font-mono font-bold text-xs"
+                          >
+                            <span>{s}</span>
+                            <button
+                              type="button"
+                              onClick={() => setEditSizes(editSizes.filter((x) => x !== s))}
+                              className="text-red-400 hover:text-red-500 cursor-pointer ml-1"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* COLORS */}
+                  <div className="space-y-2 pt-2.5 border-t border-black/10 dark:border-white/10">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-[#475569] dark:text-[#FFAA2C]">
+                        {lang === 'ar' ? 'الألوان :' : 'Couleurs :'}
+                      </label>
+                      {editColors.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setEditColors([])}
+                          className="text-[10px] text-red-500 hover:underline cursor-pointer"
+                        >
+                          {lang === 'ar' ? 'مسح الكل' : 'Effacer'}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-1">
+                      {[
+                        { nameFr: 'Noir', nameAr: 'أسود', hex: '#000000' },
+                        { nameFr: 'Blanc', nameAr: 'أبيض', hex: '#FFFFFF' },
+                        { nameFr: 'Gris', nameAr: 'رمادي', hex: '#64748B' },
+                        { nameFr: 'Bleu Marine', nameAr: 'أزرق داكن', hex: '#1E3A8A' },
+                        { nameFr: 'Rouge', nameAr: 'أحمر', hex: '#DC2626' },
+                        { nameFr: 'Vert', nameAr: 'أخضر', hex: '#16A34A' },
+                        { nameFr: 'Doré', nameAr: 'ذهبي', hex: '#D97706' },
+                        { nameFr: 'Marron', nameAr: 'بني', hex: '#78350F' },
+                      ].map((c) => {
+                        const isSelected = editColors.some((x) => x.nameFr === c.nameFr || x.hex === c.hex);
+                        return (
+                          <button
+                            key={c.nameFr}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                setEditColors(editColors.filter((x) => x.nameFr !== c.nameFr && x.hex !== c.hex));
+                              } else {
+                                setEditColors([...editColors, c]);
+                              }
+                            }}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[11px] font-semibold cursor-pointer ${
+                              isSelected
+                                ? 'border-[#FF6B00] bg-[#FF6B00]/15 text-[#FF6B00]'
+                                : 'border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-[#64748B] dark:text-[#A1A1AA]'
+                            }`}
+                          >
+                            <span className="w-2.5 h-2.5 rounded-full border border-black/20 dark:border-white/20" style={{ backgroundColor: c.hex }} />
+                            <span>{lang === 'ar' ? c.nameAr : c.nameFr}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-1.5 pt-0.5 items-center">
+                      <div className="col-span-2">
+                        <input
+                          type="color"
+                          value={editCustomColorHex}
+                          onChange={(e) => setEditCustomColorHex(e.target.value)}
+                          className="w-full h-7 rounded-lg bg-transparent border border-black/10 dark:border-white/15 cursor-pointer p-0.5"
+                        />
+                      </div>
+                      <div className="col-span-4">
+                        <input
+                          type="text"
+                          value={editCustomColorNameFr}
+                          onChange={(e) => setEditCustomColorNameFr(e.target.value)}
+                          placeholder="Nom FR"
+                          className="w-full bg-slate-50 dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-lg px-2 py-1 text-xs text-[#0F172A] dark:text-white outline-none"
+                        />
+                      </div>
+                      <div className="col-span-4">
+                        <input
+                          type="text"
+                          dir="rtl"
+                          value={editCustomColorNameAr}
+                          onChange={(e) => setEditCustomColorNameAr(e.target.value)}
+                          placeholder="الاسم AR"
+                          className="w-full bg-slate-50 dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-lg px-2 py-1 text-xs text-[#0F172A] dark:text-white outline-none text-right"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (editCustomColorNameFr.trim() || editCustomColorNameAr.trim()) {
+                              setEditColors([
+                                ...editColors,
+                                {
+                                  nameFr: editCustomColorNameFr.trim() || editCustomColorNameAr.trim(),
+                                  nameAr: editCustomColorNameAr.trim() || editCustomColorNameFr.trim(),
+                                  hex: editCustomColorHex,
+                                },
+                              ]);
+                              setEditCustomColorNameFr('');
+                              setEditCustomColorNameAr('');
+                            }
+                          }}
+                          className="w-full py-1 bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-[#0F172A] dark:text-white font-bold rounded-lg text-xs"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    {editColors.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        {editColors.map((c, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/15 text-xs text-[#0F172A] dark:text-white"
+                          >
+                            <span className="w-2.5 h-2.5 rounded-full border border-black/20 dark:border-white/20" style={{ backgroundColor: c.hex }} />
+                            <span>{lang === 'ar' ? c.nameAr : c.nameFr}</span>
+                            <button
+                              type="button"
+                              onClick={() => setEditColors(editColors.filter((_, i) => i !== idx))}
+                              className="text-red-400 hover:text-red-500 cursor-pointer ml-1"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Actions */}
@@ -3855,9 +4474,17 @@ export default function AdminDashboardPage() {
 
                   <button
                     type="submit"
-                    className="w-full py-3.5 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 transition-all cursor-pointer mt-2"
+                    disabled={isSubmittingPromo}
+                    className="w-full py-3.5 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 transition-all cursor-pointer mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    {lang === 'ar' ? 'تفعيل العرض الترويجي الآن' : 'Lancer la Promotion'}
+                    {isSubmittingPromo ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>{lang === 'ar' ? 'جارٍ التفعيل...' : 'Lancement...'}</span>
+                      </>
+                    ) : (
+                      <span>{lang === 'ar' ? 'تفعيل العرض الترويجي الآن' : 'Lancer la Promotion'}</span>
+                    )}
                   </button>
                 </form>
               )}

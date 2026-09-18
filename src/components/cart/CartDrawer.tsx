@@ -74,7 +74,7 @@ export default function CartDrawer() {
             ) : (
               cart.map((item) => (
                 <div
-                  key={`${item.product.id}-${item.selectedColor}`}
+                  key={`${item.product.id}-${item.selectedColor || ''}-${item.selectedSize || ''}`}
                   className="flex gap-4 p-3.5 bg-[#18181F] border border-white/10 rounded-2xl relative group hover:border-[#FF6B00]/40 transition-colors"
                 >
                   <Link
@@ -100,11 +100,18 @@ export default function CartDrawer() {
                           {lang === 'ar' ? item.product.nameAr : item.product.nameFr}
                         </h4>
                       </Link>
-                      {item.selectedColor && (
-                        <p className="text-[11px] text-[#FFAA2C] mt-0.5">
-                          {item.selectedColor}
-                        </p>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                        {item.selectedColor && (
+                          <span className="text-[11px] text-[#FFAA2C]">
+                            {item.selectedColor}
+                          </span>
+                        )}
+                        {item.selectedSize && (
+                          <span className="px-1.5 py-0.5 rounded bg-[#FF6B00]/20 border border-[#FF6B00]/30 text-[10px] text-[#FF6B00] font-mono font-bold">
+                            {item.selectedSize}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between mt-2">
