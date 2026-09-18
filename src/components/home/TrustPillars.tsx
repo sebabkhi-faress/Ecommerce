@@ -23,13 +23,6 @@ export default function TrustPillars() {
       color: '#FFAA2C',
     },
     {
-      icon: RefreshCw,
-      title: t('trust.p3_title'),
-      desc: t('trust.p3_desc'),
-      tag: t('trust.p3_tag'),
-      color: '#25D366',
-    },
-    {
       icon: Headphones,
       title: t('trust.p4_title'),
       desc: t('trust.p4_desc'),
@@ -53,7 +46,7 @@ export default function TrustPillars() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
           {pillars.map((pillar, idx) => {
             const Icon = pillar.icon;
             return (

@@ -495,8 +495,46 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
+              {/* Quantity Selector */}
+              <div className="flex items-center justify-between p-3.5 bg-[#14141B] rounded-2xl border border-white/10">
+                <div>
+                  <span className="text-xs font-bold text-[#F5F5F7] block">
+                    {lang === 'ar' ? 'الكمية المطلوبة' : 'Quantité à commander'}
+                  </span>
+                  <span className="text-[11px] text-[#A1A1AA] font-mono">
+                    {lang === 'ar'
+                      ? `المجموع : ${formatDZD(displayPrice * quantity, lang)}`
+                      : `Total : ${formatDZD(displayPrice * quantity, lang)}`}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 bg-[#18181F] border border-white/10 px-2 py-1.5 rounded-xl shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    disabled={quantity <= 1}
+                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 disabled:hover:bg-white/5 text-white flex items-center justify-center font-bold text-base transition-colors cursor-pointer"
+                    aria-label="Diminuer la quantité"
+                  >
+                    -
+                  </button>
+                  <span className="w-8 text-center font-mono font-black text-sm text-[#FF6B00]">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.min(product.stockCount || 99, q + 1))}
+                    disabled={quantity >= (product.stockCount || 99)}
+                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 disabled:hover:bg-white/5 text-white flex items-center justify-center font-bold text-base transition-colors cursor-pointer"
+                    aria-label="Augmenter la quantité"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
               {/* Action Buttons: Fast Buy & Add to Cart */}
-              <div className="grid grid-cols-5 gap-3 pt-2">
+              <div className="grid grid-cols-5 gap-3 pt-1">
                 <button
                   onClick={() => openDirectCheckout(product, quantity, selectedColor?.nameFr)}
                   className="col-span-4 py-3.5 px-4 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"

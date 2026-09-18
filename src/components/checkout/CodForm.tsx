@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useOrders, useDeliveryFees } from '@/context/OrderContext';
@@ -53,6 +53,24 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
   const [bannedError, setBannedError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Editable items state to allow quantity adjustments directly in form
+  const [formItems, setFormItems] = useState(items);
+  useEffect(() => {
+    setFormItems(items);
+  }, [items]);
+
+  // Pre-fill phone and name if saved from past session
+  useEffect(() => {
+    try {
+      const savedPhone = localStorage.getItem('bika_customer_phone');
+      const savedName = localStorage.getItem('bika_customer_name');
+      if (savedPhone && !phone) setPhone(savedPhone);
+      if (savedName && !fullName) setFullName(savedName);
+    } catch (e) {
+      // Ignore
+    }
+  }, []);
+
   const selectedWilaya = useMemo(
     () => getWilayaByCode(selectedWilayaCode) || WILAYAS[15],
     [selectedWilayaCode]
@@ -73,7 +91,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
 
   // Calculate promotional prices for all items in checkout
   const itemsWithPricing = useMemo(() => {
-    return items.map((item) => {
+    return formItems.map((item) => {
       const promo = getPromotionForProduct(item.product);
       const unitPrice = promo ? promo.finalPrice : item.product.price;
       const originalUnitPrice = item.product.price;
@@ -88,7 +106,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
         totalSavings: hasDiscount && promo ? promo.savings * item.quantity : 0,
       };
     });
-  }, [items, getPromotionForProduct]);
+  }, [formItems, getPromotionForProduct]);
 
   const subtotal = useMemo(
     () => itemsWithPricing.reduce((sum, item) => sum + item.itemTotal, 0),
@@ -188,6 +206,14 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
         // Confetti fallback
       }
 
+      // Save customer phone and name locally for easy future order tracking
+      try {
+        localStorage.setItem('bika_customer_phone', phone.trim());
+        localStorage.setItem('bika_customer_name', fullName.trim());
+      } catch (e) {
+        // Ignore
+      }
+
       clearCart();
 
       if (onSuccess) {
@@ -209,7 +235,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
         <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#FFAA2C] flex items-center justify-between">
           <span>{t('checkout.order_summary')}</span>
           <span className="text-[11px] text-[#A1A1AA] lowercase">
-            {items.reduce((s, i) => s + i.quantity, 0)} {t('checkout.articles_count')}
+            {formItems.reduce((s, i) => s + i.quantity, 0)} {t('checkout.articles_count')}
           </span>
         </h4>
 
@@ -225,8 +251,45 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
                 <p className="font-semibold text-[#F5F5F7] truncate">
                   {lang === 'ar' ? item.product.nameAr : item.product.nameFr}
                 </p>
-                <div className="flex items-center gap-2 text-[11px] text-[#A1A1AA] mt-0.5">
-                  <span>{t('checkout.qty_label')} {item.quantity}</span>
+                <div className="flex items-center gap-2 text-[11px] text-[#A1A1AA] mt-1 flex-wrap">
+                  {/* Inline Quantity Stepper */}
+                  <div className="inline-flex items-center gap-1.5 bg-[#14141B] border border-white/10 rounded-lg p-0.5 shadow-inner">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormItems((prev) =>
+                          prev.map((it, i) =>
+                            i === idx ? { ...it, quantity: Math.max(1, it.quantity - 1) } : it
+                          )
+                        );
+                      }}
+                      disabled={item.quantity <= 1}
+                      className="w-5 h-5 rounded bg-white/5 hover:bg-white/15 disabled:opacity-30 flex items-center justify-center text-white font-bold text-xs transition-colors cursor-pointer"
+                      aria-label="Decrease quantity"
+                    >
+                      -
+                    </button>
+                    <span className="w-5 text-center font-mono font-bold text-xs text-[#FF6B00]">
+                      {item.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormItems((prev) =>
+                          prev.map((it, i) =>
+                            i === idx
+                              ? { ...it, quantity: Math.min(it.product.stockCount || 99, it.quantity + 1) }
+                              : it
+                          )
+                        );
+                      }}
+                      disabled={item.quantity >= (item.product.stockCount || 99)}
+                      className="w-5 h-5 rounded bg-white/5 hover:bg-white/15 disabled:opacity-30 flex items-center justify-center text-white font-bold text-xs transition-colors cursor-pointer"
+                      aria-label="Increase quantity"
+                    >
+                      +
+                    </button>
+                  </div>
                   {item.selectedColor && <span>• {item.selectedColor}</span>}
                   {item.hasDiscount && (
                     <span className="px-1.5 py-0.5 rounded bg-[#FF6B00]/20 text-[#FFAA2C] font-mono text-[10px] font-bold border border-[#FF6B00]/30">

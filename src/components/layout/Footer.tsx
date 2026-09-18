@@ -99,11 +99,6 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/#guarantees" className="hover:text-[#FFAA2C] transition-colors">
-                  {t('trust.p3_title')}
-                </Link>
-              </li>
-              <li>
                 <Link href="/admin" className="text-[#FF6B00] hover:underline font-mono">
                   → {t('nav.admin')}
                 </Link>

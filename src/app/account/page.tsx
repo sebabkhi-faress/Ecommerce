@@ -32,7 +32,7 @@ export default function CustomerAccountPage() {
 
   useEffect(() => {
     if (!isAuthLoading && !isAuthenticated) {
-      router.push('/login?redirect=/account');
+      router.replace('/orders');
     }
   }, [isAuthLoading, isAuthenticated, router]);
 

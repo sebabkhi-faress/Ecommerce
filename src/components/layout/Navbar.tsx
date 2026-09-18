@@ -28,6 +28,7 @@ import {
   Truck,
   LogOut,
   ChevronDown,
+  Package,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -117,11 +118,11 @@ export default function Navbar() {
                   {t('nav.products')}
                 </Link>
                 <Link
-                  href="/#deals"
+                  href="/orders"
                   className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-[#FFAA2C] hover:text-[#FF6B00] hover:bg-[#FFAA2C]/10 rounded-full transition-colors"
                 >
-                  <Flame className="w-4 h-4" />
-                  {t('nav.deals')}
+                  <Package className="w-4 h-4" />
+                  <span>{t('nav.my_orders')}</span>
                 </Link>
                 <Link
                   href="/#guarantees"
