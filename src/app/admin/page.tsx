@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useOrders, Order, OrderStatus, useDeliveryFees, WilayaDeliveryFee } from '@/context/OrderContext';
@@ -83,6 +83,7 @@ export default function AdminDashboardPage() {
     products,
     categories,
     addProduct,
+    updateProduct,
     deleteProduct,
     deleteProducts,
     addCategory,
@@ -108,7 +109,113 @@ export default function AdminDashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [adminTab, setAdminTab] = useState<'overview' | 'orders' | 'products' | 'categories' | 'promotions' | 'delivery_fees' | 'users' | 'banned' | 'statics'>('overview');
+  type AdminTabType = 'overview' | 'orders' | 'products' | 'categories' | 'promotions' | 'delivery_fees' | 'users' | 'banned' | 'statics';
+  const [adminTab, setAdminTabState] = useState<AdminTabType>('overview');
+
+  const setAdminTab = useCallback((tab: AdminTabType) => {
+    setAdminTabState(tab);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('admin_active_tab', tab);
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tab);
+        window.history.replaceState(null, '', url.toString());
+      } catch (e) {}
+    }
+  }, []);
+
+  // Restore active tab on mount so refresh ALWAYS stays on current tab
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab') as AdminTabType | null;
+      const validTabs: AdminTabType[] = ['overview', 'orders', 'products', 'categories', 'promotions', 'delivery_fees', 'users', 'banned', 'statics'];
+      if (tabParam && validTabs.includes(tabParam)) {
+        setAdminTabState(tabParam);
+      } else {
+        const savedTab = localStorage.getItem('admin_active_tab') as AdminTabType | null;
+        if (savedTab && validTabs.includes(savedTab)) {
+          setAdminTabState(savedTab);
+        }
+      }
+    } catch (e) {}
+  }, []);
+
+  // Edit Product State
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editNameFr, setEditNameFr] = useState('');
+  const [editNameAr, setEditNameAr] = useState('');
+  const [editPrice, setEditPrice] = useState<number | string>('');
+  const [editOriginalPrice, setEditOriginalPrice] = useState<number | string>('');
+  const [editStockCount, setEditStockCount] = useState<number | string>('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editIsFlashDeal, setEditIsFlashDeal] = useState(false);
+  const [editTaglineFr, setEditTaglineFr] = useState('');
+  const [editTaglineAr, setEditTaglineAr] = useState('');
+  const [editDescFr, setEditDescFr] = useState('');
+  const [editDescAr, setEditDescAr] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const handleOpenEditProduct = (p: Product) => {
+    setEditingProduct(p);
+    setEditNameFr(p.nameFr);
+    setEditNameAr(p.nameAr);
+    setEditPrice(p.price);
+    setEditOriginalPrice(p.originalPrice || '');
+    setEditStockCount(p.stockCount);
+    setEditCategory(p.category);
+    setEditIsFlashDeal(Boolean(p.isFlashDeal));
+    setEditTaglineFr(p.taglineFr || '');
+    setEditTaglineAr(p.taglineAr || '');
+    setEditDescFr(p.descriptionFr || '');
+    setEditDescAr(p.descriptionAr || '');
+    setEditError(null);
+  };
+
+  const handleSaveProductEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    setEditSaving(true);
+    setEditError(null);
+
+    const priceNum = Number(editPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      setEditError(lang === 'ar' ? 'السعر غير صحيح' : 'Prix invalide');
+      setEditSaving(false);
+      return;
+    }
+
+    const updates: Partial<Product> = {
+      nameFr: editNameFr.trim(),
+      nameAr: editNameAr.trim(),
+      price: priceNum,
+      originalPrice: editOriginalPrice ? Number(editOriginalPrice) : undefined,
+      stockCount: Number(editStockCount) || 0,
+      category: editCategory,
+      isFlashDeal: editIsFlashDeal,
+      taglineFr: editTaglineFr.trim(),
+      taglineAr: editTaglineAr.trim(),
+      descriptionFr: editDescFr.trim(),
+      descriptionAr: editDescAr.trim(),
+    };
+
+    const res = await updateProduct(editingProduct.id, updates);
+    setEditSaving(false);
+
+    if (res.success) {
+      setEditingProduct(null);
+      showToast(
+        lang === 'ar' ? 'تم تعديل المنتج بنجاح' : 'Produit modifié avec succès',
+        'success',
+        lang === 'ar' ? `تم حفظ التعديلات على ${updates.nameAr || updates.nameFr}` : `Modifications enregistrées pour ${updates.nameFr}`
+      );
+    } else {
+      setEditError(res.error || (lang === 'ar' ? 'حدث خطأ أثناء حفظ التعديل' : 'Erreur lors de la mise à jour'));
+    }
+  };
+
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [productSubTab, setProductSubTab] = useState<'catalog' | 'categories'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
@@ -1687,7 +1794,7 @@ export default function AdminDashboardPage() {
                             <Link
                               href={`/products/${product.slug}`}
                               target="_blank"
-                              className="p-2 rounded-lg bg-white/5 hover:bg-white/15 text-[#A1A1AA] hover:text-white transition-colors"
+                              className="p-2 rounded-lg bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/15 text-[#64748B] dark:text-[#A1A1AA] hover:text-[#0F172A] dark:hover:text-white transition-colors"
                               title={lang === 'ar' ? 'عرض في المتجر' : 'Voir dans le magasin'}
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
@@ -1695,8 +1802,17 @@ export default function AdminDashboardPage() {
 
                             <button
                               type="button"
+                              onClick={() => handleOpenEditProduct(product)}
+                              className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors cursor-pointer"
+                              title={lang === 'ar' ? 'تعديل المنتج' : 'Modifier le produit'}
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              type="button"
                               onClick={() => openDeleteConfirmation([product])}
-                              className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors cursor-pointer"
+                              className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 transition-colors cursor-pointer"
                               title={lang === 'ar' ? 'حذف المنتج' : 'Supprimer le produit'}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -2803,6 +2919,198 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
+      {/* Edit Product Modal Dialog */}
+      {editingProduct && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div
+            onClick={() => setEditingProduct(null)}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+          />
+
+          <div className="min-h-full flex items-center justify-center p-3 sm:p-4">
+            <div className="relative bg-white dark:bg-[#14141B] border border-black/10 dark:border-white/15 rounded-3xl w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-8 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between pb-4 border-b border-black/10 dark:border-white/10">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-500 flex items-center justify-center">
+                    <Edit3 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-[#0F172A] dark:text-[#F5F5F7]">
+                      {lang === 'ar' ? 'تعديل بيانات المنتج' : 'Modifier le Produit'}
+                    </h3>
+                    <p className="text-[11px] text-[#64748B] dark:text-[#A1A1AA] font-mono">
+                      /{editingProduct.slug}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingProduct(null)}
+                  className="p-1 rounded-lg text-[#64748B] dark:text-[#A1A1AA] hover:text-[#0F172A] dark:hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {editError && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-semibold">
+                  {editError}
+                </div>
+              )}
+
+              <form onSubmit={handleSaveProductEdit} className="space-y-4 text-xs">
+                {/* Product Names (FR / AR) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[#475569] dark:text-[#A1A1AA] mb-1 font-bold">
+                      Nom (Français) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editNameFr}
+                      onChange={(e) => setEditNameFr(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-xl px-3 py-2.5 text-[#0F172A] dark:text-white outline-none focus:border-[#FF6B00]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[#475569] dark:text-[#A1A1AA] mb-1 font-bold text-right">
+                      * (العربية) اسم المنتج
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      dir="rtl"
+                      value={editNameAr}
+                      onChange={(e) => setEditNameAr(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-xl px-3 py-2.5 text-[#0F172A] dark:text-white outline-none focus:border-[#FF6B00] text-right"
+                    />
+                  </div>
+                </div>
+
+                {/* Category & Stock */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[#475569] dark:text-[#A1A1AA] mb-1 font-bold">
+                      {t('admin.lbl_category')}
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={editCategory}
+                        onChange={(e) => setEditCategory(e.target.value)}
+                        className="w-full appearance-none bg-slate-50 dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-xs text-[#0F172A] dark:text-white outline-none cursor-pointer"
+                      >
+                        {categories.map((c) => (
+                          <option key={c.id || c.slug} value={c.slug} className="bg-white dark:bg-[#18181F] text-[#0F172A] dark:text-[#F5F5F7]">
+                            {lang === 'ar' ? c.nameAr : c.nameFr} ({c.slug})
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 ltr:right-2.5 rtl:left-2.5 flex items-center text-[#64748B] dark:text-[#A1A1AA]">
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[#475569] dark:text-[#A1A1AA] mb-1 font-bold">
+                      {lang === 'ar' ? 'المخزون المتوفر' : 'Stock'}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editStockCount}
+                      onChange={(e) => setEditStockCount(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-xl px-3 py-2.5 text-[#0F172A] dark:text-white font-mono outline-none focus:border-[#FF6B00]"
+                    />
+                  </div>
+                </div>
+
+                {/* Price & Original Price */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[#475569] dark:text-[#A1A1AA] mb-1 font-bold">
+                      {t('admin.lbl_price')} (DZD) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-xl px-3 py-2.5 text-[#0F172A] dark:text-white font-mono font-bold outline-none focus:border-[#FF6B00]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[#475569] dark:text-[#A1A1AA] mb-1 font-bold">
+                      {lang === 'ar' ? 'السعر القديم المشطوب (اختياري)' : 'Prix barré (Optionnel)'}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editOriginalPrice}
+                      onChange={(e) => setEditOriginalPrice(e.target.value)}
+                      placeholder="Ex: 11000"
+                      className="w-full bg-slate-50 dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-xl px-3 py-2.5 text-[#0F172A] dark:text-white font-mono outline-none focus:border-[#FF6B00]"
+                    />
+                  </div>
+                </div>
+
+                {/* Flash Deal Toggle */}
+                <div className="p-3 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-[#0F172A] dark:text-[#F5F5F7] block text-xs">
+                      {lang === 'ar' ? 'عرض فلاش خاص (Flash Deal)' : 'Offre Flash Spéciale'}
+                    </span>
+                    <span className="text-[11px] text-[#64748B] dark:text-[#A1A1AA]">
+                      {lang === 'ar' ? 'إظهار شارة التخفيض المميز على المنتج' : 'Afficher un badge promotionnel'}
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={editIsFlashDeal}
+                    onChange={(e) => setEditIsFlashDeal(e.target.checked)}
+                    className="w-4 h-4 rounded text-[#FF6B00] accent-[#FF6B00] cursor-pointer"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-black/10 dark:border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct(null)}
+                    disabled={editSaving}
+                    className="px-4 py-2.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-xs font-bold text-[#64748B] dark:text-[#A1A1AA] hover:text-[#0F172A] dark:hover:text-white transition-colors cursor-pointer"
+                  >
+                    {lang === 'ar' ? 'إلغاء' : 'Annuler'}
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={editSaving}
+                    className="px-5 py-2.5 bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/25 transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    {editSaving ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>{lang === 'ar' ? 'جارٍ الحفظ...' : 'Enregistrement...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-3.5 h-3.5" />
+                        <span>{lang === 'ar' ? 'حفظ التعديلات' : 'Enregistrer'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Promotion Creation Modal Dialog */}
       {isAddPromoOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -3232,16 +3540,16 @@ export default function AdminDashboardPage() {
       {/* ==================== FLOATING TOAST CONFIRMATION NOTIFICATION ==================== */}
       {toast.isOpen && (
         <div className="fixed top-20 ltr:right-4 rtl:left-4 sm:ltr:right-8 sm:rtl:left-8 z-50 max-w-md w-full animate-in slide-in-from-top-4 fade-in duration-300">
-          <div className="p-4 rounded-2xl bg-[#14141B] border border-emerald-500/40 shadow-2xl shadow-emerald-500/15 flex items-start gap-3 backdrop-blur-xl">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
+          <div className="p-4 rounded-2xl bg-white dark:bg-[#14141B] border border-emerald-500/40 shadow-2xl shadow-emerald-500/15 flex items-start gap-3 backdrop-blur-xl">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5">
               <CheckCircle className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <h4 className="text-xs font-bold text-white">
+              <h4 className="text-xs font-black text-[#0F172A] dark:text-white">
                 {toast.message}
               </h4>
               {toast.details && (
-                <p className="text-[11px] text-[#A1A1AA] mt-0.5 leading-relaxed">
+                <p className="text-[11px] text-[#475569] dark:text-[#A1A1AA] mt-0.5 leading-relaxed font-medium">
                   {toast.details}
                 </p>
               )}
@@ -3249,7 +3557,7 @@ export default function AdminDashboardPage() {
             <button
               type="button"
               onClick={() => setToast((prev) => ({ ...prev, isOpen: false }))}
-              className="p-1 text-[#A1A1AA] hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-1 text-[#64748B] dark:text-[#A1A1AA] hover:text-[#0F172A] dark:hover:text-white rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>

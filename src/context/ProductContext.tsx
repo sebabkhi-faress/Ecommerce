@@ -148,6 +148,7 @@ interface ProductContextType {
   getProductById: (id: string) => Product | undefined;
   getPromotionForProduct: (product: Product) => AppliedPromotion | null;
   addProduct: (productData: Partial<Product> & { nameFr: string; nameAr: string; price: number; category: string }) => Promise<{ success: boolean; error?: string }>;
+  updateProduct: (id: string, updates: Partial<Product>) => Promise<{ success: boolean; error?: string }>;
   deleteProduct: (id: string) => Promise<{ success: boolean; error?: string }>;
   deleteProducts: (ids: string[]) => Promise<{ success: boolean; error?: string }>;
   refreshProducts: () => Promise<void>;
@@ -220,7 +221,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           .select('*')
           .order('created_at', { ascending: true });
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           const mapped = data.map(mapRowToCategory);
           setCategories(mapped);
           try {
@@ -244,7 +245,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           const mapped = data.map(mapRowToPromotion);
           setPromotions(mapped);
           try {
@@ -269,7 +270,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           const mapped = data.map(mapRowToProduct);
           setProducts(mapped);
           setIsDbConnected(true);
@@ -278,9 +279,6 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           } catch (e) {
             // Ignore storage errors
           }
-        } else if (!error && data && data.length === 0) {
-          // If DB is connected but empty, keep seed products
-          setIsDbConnected(true);
         }
       } catch (err) {
         console.warn('Supabase products fetch failed, using fallback', err);
@@ -294,17 +292,24 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     // Attempt to load from localStorage cache first for zero layout shift
     try {
       const cached = localStorage.getItem('electronics_cached_products');
-      if (cached) {
+      if (cached !== null) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           setProducts(parsed);
         }
       }
       const cachedPromos = localStorage.getItem('electronics_cached_promotions');
-      if (cachedPromos) {
+      if (cachedPromos !== null) {
         const parsedPromos = JSON.parse(cachedPromos);
-        if (Array.isArray(parsedPromos) && parsedPromos.length > 0) {
+        if (Array.isArray(parsedPromos)) {
           setPromotions(parsedPromos);
+        }
+      }
+      const cachedCats = localStorage.getItem('electronics_cached_categories');
+      if (cachedCats !== null) {
+        const parsedCats = JSON.parse(cachedCats);
+        if (Array.isArray(parsedCats)) {
+          setCategories(parsedCats);
         }
       }
     } catch (e) {
@@ -413,12 +418,18 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Update locally first for instant UI response
-    setProducts((prev) => [newProd, ...prev]);
+    setProducts((prev) => {
+      const updated = [newProd, ...prev.filter((p) => p.slug !== newProd.slug)];
+      try {
+        localStorage.setItem('electronics_cached_products', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
 
     // Persist to Supabase if connected
     if (isSupabaseConfigured && supabase) {
       try {
-        const { error } = await supabase.from('products').insert({
+        const { error } = await supabase.from('products').upsert({
           id: newProd.id,
           slug: newProd.slug,
           name_fr: newProd.nameFr,
@@ -455,13 +466,62 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     return { success: true };
   };
 
+  const updateProduct = async (id: string, updates: Partial<Product>): Promise<{ success: boolean; error?: string }> => {
+    setProducts((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, ...updates } : p));
+      try {
+        localStorage.setItem('electronics_cached_products', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const rowUpdates: any = {};
+        if (updates.nameFr !== undefined) rowUpdates.name_fr = updates.nameFr;
+        if (updates.nameAr !== undefined) rowUpdates.name_ar = updates.nameAr;
+        if (updates.price !== undefined) rowUpdates.price = updates.price;
+        if (updates.originalPrice !== undefined) rowUpdates.original_price = updates.originalPrice;
+        if (updates.stockCount !== undefined) {
+          rowUpdates.stock_count = updates.stockCount;
+        }
+        if (updates.category !== undefined) rowUpdates.category = updates.category;
+        if (updates.taglineFr !== undefined) rowUpdates.tagline_fr = updates.taglineFr;
+        if (updates.taglineAr !== undefined) rowUpdates.tagline_ar = updates.taglineAr;
+        if (updates.descriptionFr !== undefined) rowUpdates.description_fr = updates.descriptionFr;
+        if (updates.descriptionAr !== undefined) rowUpdates.description_ar = updates.descriptionAr;
+        if (updates.isFlashDeal !== undefined) rowUpdates.is_flash_deal = updates.isFlashDeal;
+        if (updates.badgeFr !== undefined) rowUpdates.badge_fr = updates.badgeFr;
+        if (updates.badgeAr !== undefined) rowUpdates.badge_ar = updates.badgeAr;
+        if (updates.images !== undefined) rowUpdates.images = updates.images;
+        if (updates.colors !== undefined) rowUpdates.colors = updates.colors;
+
+        const { error } = await supabase.from('products').update(rowUpdates).eq('id', id);
+        if (error) {
+          console.error('Error updating product in Supabase:', error.message);
+          return { success: false, error: error.message };
+        }
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Failed to update product' };
+      }
+    }
+
+    return { success: true };
+  };
+
   const deleteProduct = async (id: string): Promise<{ success: boolean; error?: string }> => {
     return deleteProducts([id]);
   };
 
   const deleteProducts = async (ids: string[]): Promise<{ success: boolean; error?: string }> => {
     if (!ids || ids.length === 0) return { success: true };
-    setProducts((prev) => prev.filter((p) => !ids.includes(p.id)));
+    setProducts((prev) => {
+      const updated = prev.filter((p) => !ids.includes(p.id));
+      try {
+        localStorage.setItem('electronics_cached_products', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -498,7 +558,13 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
     };
 
-    setCategories((prev) => [...prev.filter((c) => c.slug !== cleanSlug), newCategory]);
+    setCategories((prev) => {
+      const updated = [...prev.filter((c) => c.slug !== cleanSlug), newCategory];
+      try {
+        localStorage.setItem('electronics_cached_categories', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -525,7 +591,13 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteCategory = async (id: string): Promise<{ success: boolean; error?: string }> => {
-    setCategories((prev) => prev.filter((c) => c.id !== id && c.slug !== id));
+    setCategories((prev) => {
+      const updated = prev.filter((c) => c.id !== id && c.slug !== id);
+      try {
+        localStorage.setItem('electronics_cached_categories', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -617,7 +689,13 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       id,
       createdAt: new Date().toISOString(),
     };
-    setPromotions((prev) => [newPromo, ...prev]);
+    setPromotions((prev) => {
+      const updated = [newPromo, ...prev];
+      try {
+        localStorage.setItem('electronics_cached_promotions', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -648,7 +726,13 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deletePromotion = async (id: string): Promise<{ success: boolean; error?: string }> => {
-    setPromotions((prev) => prev.filter((p) => p.id !== id));
+    setPromotions((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      try {
+        localStorage.setItem('electronics_cached_promotions', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -666,7 +750,13 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   };
 
   const togglePromotion = async (id: string, isActive: boolean): Promise<{ success: boolean; error?: string }> => {
-    setPromotions((prev) => prev.map((p) => (p.id === id ? { ...p, isActive } : p)));
+    setPromotions((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, isActive } : p));
+      try {
+        localStorage.setItem('electronics_cached_promotions', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -695,6 +785,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         getProductById,
         getPromotionForProduct,
         addProduct,
+        updateProduct,
         deleteProduct,
         deleteProducts,
         refreshProducts: fetchProducts,
