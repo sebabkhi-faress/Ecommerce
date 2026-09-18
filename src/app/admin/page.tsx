@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useOrders, Order, OrderStatus, useDeliveryFees, WilayaDeliveryFee } from '@/context/OrderContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { WILAYAS } from '@/data/wilayas';
-import { formatDZD } from '@/data/products';
+import { formatDZD, Product } from '@/data/products';
 import {
   DollarSign,
   Package,
@@ -66,6 +66,7 @@ export default function AdminDashboardPage() {
   const {
     orders,
     updateOrderStatus,
+    deleteOrders,
     metrics,
     isSupabaseConnected,
     refreshOrders,
@@ -80,6 +81,7 @@ export default function AdminDashboardPage() {
     categories,
     addProduct,
     deleteProduct,
+    deleteProducts,
     addCategory,
     deleteCategory,
     refreshProducts,
@@ -108,6 +110,25 @@ export default function AdminDashboardPage() {
   const [productSubTab, setProductSubTab] = useState<'catalog' | 'categories'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Products Multiselect state
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+
+  // Delete confirmation modal with linked orders checking
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    products: Product[];
+    linkedOrders: Order[];
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    products: [],
+    linkedOrders: [],
+    isDeleting: false,
+  });
+
+  // Admin Profile Modal state
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [wilayaFilter, setWilayaFilter] = useState<string>('all');
 
   // Promotion management states
@@ -194,16 +215,92 @@ export default function AdminDashboardPage() {
         setAdminTab(e.detail.tab);
       }
     };
+    const handleOpenProfile = () => {
+      setIsProfileModalOpen(true);
+    };
+    const handleOpenSettings = () => {
+      setAdminTab('users');
+      setIsProfileModalOpen(false);
+    };
+
     window.addEventListener('toggle-admin-sidebar', handleToggleSidebar);
     window.addEventListener('open-admin-tab', handleOpenTab);
+    window.addEventListener('open-admin-profile-modal', handleOpenProfile);
+    window.addEventListener('open-admin-settings-modal', handleOpenSettings);
+
     return () => {
       window.removeEventListener('toggle-admin-sidebar', handleToggleSidebar);
       window.removeEventListener('open-admin-tab', handleOpenTab);
+      window.removeEventListener('open-admin-profile-modal', handleOpenProfile);
+      window.removeEventListener('open-admin-settings-modal', handleOpenSettings);
     };
   }, []);
 
   const handleLogout = () => {
     authLogout('/login');
+  };
+
+  // Products Multiselect & Delete Handlers
+  const toggleSelectAllProducts = () => {
+    if (selectedProductIds.length === products.length) {
+      setSelectedProductIds([]);
+    } else {
+      setSelectedProductIds(products.map((p) => p.id));
+    }
+  };
+
+  const toggleSelectProduct = (id: string) => {
+    setSelectedProductIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const openDeleteConfirmation = (targetProducts: Product[]) => {
+    if (!targetProducts || targetProducts.length === 0) return;
+    const targetIds = new Set(targetProducts.map((p) => p.id));
+    const targetNamesFr = new Set(targetProducts.map((p) => p.nameFr?.trim().toLowerCase()));
+    const targetNamesAr = new Set(targetProducts.map((p) => p.nameAr?.trim()));
+
+    const linked = orders.filter((order) =>
+      order.items.some(
+        (item) =>
+          targetIds.has(item.productId) ||
+          (item.productNameFr && targetNamesFr.has(item.productNameFr.trim().toLowerCase())) ||
+          (item.productNameAr && targetNamesAr.has(item.productNameAr.trim()))
+      )
+    );
+
+    setDeleteModal({
+      isOpen: true,
+      products: targetProducts,
+      linkedOrders: linked,
+      isDeleting: false,
+    });
+  };
+
+  const handleConfirmDeleteProducts = async () => {
+    if (deleteModal.products.length === 0) return;
+    setDeleteModal((prev) => ({ ...prev, isDeleting: true }));
+
+    const productIdsToDelete = deleteModal.products.map((p) => p.id);
+    const orderIdsToDelete = deleteModal.linkedOrders.map((o) => o.id);
+
+    try {
+      await deleteProducts(productIdsToDelete);
+      if (orderIdsToDelete.length > 0) {
+        await deleteOrders(orderIdsToDelete);
+      }
+      setSelectedProductIds((prev) => prev.filter((id) => !productIdsToDelete.includes(id)));
+      setDeleteModal({
+        isOpen: false,
+        products: [],
+        linkedOrders: [],
+        isDeleting: false,
+      });
+    } catch (err) {
+      console.error('Failed to delete product(s)/order(s)', err);
+      setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
+    }
   };
 
   const handleAddProduct = async (e: React.FormEvent) => {
@@ -637,7 +734,7 @@ export default function AdminDashboardPage() {
           {/* Sidebar Top Header */}
           <div className="flex items-center justify-between px-2 pt-1">
             <span className="text-[10px] font-mono font-bold tracking-widest text-[#A1A1AA] uppercase">
-              {lang === 'ar' ? 'التنقل في لوحة التحكم' : 'ADMIN NAVIGATION'}
+              {lang === 'ar' ? 'التنقل في لوحة التحكم' : 'NAVIGATION ADMIN'}
             </span>
             <button
               type="button"
@@ -665,10 +762,10 @@ export default function AdminDashboardPage() {
             >
               <div className="flex items-center gap-3">
                 <LayoutDashboard className={`w-4 h-4 transition-transform group-hover:scale-110 ${adminTab === 'overview' ? 'text-black' : 'text-[#FFAA2C]'}`} />
-                <span>{lang === 'ar' ? 'نظرة عامة' : 'Overview'}</span>
+                <span>{lang === 'ar' ? 'نظرة عامة' : "Vue d'ensemble"}</span>
               </div>
               <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${adminTab === 'overview' ? 'bg-black/20 text-black font-extrabold' : 'bg-white/5 text-[#A1A1AA]'}`}>
-                Live
+                {lang === 'ar' ? 'مباشر' : 'En direct'}
               </span>
             </button>
 
@@ -687,7 +784,7 @@ export default function AdminDashboardPage() {
             >
               <div className="flex items-center gap-3">
                 <Package className={`w-4 h-4 transition-transform group-hover:scale-110 ${adminTab === 'products' || adminTab === 'categories' ? 'text-black' : 'text-[#FFAA2C]'}`} />
-                <span>{lang === 'ar' ? 'المنتجات' : 'Products'}</span>
+                <span>{lang === 'ar' ? 'المنتجات' : 'Produits'}</span>
               </div>
               <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${adminTab === 'products' || adminTab === 'categories' ? 'bg-black/20 text-black font-extrabold' : 'bg-white/5 text-[#A1A1AA]'}`}>
                 {products.length}
@@ -709,7 +806,7 @@ export default function AdminDashboardPage() {
             >
               <div className="flex items-center gap-3">
                 <ShoppingBag className={`w-4 h-4 transition-transform group-hover:scale-110 ${adminTab === 'orders' ? 'text-black' : 'text-[#FFAA2C]'}`} />
-                <span>{lang === 'ar' ? 'الطلبيات' : 'Orders'}</span>
+                <span>{lang === 'ar' ? 'الطلبيات' : 'Commandes'}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 {metrics.pendingCount > 0 && (
@@ -736,7 +833,7 @@ export default function AdminDashboardPage() {
             >
               <div className="flex items-center gap-3">
                 <Truck className={`w-4 h-4 transition-transform group-hover:scale-110 ${adminTab === 'delivery_fees' ? 'text-black' : 'text-[#FFAA2C]'}`} />
-                <span>{lang === 'ar' ? 'أسعار التوصيل' : 'Delivery'}</span>
+                <span>{lang === 'ar' ? 'أسعار التوصيل' : 'Livraison'}</span>
               </div>
               <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${adminTab === 'delivery_fees' ? 'bg-black/20 text-black font-extrabold' : 'bg-white/5 text-[#A1A1AA]'}`}>
                 68
@@ -780,36 +877,73 @@ export default function AdminDashboardPage() {
             >
               <div className="flex items-center gap-3">
                 <Users className={`w-4 h-4 transition-transform group-hover:scale-110 ${adminTab === 'users' || adminTab === 'banned' ? 'text-black' : 'text-[#FFAA2C]'}`} />
-                <span>{lang === 'ar' ? 'المستخدمون والأمان' : 'Users'}</span>
+                <span>{lang === 'ar' ? 'المستخدمون والأمان' : 'Utilisateurs'}</span>
               </div>
               <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${adminTab === 'users' || adminTab === 'banned' ? 'bg-black/20 text-black font-extrabold' : 'bg-white/5 text-[#A1A1AA]'}`}>
-                {bannedPhones.length > 0 ? `${bannedPhones.length} bans` : 'Admin'}
+                {bannedPhones.length > 0 ? (lang === 'ar' ? `${bannedPhones.length} محظور` : `${bannedPhones.length} bloqué${bannedPhones.length > 1 ? 's' : ''}`) : (lang === 'ar' ? 'الأمان' : 'Sécurité')}
               </span>
             </button>
           </nav>
         </div>
 
-        {/* Compact Admin Card at Sidebar bottom */}
-        <div className="pt-4 border-t border-white/10">
-          <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF6B00] via-[#FFAA2C] to-[#E05E00] text-black font-black text-xs font-mono flex items-center justify-center shrink-0 shadow-sm shadow-[#FF6B00]/30">
-              {getInitials(user?.name, user?.email)}
+        {/* Dynamic Admin Profile Section at Sidebar bottom (Mobile & Desktop) */}
+        <div className="pt-4 border-t border-white/10 space-y-2">
+          {/* Clickable Profile Card */}
+          <div
+            onClick={() => {
+              setIsProfileModalOpen(true);
+              setIsMobileSidebarOpen(false);
+            }}
+            className="p-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-all cursor-pointer group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B00] via-[#FFAA2C] to-[#E05E00] text-black font-black text-xs font-mono flex items-center justify-center shrink-0 shadow-md shadow-[#FF6B00]/30 group-hover:scale-105 transition-transform">
+                  {getInitials(user?.name, user?.email)}
+                </div>
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#25D366] ring-2 ring-[#0E0E14]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-[#F5F5F7] group-hover:text-white transition-colors truncate">
+                  {user?.name?.trim() || (lang === 'ar' ? 'مسؤول النظام' : 'Directeur Admin DZ')}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] text-[#FFAA2C] font-mono font-semibold">
+                    {lang === 'ar' ? 'مسؤول النظام' : 'Administrateur'}
+                  </span>
+                </div>
+                {user?.email && (
+                  <p className="text-[10px] text-[#A1A1AA] truncate font-mono mt-0.5">
+                    {user.email}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-[#F5F5F7] truncate">
-                {user?.name?.trim() || user?.email?.split('@')[0] || 'Admin'}
-              </p>
-              <p className="text-[10px] text-[#A1A1AA] truncate font-mono">
-                {lang === 'ar' ? 'مسؤول النظام' : 'Administrator'}
-              </p>
-            </div>
+          </div>
+
+          {/* Quick Actions: Mon Profil & Déconnexion */}
+          <div className="grid grid-cols-2 gap-1.5 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setIsProfileModalOpen(true);
+                setIsMobileSidebarOpen(false);
+              }}
+              className="px-2 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-[11px] font-semibold text-[#F5F5F7] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              title={lang === 'ar' ? 'الملف الشخصي' : 'Mon Profil'}
+            >
+              <User className="w-3.5 h-3.5 text-[#FFAA2C]" />
+              <span>{lang === 'ar' ? 'الملف الشخصي' : 'Mon Profil'}</span>
+            </button>
+
             <button
               type="button"
               onClick={handleLogout}
-              className="p-1.5 rounded-lg text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+              className="px-2 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-[11px] font-semibold text-red-400 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               title={lang === 'ar' ? 'تسجيل الخروج' : 'Déconnexion'}
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
+              <span>{lang === 'ar' ? 'خروج' : 'Quitter'}</span>
             </button>
           </div>
         </div>
@@ -838,7 +972,7 @@ export default function AdminDashboardPage() {
                   </span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-                  {lang === 'ar' ? 'لوحة التحكم - نظرة عامة' : 'Tableau de Bord - Overview'}
+                  {lang === 'ar' ? 'لوحة التحكم - نظرة عامة' : "Tableau de Bord - Vue d'ensemble"}
                 </h1>
                 <p className="text-xs text-[#A1A1AA] mt-0.5">
                   {lang === 'ar' ? 'متابعة شاملة لجميع مؤشرات الأداء والطلبيات والمنتجات' : 'Suivi global des commandes, des revenus en direct et de l\'inventaire'}
@@ -1295,10 +1429,57 @@ export default function AdminDashboardPage() {
               </button>
             </div>
 
+            {/* Multiselect Bulk Action Bar */}
+            {selectedProductIds.length > 0 && (
+              <div className="p-3.5 bg-gradient-to-r from-[#FF6B00]/15 via-[#FFAA2C]/10 to-transparent border-b border-[#FF6B00]/30 flex items-center justify-between flex-wrap gap-3 animate-in fade-in duration-150">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-6 h-6 rounded-lg bg-[#FF6B00] text-black font-black text-xs flex items-center justify-center">
+                    {selectedProductIds.length}
+                  </span>
+                  <span className="text-xs font-bold text-[#F5F5F7]">
+                    {lang === 'ar'
+                      ? `تم تحديد ${selectedProductIds.length} منتج`
+                      : `${selectedProductIds.length} produit${selectedProductIds.length > 1 ? 's' : ''} sélectionné${selectedProductIds.length > 1 ? 's' : ''}`}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProductIds([])}
+                    className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                  >
+                    {lang === 'ar' ? 'إلغاء التحديد' : 'Désélectionner tout'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const targets = products.filter((p) => selectedProductIds.includes(p.id));
+                      openDeleteConfirmation(targets);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-lg shadow-red-500/10"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{lang === 'ar' ? 'حذف المنتجات المحددة' : 'Supprimer la sélection'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-white/10 bg-[#14141B] text-[#A1A1AA] font-mono text-[11px] uppercase">
+                    <th className="p-4 w-12 text-center">
+                      <input
+                        type="checkbox"
+                        checked={products.length > 0 && selectedProductIds.length === products.length}
+                        onChange={toggleSelectAllProducts}
+                        className="w-4 h-4 rounded border-white/20 bg-white/5 text-[#FF6B00] focus:ring-[#FF6B00] cursor-pointer accent-[#FF6B00]"
+                        title={lang === 'ar' ? 'تحديد الكل' : 'Tout sélectionner'}
+                      />
+                    </th>
                     <th className="p-4">{lang === 'ar' ? 'المنتج' : 'Produit'}</th>
                     <th className="p-4">{lang === 'ar' ? 'القسم' : 'Catégorie'}</th>
                     <th className="p-4">{lang === 'ar' ? 'السعر' : 'Prix'}</th>
@@ -1308,80 +1489,93 @@ export default function AdminDashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={product.images[0]}
-                            alt={product.nameFr}
-                            className="w-12 h-12 rounded-xl object-cover bg-black/40 border border-white/10 shrink-0"
+                  {products.map((product) => {
+                    const isSelected = selectedProductIds.includes(product.id);
+                    return (
+                      <tr
+                        key={product.id}
+                        className={`hover:bg-white/[0.02] transition-colors ${
+                          isSelected ? 'bg-[#FF6B00]/[0.06]' : ''
+                        }`}
+                      >
+                        <td className="p-4 w-12 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectProduct(product.id)}
+                            className="w-4 h-4 rounded border-white/20 bg-white/5 text-[#FF6B00] focus:ring-[#FF6B00] cursor-pointer accent-[#FF6B00]"
                           />
-                          <div className="min-w-0">
-                            <p className="font-bold text-[#F5F5F7] truncate max-w-xs sm:max-w-md">
-                              {lang === 'ar' ? product.nameAr : product.nameFr}
-                            </p>
-                            <p className="text-[11px] text-[#A1A1AA] font-mono truncate max-w-xs">
-                              /{product.slug}
-                            </p>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={product.images[0]}
+                              alt={product.nameFr}
+                              className="w-12 h-12 rounded-xl object-cover bg-black/40 border border-white/10 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <p className="font-bold text-[#F5F5F7] truncate max-w-xs sm:max-w-md">
+                                {lang === 'ar' ? product.nameAr : product.nameFr}
+                              </p>
+                              <p className="text-[11px] text-[#A1A1AA] font-mono truncate max-w-xs">
+                                /{product.slug}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="p-4">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase bg-white/5 border border-white/10 text-[#FFAA2C]">
-                          {product.category}
-                        </span>
-                      </td>
-
-                      <td className="p-4 font-mono font-black text-[#FF6B00]">
-                        {formatDZD(product.price, lang)}
-                      </td>
-
-                      <td className="p-4">
-                        <span className="font-mono text-emerald-400 font-bold">
-                          {product.stockCount} {lang === 'ar' ? 'قطعة' : 'pcs'}
-                        </span>
-                      </td>
-
-                      <td className="p-4">
-                        {product.isFlashDeal ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FF6B00]/20 text-[#FF6B00] border border-[#FF6B00]/40">
-                            FLASH DEAL
+                        <td className="p-4">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase bg-white/5 border border-white/10 text-[#FFAA2C]">
+                            {product.category}
                           </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/5 text-[#A1A1AA]">
-                            STANDARD
+                        </td>
+
+                        <td className="p-4 font-mono font-black text-[#FF6B00]">
+                          {formatDZD(product.price, lang)}
+                        </td>
+
+                        <td className="p-4">
+                          <span className="font-mono text-emerald-400 font-bold">
+                            {product.stockCount} {lang === 'ar' ? 'قطعة' : 'pcs'}
                           </span>
-                        )}
-                      </td>
+                        </td>
 
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link
-                            href={`/products/${product.slug}`}
-                            target="_blank"
-                            className="p-2 rounded-lg bg-white/5 hover:bg-white/15 text-[#A1A1AA] hover:text-white transition-colors"
-                            title={lang === 'ar' ? 'عرض في المتجر' : 'Voir dans le magasin'}
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </Link>
+                        <td className="p-4">
+                          {product.isFlashDeal ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FF6B00]/20 text-[#FF6B00] border border-[#FF6B00]/40">
+                              FLASH DEAL
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/5 text-[#A1A1AA]">
+                              STANDARD
+                            </span>
+                          )}
+                        </td>
 
-                          <button
-                            onClick={async () => {
-                              if (confirm(lang === 'ar' ? 'هل أنت متأكد من حذف هذا المنتج من قاعدة البيانات؟' : 'Voulez-vous vraiment supprimer ce produit de la base de données ?')) {
-                                await deleteProduct(product.id);
-                              }
-                            }}
-                            className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors cursor-pointer"
-                            title={lang === 'ar' ? 'حذف المنتج' : 'Supprimer le produit'}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        <td className="p-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link
+                              href={`/products/${product.slug}`}
+                              target="_blank"
+                              className="p-2 rounded-lg bg-white/5 hover:bg-white/15 text-[#A1A1AA] hover:text-white transition-colors"
+                              title={lang === 'ar' ? 'عرض في المتجر' : 'Voir dans le magasin'}
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </Link>
+
+                            <button
+                              type="button"
+                              onClick={() => openDeleteConfirmation([product])}
+                              className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors cursor-pointer"
+                              title={lang === 'ar' ? 'حذف المنتج' : 'Supprimer le produit'}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -2893,6 +3087,289 @@ export default function AdminDashboardPage() {
                   </span>
                 </button>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== PRODUCT DELETE CONFIRMATION MODAL WITH ORDER CHECK ==================== */}
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-[#14141B] border border-white/15 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#F5F5F7]">
+                    {lang === 'ar' ? 'تأكيد حذف المنتج' : 'Confirmer la suppression'}
+                  </h3>
+                  <p className="text-xs text-[#A1A1AA]">
+                    {deleteModal.products.length === 1
+                      ? (lang === 'ar' ? 'سيتم إزالة هذا المنتج من الكتالوج' : 'Ce produit sera retiré du catalogue')
+                      : (lang === 'ar' ? `سيتم إزالة ${deleteModal.products.length} منتجات محددة` : `${deleteModal.products.length} produits sélectionnés seront retirés`)}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteModal({ isOpen: false, products: [], linkedOrders: [], isDeleting: false })}
+                className="p-1 text-[#A1A1AA] hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Target Products Preview */}
+            <div className="max-h-36 overflow-y-auto space-y-2 p-2 bg-white/[0.02] border border-white/5 rounded-2xl">
+              {deleteModal.products.map((p) => (
+                <div key={p.id} className="flex items-center gap-3 p-1.5">
+                  <img
+                    src={p.images?.[0] || '/placeholder.png'}
+                    alt={p.nameFr}
+                    className="w-10 h-10 rounded-xl object-cover bg-black/40 border border-white/10 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-[#F5F5F7] truncate">
+                      {lang === 'ar' ? p.nameAr : p.nameFr}
+                    </p>
+                    <p className="text-[10px] text-[#FFAA2C] font-mono">
+                      {formatDZD(p.price, lang)} • {p.category}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* LINKED ORDERS CRITICAL WARNING OR SAFE NOTICE */}
+            {deleteModal.linkedOrders.length > 0 ? (
+              <div className="space-y-3">
+                <div className="p-4 rounded-2xl bg-red-500/15 border border-red-500/40 text-red-300 space-y-1.5">
+                  <div className="flex items-center gap-2 font-black text-xs text-red-400 uppercase tracking-wider">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>
+                      {lang === 'ar'
+                        ? `⚠️ تحذير: هذا المنتج مرتبط بـ ${deleteModal.linkedOrders.length} طلبية مسجلة!`
+                        : `⚠️ ATTENTION : Lié à ${deleteModal.linkedOrders.length} commande(s) active(s) !`}
+                    </span>
+                  </div>
+                  <p className="text-xs text-red-200/90 leading-relaxed font-medium">
+                    {lang === 'ar'
+                      ? `هناك ${deleteModal.linkedOrders.length} طلبية حالية مسجلة تحتوي على هذا المنتج. حذف المنتج سيؤدي تلقائياً إلى حذف وإلغاء هذه الطلبيات المرتبطة أيضاً!`
+                      : `Ce produit est inclus dans ${deleteModal.linkedOrders.length} commande(s). La confirmation supprimera définitivement le produit ET toutes ces commandes associées !`}
+                  </p>
+                </div>
+
+                {/* Linked Orders List */}
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-mono font-bold text-[#A1A1AA] uppercase">
+                    {lang === 'ar' ? 'الطلبيات التي ستُحذف:' : 'Commandes associées qui seront supprimées :'}
+                  </p>
+                  <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                    {deleteModal.linkedOrders.map((ord) => (
+                      <div
+                        key={ord.id}
+                        className="p-2.5 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between text-xs"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-[#FFAA2C]">
+                              {ord.trackingCode}
+                            </span>
+                            <span className="text-[11px] text-white font-medium truncate">
+                              {ord.fullName}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[#A1A1AA] font-mono truncate">
+                            {ord.phone} • {lang === 'ar' ? ord.wilayaNameAr : ord.wilayaNameFr}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="font-mono font-bold text-[#FF6B00] block text-xs">
+                            {formatDZD(ord.total, lang)}
+                          </span>
+                          <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-white/5 text-[#A1A1AA] font-mono">
+                            {ord.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-center gap-2.5">
+                <CheckCircle className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span>
+                  {lang === 'ar'
+                    ? 'لا توجد أي طلبية سابقة تحتوي على هذا المنتج. الحذف آمن ولن يؤثر على سجل الطلبيات.'
+                    : 'Aucune commande existante ne contient ce produit. Le produit peut être retiré en toute sécurité.'}
+                </span>
+              </div>
+            )}
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setDeleteModal({ isOpen: false, products: [], linkedOrders: [], isDeleting: false })}
+                disabled={deleteModal.isDeleting}
+                className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {lang === 'ar' ? 'إلغاء' : 'Annuler'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmDeleteProducts}
+                disabled={deleteModal.isDeleting}
+                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-red-600/30 disabled:opacity-50"
+              >
+                {deleteModal.isDeleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>{lang === 'ar' ? 'جارٍ الحذف...' : 'Suppression...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>
+                      {deleteModal.linkedOrders.length > 0
+                        ? (lang === 'ar'
+                            ? `تأكيد الحذف ومعها ${deleteModal.linkedOrders.length} طلبية`
+                            : `Supprimer (${deleteModal.linkedOrders.length} commande(s) incluses)`)
+                        : (lang === 'ar' ? 'تأكيد الحذف النهائي' : 'Confirmer la suppression')}
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== ADMIN PROFILE & ACCOUNT MODAL ==================== */}
+      {isProfileModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-[#14141B] border border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-6 animate-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#FF6B00]/15 border border-[#FF6B00]/30 flex items-center justify-center text-[#FF6B00]">
+                  <User className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-black text-[#F5F5F7]">
+                  {lang === 'ar' ? 'الملف الشخصي للمسؤول' : 'Profil Administrateur'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsProfileModalOpen(false)}
+                className="p-1 text-[#A1A1AA] hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Profile Hero Card */}
+            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center gap-4">
+              <div className="relative">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#FF6B00] via-[#FFAA2C] to-[#E05E00] text-black font-black text-lg font-mono flex items-center justify-center shadow-lg shadow-[#FF6B00]/30 shrink-0">
+                  {getInitials(user?.name, user?.email)}
+                </div>
+                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-[#25D366] ring-2 ring-[#14141B]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-sm font-bold text-[#F5F5F7] truncate">
+                  {user?.name?.trim() || (lang === 'ar' ? 'مسؤول النظام' : 'Directeur Admin DZ')}
+                </h4>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="px-2 py-0.5 rounded-full bg-[#FF6B00]/15 text-[#FFAA2C] border border-[#FF6B00]/30 text-[10px] font-mono font-bold uppercase">
+                    {lang === 'ar' ? 'مسؤول النظام' : 'Administrateur'}
+                  </span>
+                  <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    {lang === 'ar' ? 'متصل' : 'En ligne'}
+                  </span>
+                </div>
+                <p className="text-xs text-[#A1A1AA] font-mono mt-1 truncate">
+                  {user?.email || 'admin@electronics.dz'}
+                </p>
+              </div>
+            </div>
+
+            {/* Session & Security Info */}
+            <div className="space-y-2 text-xs">
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between">
+                <span className="text-[#A1A1AA]">{lang === 'ar' ? 'نوع المصادقة' : 'Authentification'}</span>
+                <span className="font-mono text-emerald-400 font-semibold">Supabase Auth (Cloud)</span>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between">
+                <span className="text-[#A1A1AA]">{lang === 'ar' ? 'صلاحيات الحساب' : 'Permissions'}</span>
+                <span className="font-mono text-[#FFAA2C] font-semibold">{lang === 'ar' ? 'تحكم كامل (Root Admin)' : 'Accès Total (Root Admin)'}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between">
+                <span className="text-[#A1A1AA]">{lang === 'ar' ? 'مدة الجلسة' : 'Durée de session'}</span>
+                <span className="font-mono text-[#F5F5F7]">{lang === 'ar' ? '7 أسابيع (نشطة)' : '7 semaines (Active)'}</span>
+              </div>
+            </div>
+
+            {/* Quick Navigation Shortcuts */}
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setAdminTab('users');
+                  setIsProfileModalOpen(false);
+                }}
+                className="w-full p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#F5F5F7] flex items-center justify-between transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[#FFAA2C]" />
+                  <span>{lang === 'ar' ? 'إدارة المستخدمين والأمان' : 'Gérer les utilisateurs et sécurité'}</span>
+                </div>
+                <span className="text-[10px] text-[#A1A1AA] font-mono">→</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setAdminTab('delivery_fees');
+                  setIsProfileModalOpen(false);
+                }}
+                className="w-full p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#F5F5F7] flex items-center justify-between transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-[#FFAA2C]" />
+                  <span>{lang === 'ar' ? 'إعدادات أسعار التوصيل' : 'Gérer les tarifs de livraison'}</span>
+                </div>
+                <span className="text-[10px] text-[#A1A1AA] font-mono">→</span>
+              </button>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsProfileModalOpen(false);
+                  handleLogout();
+                }}
+                className="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{lang === 'ar' ? 'تسجيل الخروج' : 'Déconnexion'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsProfileModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition-colors cursor-pointer"
+              >
+                {lang === 'ar' ? 'إغلاق' : 'Fermer'}
+              </button>
             </div>
           </div>
         </div>

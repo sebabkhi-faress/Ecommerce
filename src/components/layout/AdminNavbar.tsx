@@ -73,8 +73,8 @@ export default function AdminNavbar({ onToggleSidebar, isDbConnected = true }: A
   const adminName = user?.name?.trim() || user?.email?.split('@')[0] || (lang === 'ar' ? 'مسؤول النظام' : 'Administrateur');
   const initials = getInitials(user?.name, user?.email);
   const roleLabel = user?.role === 'admin' || role === 'admin'
-    ? (lang === 'ar' ? 'مسؤول النظام' : 'Administrator')
-    : (user?.role || 'Administrator');
+    ? (lang === 'ar' ? 'مسؤول النظام' : 'Administrateur')
+    : (user?.role || 'Administrateur');
 
   const handleSidebarToggle = () => {
     if (onToggleSidebar) {
@@ -231,7 +231,7 @@ export default function AdminNavbar({ onToggleSidebar, isDbConnected = true }: A
                   >
                     <User className="w-4 h-4 text-[#FFAA2C]" />
                     <div className="flex-1">
-                      <span className="font-semibold block">{lang === 'ar' ? 'الملف الشخصي' : 'Profile'}</span>
+                      <span className="font-semibold block">{lang === 'ar' ? 'الملف الشخصي' : 'Mon Profil'}</span>
                       <span className="text-[10px] text-[#A1A1AA] block">
                         {lang === 'ar' ? 'معلومات حساب المسؤول' : 'Détails du compte admin'}
                       </span>
@@ -246,7 +246,7 @@ export default function AdminNavbar({ onToggleSidebar, isDbConnected = true }: A
                   >
                     <Settings className="w-4 h-4 text-[#A1A1AA]" />
                     <div className="flex-1">
-                      <span className="font-semibold block">{lang === 'ar' ? 'إعدادات الحساب' : 'Account Settings'}</span>
+                      <span className="font-semibold block">{lang === 'ar' ? 'إعدادات الحساب' : 'Paramètres du compte'}</span>
                       <span className="text-[10px] text-[#A1A1AA] block">
                         {lang === 'ar' ? 'الجلسة والأمان (49 يوماً)' : 'Sécurité & session (7 sem.)'}
                       </span>
@@ -264,7 +264,7 @@ export default function AdminNavbar({ onToggleSidebar, isDbConnected = true }: A
                   className="w-full px-3 py-2.5 rounded-xl text-left flex items-center gap-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/15 transition-colors cursor-pointer text-xs font-bold group"
                 >
                   <LogOut className="w-4 h-4 text-red-400 group-hover:scale-110 transition-transform" />
-                  <span>{lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}</span>
+                  <span>{lang === 'ar' ? 'تسجيل الخروج' : 'Déconnexion'}</span>
                 </button>
               </div>
             )}

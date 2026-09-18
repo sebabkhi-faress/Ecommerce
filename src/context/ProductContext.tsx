@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { Product, PRODUCTS } from '@/data/products';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
+export type { Product } from '@/data/products';
+
 export interface Category {
   id: string;
   slug: string;
@@ -147,6 +149,7 @@ interface ProductContextType {
   getPromotionForProduct: (product: Product) => AppliedPromotion | null;
   addProduct: (productData: Partial<Product> & { nameFr: string; nameAr: string; price: number; category: string }) => Promise<{ success: boolean; error?: string }>;
   deleteProduct: (id: string) => Promise<{ success: boolean; error?: string }>;
+  deleteProducts: (ids: string[]) => Promise<{ success: boolean; error?: string }>;
   refreshProducts: () => Promise<void>;
   addCategory: (categoryData: {
     slug: string;
@@ -453,13 +456,18 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteProduct = async (id: string): Promise<{ success: boolean; error?: string }> => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+    return deleteProducts([id]);
+  };
+
+  const deleteProducts = async (ids: string[]): Promise<{ success: boolean; error?: string }> => {
+    if (!ids || ids.length === 0) return { success: true };
+    setProducts((prev) => prev.filter((p) => !ids.includes(p.id)));
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const { error } = await supabase.from('products').delete().eq('id', id);
+        const { error } = await supabase.from('products').delete().in('id', ids);
         if (error) {
-          console.error('Error deleting product from Supabase:', error.message);
+          console.error('Error deleting products from Supabase:', error.message);
           return { success: false, error: error.message };
         }
       } catch (err: any) {
@@ -688,6 +696,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         getPromotionForProduct,
         addProduct,
         deleteProduct,
+        deleteProducts,
         refreshProducts: fetchProducts,
         addCategory,
         deleteCategory,

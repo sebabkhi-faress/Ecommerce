@@ -103,6 +103,7 @@ interface OrderContextType {
   updateOrderStatus: (orderId: string, status: OrderStatus, reason?: string) => void;
   getOrderById: (orderId: string) => Order | undefined;
   getOrderByTrackingCode: (code: string) => Order | undefined;
+  deleteOrders: (orderIds: string[]) => Promise<{ success: boolean; error?: string }>;
   refreshOrders: () => Promise<void>;
   banPhone: (phone: string, reason?: string, notes?: string) => Promise<{ success: boolean; error?: string }>;
   unbanPhone: (phone: string) => Promise<{ success: boolean; error?: string }>;
@@ -568,6 +569,25 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     return orders.find((ord) => ord.trackingCode.toLowerCase() === code.toLowerCase());
   };
 
+  const deleteOrders = async (orderIds: string[]): Promise<{ success: boolean; error?: string }> => {
+    if (!orderIds || orderIds.length === 0) return { success: true };
+    const updated = orders.filter((o) => !orderIds.includes(o.id));
+    saveLocalOrders(updated);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('orders').delete().in('id', orderIds);
+        if (error) {
+          console.error('Error deleting orders from Supabase:', error.message);
+          return { success: false, error: error.message };
+        }
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Delete orders failed' };
+      }
+    }
+    return { success: true };
+  };
+
   const getDeliveryFeeForWilaya = useCallback(
     (code: string, mode: 'home' | 'desk'): number => {
       const normalizedCode = String(code).padStart(2, '0');
@@ -716,6 +736,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         updateOrderStatus,
         getOrderById,
         getOrderByTrackingCode,
+        deleteOrders,
         refreshOrders: fetchOrders,
         banPhone,
         unbanPhone,
