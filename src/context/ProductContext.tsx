@@ -17,53 +17,7 @@ export interface Category {
   createdAt?: string;
 }
 
-export const DEFAULT_CATEGORIES: Category[] = [
-  {
-    id: 'cat-earbuds',
-    slug: 'earbuds',
-    nameFr: 'Écouteurs sans fil',
-    nameAr: 'سماعات أذن لاسلكية',
-    descriptionFr: 'Écouteurs True Wireless avec réduction de bruit active et design transparent',
-    descriptionAr: 'سماعات بلوتوث لاسلكية بتقنية إلغاء الضوضاء وتصميم عصري شفاف',
-    icon: 'Headphones',
-  },
-  {
-    id: 'cat-headphones',
-    slug: 'headphones',
-    nameFr: 'Casques Audio Hi-Fi',
-    nameAr: 'سماعات رأس صوتية',
-    descriptionFr: 'Casques circum-auriculaires ANC haute fidélité pour audiophiles et studio',
-    descriptionAr: 'سماعات رأس محيطية احترافية بجودة صوت فائقة ومريحة للمكتب والألعاب',
-    icon: 'Headphones',
-  },
-  {
-    id: 'cat-speakers',
-    slug: 'speakers',
-    nameFr: 'Enceintes & Soundbars',
-    nameAr: 'مكبرات صوت وساوند بار',
-    descriptionFr: 'Enceintes Bluetooth nomades étanches et barres de son pour setups TV',
-    descriptionAr: 'مكبرات صوت مقاومة للماء وأشرطة صوت ساوند بار للمكاتب والشاشات',
-    icon: 'Speaker',
-  },
-  {
-    id: 'cat-chargers',
-    slug: 'chargers',
-    nameFr: 'Chargeurs GaN & Câbles',
-    nameAr: 'شواحن سريعة GaN وكابلات',
-    descriptionFr: 'Blocs de charge rapide GaN jusqu’à 140W et câbles renforcés haute vitesse',
-    descriptionAr: 'شواحن بتقنية النيتريد فائقة السرعة وكابلات مضفرة مدرعة',
-    icon: 'Zap',
-  },
-  {
-    id: 'cat-powerbanks',
-    slug: 'powerbanks',
-    nameFr: 'Batteries MagSafe',
-    nameAr: 'بنوك طاقة وميج سيف',
-    descriptionFr: 'Batteries magnétiques ultra-fines MagSafe et stations sans fil induction',
-    descriptionAr: 'بطاريات شحن لاسلكية مغناطيسية متوافقة مع الآيفون وأجهزة الأندرويد',
-    icon: 'BatteryCharging',
-  },
-];
+export const DEFAULT_CATEGORIES: Category[] = [];
 
 export interface Promotion {
   id: string;
@@ -91,22 +45,7 @@ export interface AppliedPromotion {
   isExpiringSoon: boolean;
 }
 
-export const DEFAULT_PROMOTIONS: Promotion[] = [
-  {
-    id: 'prm-sample-1',
-    name: 'Offre Spéciale Écouteurs Sans Fil (-20%)',
-    targetType: 'category',
-    targetId: 'earbuds',
-    discountType: 'percentage',
-    discountValue: 20,
-    startAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
-    endAt: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
-    isActive: true,
-    bannerTextFr: 'Remise exceptionnelle de 20% sur tous les écouteurs sans fil !',
-    bannerTextAr: 'تخفيض استثنائي 20% على جميع السماعات اللاسلكية لفترة محدودة !',
-    createdAt: new Date().toISOString(),
-  },
-];
+export const DEFAULT_PROMOTIONS: Promotion[] = [];
 
 export function mapRowToPromotion(row: any): Promotion {
   return {
@@ -219,10 +158,58 @@ export function mapRowToProduct(row: any): Product {
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 export function ProductProvider({ children }: { children: React.ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
-  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
-  const [promotions, setPromotions] = useState<Promotion[]>(DEFAULT_PROMOTIONS);
-  const [isLoading, setIsLoading] = useState(false);
+  const [products, setProducts] = useState<Product[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('electronics_cached_products');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return PRODUCTS;
+  });
+
+  const [categories, setCategories] = useState<Category[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('electronics_cached_categories');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_CATEGORIES;
+  });
+
+  const [promotions, setPromotions] = useState<Promotion[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('electronics_cached_promotions');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_PROMOTIONS;
+  });
+
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('electronics_cached_products');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return false;
+        }
+      } catch (e) {}
+    }
+    return true;
+  });
+
   const [isDbConnected, setIsDbConnected] = useState(false);
 
   // Fetch all categories from Supabase

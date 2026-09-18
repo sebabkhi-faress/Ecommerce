@@ -14,7 +14,7 @@ interface FeaturedProductsProps {
 
 export default function FeaturedProducts({ selectedCategory = 'all', onSelectCategory }: FeaturedProductsProps) {
   const { lang, t } = useLanguage();
-  const { products, categories } = useProducts();
+  const { products, categories, isLoading } = useProducts();
   const [internalCategory, setInternalCategory] = useState('all');
 
   const currentCategory = onSelectCategory ? selectedCategory : internalCategory;
@@ -79,6 +79,22 @@ export default function FeaturedProducts({ selectedCategory = 'all', onSelectCat
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
+          {isLoading && filteredProducts.length === 0 && (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-[#18181F] border border-white/5 rounded-3xl p-5 animate-pulse flex flex-col justify-between h-96"
+              >
+                <div className="w-full h-48 rounded-2xl bg-white/5 mb-4" />
+                <div className="space-y-3">
+                  <div className="h-4 bg-white/10 rounded w-3/4" />
+                  <div className="h-3 bg-white/5 rounded w-1/2" />
+                  <div className="h-6 bg-white/10 rounded w-1/3 mt-4" />
+                </div>
+                <div className="h-10 bg-white/5 rounded-xl mt-4" />
+              </div>
+            ))
+          )}
         </div>
       </div>
     </section>

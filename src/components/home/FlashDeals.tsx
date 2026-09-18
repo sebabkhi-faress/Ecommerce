@@ -8,7 +8,7 @@ import { Flame, Clock, Zap } from 'lucide-react';
 
 export default function FlashDeals() {
   const { lang, t } = useLanguage();
-  const { products } = useProducts();
+  const { products, isLoading } = useProducts();
 
   // Simulated countdown timer: 1 day, 8 hours, 45 minutes, 20 seconds
   const [timeLeft, setTimeLeft] = useState({
@@ -37,6 +37,10 @@ export default function FlashDeals() {
   }, []);
 
   const flashProducts = products.filter((p) => p.isFlashDeal);
+
+  if (flashProducts.length === 0) {
+    return null;
+  }
 
   return (
     <section id="deals" className="py-12 bg-slate-100/70 dark:bg-[#121217]/60 border-y border-black/5 dark:border-white/5 relative w-full max-w-full overflow-hidden">
