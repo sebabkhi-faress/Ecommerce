@@ -42,14 +42,6 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
 
-  // Route-specific handling: Admin Dashboard
-  if (pathname?.startsWith('/admin/login')) {
-    return null;
-  }
-  if (pathname?.startsWith('/admin')) {
-    return <AdminNavbar />;
-  }
-
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -73,6 +65,14 @@ export default function Navbar() {
     );
     setSearchResults(matches);
   }, [searchQuery, products]);
+
+  // Route-specific handling: Admin Dashboard
+  if (pathname?.startsWith('/admin/login')) {
+    return null;
+  }
+  if (pathname?.startsWith('/admin')) {
+    return <AdminNavbar />;
+  }
 
   return (
     <>
