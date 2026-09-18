@@ -37,7 +37,7 @@ export default function Navbar() {
   const { totalItems, setIsCartOpen } = useCart();
   const { theme, toggleTheme } = useTheme();
   const { products } = useProducts();
-  const { user, role, logout, isAuthenticated } = useAuth();
+  const { user, role, logout, isAuthenticated, isLoading } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -310,6 +310,8 @@ export default function Navbar() {
                     </>
                   )}
                 </div>
+              ) : isLoading ? (
+                <div className="w-8 h-8 sm:w-20 sm:h-8 rounded-full bg-white/5 border border-white/10 animate-pulse shrink-0" />
               ) : (
                 <Link
                   href="/login"

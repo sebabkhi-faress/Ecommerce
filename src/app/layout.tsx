@@ -108,18 +108,20 @@ export default async function RootLayout({
                   }
 
                   var l = localStorage.getItem('electronics_lang');
-                  if (l === 'ar') {
-                    document.documentElement.lang = 'ar';
-                    document.documentElement.dir = 'rtl';
-                    document.documentElement.setAttribute('data-lang', 'ar');
-                    document.documentElement.classList.add('font-arabic');
-                    document.documentElement.classList.remove('font-latin');
-                  } else if (l === 'fr') {
-                    document.documentElement.lang = 'fr';
-                    document.documentElement.dir = 'ltr';
-                    document.documentElement.setAttribute('data-lang', 'fr');
-                    document.documentElement.classList.add('font-latin');
-                    document.documentElement.classList.remove('font-arabic');
+                  if (l === 'ar' || l === 'fr') {
+                    document.documentElement.lang = l;
+                    document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
+                    document.documentElement.setAttribute('data-lang', l);
+                    if (l === 'ar') {
+                      document.documentElement.classList.add('font-arabic');
+                      document.documentElement.classList.remove('font-latin');
+                    } else {
+                      document.documentElement.classList.add('font-latin');
+                      document.documentElement.classList.remove('font-arabic');
+                    }
+                    if (!document.cookie.includes('electronics_lang=' + l)) {
+                      document.cookie = 'electronics_lang=' + l + '; path=/; max-age=31536000; SameSite=Lax';
+                    }
                   }
                 } catch(e) {}
               })();

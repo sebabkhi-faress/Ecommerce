@@ -527,15 +527,15 @@ const translations: Record<Language, Record<string, string>> = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 function getInitialLanguage(propLang?: Language): Language {
-  if (propLang === 'ar' || propLang === 'fr') return propLang;
-  if (typeof document !== 'undefined') {
-    const attr = document.documentElement.getAttribute('data-lang') as Language | null;
-    if (attr === 'ar' || attr === 'fr') return attr;
+  if (typeof window !== 'undefined') {
     try {
       const saved = localStorage.getItem('electronics_lang') as Language | null;
       if (saved === 'ar' || saved === 'fr') return saved;
     } catch {}
+    const attr = document.documentElement.getAttribute('data-lang') as Language | null;
+    if (attr === 'ar' || attr === 'fr') return attr;
   }
+  if (propLang === 'ar' || propLang === 'fr') return propLang;
   return 'fr';
 }
 

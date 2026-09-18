@@ -122,10 +122,50 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function getInitialUser(): User | null {
+  if (typeof window !== 'undefined') {
+    try {
+      const sessionStr = localStorage.getItem('electronics_auth_session');
+      if (sessionStr) {
+        const sess = JSON.parse(sessionStr);
+        if (sess?.user && sess.expiresAt && Date.now() < sess.expiresAt) {
+          return sess.user;
+        }
+      }
+      const userStr = localStorage.getItem('electronics_auth_user');
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        if (u?.email && u?.role) return u;
+      }
+    } catch {}
+  }
+  return null;
+}
+
+function getInitialSession(): AuthSession | null {
+  if (typeof window !== 'undefined') {
+    try {
+      const sessionStr = localStorage.getItem('electronics_auth_session');
+      if (sessionStr) {
+        const sess = JSON.parse(sessionStr);
+        if (sess?.user && sess.expiresAt && Date.now() < sess.expiresAt) {
+          return sess;
+        }
+      }
+    } catch {}
+  }
+  return null;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<AuthSession | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(getInitialUser);
+  const [session, setSession] = useState<AuthSession | null>(getInitialSession);
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return !localStorage.getItem('electronics_auth_session') && !localStorage.getItem('electronics_auth_user');
+    }
+    return false;
+  });
 
   const logout = useCallback((redirectTo?: string) => {
     setUser(null);
