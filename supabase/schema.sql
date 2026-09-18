@@ -378,7 +378,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- 8. INITIAL SEED DATA FOR USERS & ROLES (Admin, Delivery Guy, Customer)
 -- Passwords hashed with bcrypt (Cost factor 10):
--- 'admin2026'    -> '$2b$10$ELm9xmwqXGLyDdLyLwtXJeZxRnEeiIKcBONHOp8S.AKyeRaFKQwU6'
+-- 'admin2026'    -> '$2b$10$Nw/dXAXCE1zIyL8p9FBTPO1StSsQltcb4xsjxV3uMVf1u3dM.dIDy'
 -- 'delivery2026' -> '$2b$10$wlN2gLUB7Gsb8I8KOzPuCeBvdgt0IxKwuFBbwccY9cSRrvx9FzjtG'
 -- 'client2026'   -> '$2b$10$9Ras8tjUZQXG1Vijx0qes.iyXEMeKPCPV3.z25ak0lHwpclwhOhZu'
 
@@ -387,7 +387,7 @@ VALUES
 (
     'usr-admin-01',
     'admin@electronics.dz',
-    '$2b$10$ELm9xmwqXGLyDdLyLwtXJeZxRnEeiIKcBONHOp8S.AKyeRaFKQwU6',
+    '$2b$10$Nw/dXAXCE1zIyL8p9FBTPO1StSsQltcb4xsjxV3uMVf1u3dM.dIDy',
     'Directeur Admin DZ',
     '0550123456',
     'admin'
