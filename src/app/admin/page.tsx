@@ -120,12 +120,34 @@ export default function AdminDashboardPage() {
     products: Product[];
     linkedOrders: Order[];
     isDeleting: boolean;
+    isConfirmed: boolean;
   }>({
     isOpen: false,
     products: [],
     linkedOrders: [],
     isDeleting: false,
+    isConfirmed: false,
   });
+
+  // Floating confirmation toast state
+  const [toast, setToast] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'info';
+    message: string;
+    details?: string;
+  }>({
+    isOpen: false,
+    type: 'success',
+    message: '',
+    details: undefined,
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success', details?: string) => {
+    setToast({ isOpen: true, type, message, details });
+    setTimeout(() => {
+      setToast((prev) => ({ ...prev, isOpen: false }));
+    }, 4500);
+  };
 
   // Admin Profile Modal state
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -275,6 +297,7 @@ export default function AdminDashboardPage() {
       products: targetProducts,
       linkedOrders: linked,
       isDeleting: false,
+      isConfirmed: false,
     });
   };
 
@@ -296,10 +319,27 @@ export default function AdminDashboardPage() {
         products: [],
         linkedOrders: [],
         isDeleting: false,
+        isConfirmed: false,
       });
+
+      showToast(
+        lang === 'ar' ? 'تم تأكيد الحذف بنجاح' : 'Confirmation : Suppression effectuée',
+        'success',
+        orderIdsToDelete.length > 0
+          ? (lang === 'ar'
+              ? `تم حذف ${productIdsToDelete.length} منتج و ${orderIdsToDelete.length} طلبية مرتبطة بنجاح من قاعدة البيانات.`
+              : `${productIdsToDelete.length} produit(s) et ${orderIdsToDelete.length} commande(s) associée(s) ont été définitivement supprimés.`)
+          : (lang === 'ar'
+              ? `تم حذف ${productIdsToDelete.length} منتج بنجاح من الكتالوج.`
+              : `${productIdsToDelete.length} produit(s) supprimé(s) du catalogue avec succès.`)
+      );
     } catch (err) {
       console.error('Failed to delete product(s)/order(s)', err);
       setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
+      showToast(
+        lang === 'ar' ? 'حدث خطأ أثناء الحذف' : 'Erreur lors de la suppression',
+        'error'
+      );
     }
   };
 
@@ -375,6 +415,11 @@ export default function AdminDashboardPage() {
     );
     if (!isConfirmed) return;
     await deleteCategory(id);
+    showToast(
+      lang === 'ar' ? 'تم تأكيد حذف القسم بنجاح' : 'Catégorie supprimée avec succès',
+      'success',
+      lang === 'ar' ? `تمت إزالة القسم "${name}" من النظام.` : `La catégorie "${name}" a été définitivement retirée.`
+    );
   };
 
   // Phone Ban Actions
@@ -531,6 +576,11 @@ export default function AdminDashboardPage() {
     );
     if (!isConfirmed) return;
     await deletePromotion(id);
+    showToast(
+      lang === 'ar' ? 'تم تأكيد حذف العرض الترويجي بنجاح' : 'Promotion supprimée avec succès',
+      'success',
+      lang === 'ar' ? `تمت إزالة العرض "${name}" من النظام.` : `La promotion "${name}" a été définitivement retirée.`
+    );
   };
 
   const handleTogglePromoStatus = async (promo: Promotion) => {
@@ -3092,6 +3142,34 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
+      {/* ==================== FLOATING TOAST CONFIRMATION NOTIFICATION ==================== */}
+      {toast.isOpen && (
+        <div className="fixed top-20 ltr:right-4 rtl:left-4 sm:ltr:right-8 sm:rtl:left-8 z-50 max-w-md w-full animate-in slide-in-from-top-4 fade-in duration-300">
+          <div className="p-4 rounded-2xl bg-[#14141B] border border-emerald-500/40 shadow-2xl shadow-emerald-500/15 flex items-start gap-3 backdrop-blur-xl">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
+              <CheckCircle className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="text-xs font-bold text-white">
+                {toast.message}
+              </h4>
+              {toast.details && (
+                <p className="text-[11px] text-[#A1A1AA] mt-0.5 leading-relaxed">
+                  {toast.details}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setToast((prev) => ({ ...prev, isOpen: false }))}
+              className="p-1 text-[#A1A1AA] hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ==================== PRODUCT DELETE CONFIRMATION MODAL WITH ORDER CHECK ==================== */}
       {deleteModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
@@ -3115,7 +3193,7 @@ export default function AdminDashboardPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setDeleteModal({ isOpen: false, products: [], linkedOrders: [], isDeleting: false })}
+                onClick={() => setDeleteModal({ isOpen: false, products: [], linkedOrders: [], isDeleting: false, isConfirmed: false })}
                 className="p-1 text-[#A1A1AA] hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -3210,11 +3288,39 @@ export default function AdminDashboardPage() {
               </div>
             )}
 
+            {/* EXPLICIT CONFIRMATION MESSAGE & CHECKBOX */}
+            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2">
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={deleteModal.isConfirmed}
+                  onChange={(e) => setDeleteModal((prev) => ({ ...prev, isConfirmed: e.target.checked }))}
+                  className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-red-500 focus:ring-red-500 cursor-pointer accent-red-500"
+                />
+                <div className="text-xs">
+                  <p className="font-bold text-[#F5F5F7]">
+                    {lang === 'ar'
+                      ? 'رسالة تأكيد الحذف النهائي وغير القابل للاسترجاع'
+                      : 'Confirmation explicite de suppression irréversible'}
+                  </p>
+                  <p className="text-[#A1A1AA] text-[11px] mt-0.5 leading-relaxed">
+                    {deleteModal.linkedOrders.length > 0
+                      ? (lang === 'ar'
+                          ? `أؤكد رغبتي الكاملة في حذف هذا المنتج وأوافق على حذف جميع الـ ${deleteModal.linkedOrders.length} طلبية المرتبطة به نهائياً.`
+                          : `Je confirme vouloir supprimer ce produit et j'accepte la suppression définitive de toutes les ${deleteModal.linkedOrders.length} commande(s) associée(s).`)
+                      : (lang === 'ar'
+                          ? 'أؤكد رغبتي في حذف هذا المنتج نهائياً من قاعدة البيانات والكتالوج.'
+                          : 'Je confirme vouloir supprimer définitivement ce produit du catalogue et de la base de données.')}
+                  </p>
+                </div>
+              </label>
+            </div>
+
             {/* Modal Actions */}
             <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/10">
               <button
                 type="button"
-                onClick={() => setDeleteModal({ isOpen: false, products: [], linkedOrders: [], isDeleting: false })}
+                onClick={() => setDeleteModal({ isOpen: false, products: [], linkedOrders: [], isDeleting: false, isConfirmed: false })}
                 disabled={deleteModal.isDeleting}
                 className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
               >
@@ -3224,8 +3330,13 @@ export default function AdminDashboardPage() {
               <button
                 type="button"
                 onClick={handleConfirmDeleteProducts}
-                disabled={deleteModal.isDeleting}
-                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-red-600/30 disabled:opacity-50"
+                disabled={deleteModal.isDeleting || !deleteModal.isConfirmed}
+                className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all shadow-lg ${
+                  deleteModal.isConfirmed && !deleteModal.isDeleting
+                    ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/30 cursor-pointer'
+                    : 'bg-red-950/40 text-red-400/50 border border-red-500/20 cursor-not-allowed'
+                }`}
+                title={!deleteModal.isConfirmed ? (lang === 'ar' ? 'يرجى تحديد مربع التأكيد للمتابعة' : 'Veuillez cocher la confirmation pour continuer') : ''}
               >
                 {deleteModal.isDeleting ? (
                   <>
