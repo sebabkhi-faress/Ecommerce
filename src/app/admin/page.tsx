@@ -56,6 +56,8 @@ import {
   Settings,
   Shield,
   AlertTriangle,
+  ArrowRight,
+  ArrowLeft,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured, uploadProductImage } from '@/lib/supabase';
 import { useProducts, usePromotions, Promotion } from '@/context/ProductContext';
@@ -334,6 +336,7 @@ export default function AdminDashboardPage() {
 
   // Quick Add Product Drawer state
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [newProdStep, setNewProdStep] = useState<1 | 2 | 3>(1);
   const [newProdNameFr, setNewProdNameFr] = useState('');
   const [newProdNameAr, setNewProdNameAr] = useState('');
   const [newProdCategory, setNewProdCategory] = useState('earbuds');
@@ -478,34 +481,57 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleAddProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateStep1 = (): boolean => {
     setUploadError(null);
-
     const nameFr = newProdNameFr.trim() || newProdNameAr.trim();
     const nameAr = newProdNameAr.trim() || newProdNameFr.trim();
     if (!nameFr && !nameAr) {
       setUploadError(lang === 'ar' ? 'يرجى إدخال اسم المنتج (بالعربية أو الفرنسية)' : 'Veuillez renseigner le nom du produit');
-      return;
-    }
-
-    const priceNum = Number(newProdPrice);
-    if (isNaN(priceNum) || priceNum <= 0) {
-      setUploadError(lang === 'ar' ? 'يرجى إدخال سعر صالح أكبر من 0 دج' : 'Veuillez saisir un prix valide');
-      return;
+      setNewProdStep(1);
+      return false;
     }
 
     const stockNum = Number(newProdStock);
     if (isNaN(stockNum) || stockNum < 0 || newProdStock === '') {
       setUploadError(lang === 'ar' ? 'الكمية في المخزون إجبارية (يرجى إدخال رقم 0 أو أكثر)' : 'La quantité en stock est obligatoire');
-      return;
+      setNewProdStep(1);
+      return false;
+    }
+    return true;
+  };
+
+  const validateStep2 = (): boolean => {
+    setUploadError(null);
+    const priceNum = Number(newProdPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      setUploadError(lang === 'ar' ? 'يرجى إدخال سعر صالح أكبر من 0 دج' : 'Veuillez saisir un prix valide');
+      setNewProdStep(2);
+      return false;
     }
 
     if (!newProdImage) {
       setUploadError(lang === 'ar' ? 'صورة المنتج إجبارية (يرجى رفع صورة من جهازك)' : 'L’image du produit est obligatoire (téléversez depuis votre appareil)');
+      setNewProdStep(2);
+      return false;
+    }
+    return true;
+  };
+
+  const handleAddProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUploadError(null);
+
+    if (!validateStep1()) {
+      return;
+    }
+    if (!validateStep2()) {
       return;
     }
 
+    const nameFr = newProdNameFr.trim() || newProdNameAr.trim();
+    const nameAr = newProdNameAr.trim() || newProdNameFr.trim();
+    const priceNum = Number(newProdPrice);
+    const stockNum = Number(newProdStock);
     const origPriceNum = newProdOriginalPrice ? Number(newProdOriginalPrice) : undefined;
 
     const result = await addProduct({
@@ -535,6 +561,7 @@ export default function AdminDashboardPage() {
       setTimeout(() => {
         setNewProdSuccess(false);
         setIsAddProductOpen(false);
+        setNewProdStep(1);
         // Reset form fields
         setNewProdNameFr('');
         setNewProdNameAr('');
@@ -2836,6 +2863,112 @@ export default function AdminDashboardPage() {
                 </div>
               ) : (
                 <form onSubmit={handleAddProduct} className="space-y-4 text-xs">
+                  {/* Smart Step Stepper Pills */}
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                      {/* Step 1 Pill */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUploadError(null);
+                          setNewProdStep(1);
+                        }}
+                        className={`p-2 sm:p-2.5 rounded-xl text-start transition-all cursor-pointer border ${
+                          newProdStep === 1
+                            ? 'bg-[#FF6B00]/15 border-[#FF6B00] text-white shadow-lg shadow-[#FF6B00]/10'
+                            : newProdStep > 1
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                            : 'bg-white/5 border-white/10 text-[#A1A1AA]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${
+                            newProdStep === 1
+                              ? 'bg-[#FF6B00] text-black'
+                              : newProdStep > 1
+                              ? 'bg-emerald-500 text-black'
+                              : 'bg-white/10 text-[#A1A1AA]'
+                          }`}>
+                            {newProdStep > 1 ? '✓' : '1'}
+                          </span>
+                          <span className="font-bold text-[10px] sm:text-xs truncate">
+                            {lang === 'ar' ? 'الاسم والمخزون' : 'Infos & Stock'}
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Step 2 Pill */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (validateStep1()) {
+                            setNewProdStep(2);
+                          }
+                        }}
+                        className={`p-2 sm:p-2.5 rounded-xl text-start transition-all cursor-pointer border ${
+                          newProdStep === 2
+                            ? 'bg-[#FF6B00]/15 border-[#FF6B00] text-white shadow-lg shadow-[#FF6B00]/10'
+                            : newProdStep > 2
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                            : 'bg-white/5 border-white/10 text-[#A1A1AA]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${
+                            newProdStep === 2
+                              ? 'bg-[#FF6B00] text-black'
+                              : newProdStep > 2
+                              ? 'bg-emerald-500 text-black'
+                              : 'bg-white/10 text-[#A1A1AA]'
+                          }`}>
+                            {newProdStep > 2 ? '✓' : '2'}
+                          </span>
+                          <span className="font-bold text-[10px] sm:text-xs truncate">
+                            {lang === 'ar' ? 'السعر والصورة' : 'Prix & Photo'}
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Step 3 Pill */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (validateStep1() && validateStep2()) {
+                            setNewProdStep(3);
+                          }
+                        }}
+                        className={`p-2 sm:p-2.5 rounded-xl text-start transition-all cursor-pointer border ${
+                          newProdStep === 3
+                            ? 'bg-[#FF6B00]/15 border-[#FF6B00] text-white shadow-lg shadow-[#FF6B00]/10'
+                            : 'bg-white/5 border-white/10 text-[#A1A1AA]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${
+                            newProdStep === 3
+                              ? 'bg-[#FF6B00] text-black'
+                              : 'bg-white/10 text-[#A1A1AA]'
+                          }`}>
+                            3
+                          </span>
+                          <span className="font-bold text-[10px] sm:text-xs truncate">
+                            {lang === 'ar' ? 'تفاصيل إضافية' : 'Détails'}
+                          </span>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Stepper Progress Bar */}
+                    <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] transition-all duration-300"
+                        style={{
+                          width: newProdStep === 1 ? '33.33%' : newProdStep === 2 ? '66.66%' : '100%'
+                        }}
+                      />
+                    </div>
+                  </div>
+
                   {uploadError && (
                     <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-semibold flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
@@ -2843,347 +2976,434 @@ export default function AdminDashboardPage() {
                     </div>
                   )}
 
-                  {/* 1. Product Names (AR & FR) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
-                        <span>{lang === 'ar' ? 'اسم المنتج بالعربية *' : 'Nom en Arabe *'}</span>
-                        <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Requis *'}</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        dir="rtl"
-                        value={newProdNameAr}
-                        onChange={(e) => {
-                          setNewProdNameAr(e.target.value);
-                          if (!newProdNameFr) setNewProdNameFr(e.target.value);
-                        }}
-                        placeholder={lang === 'ar' ? 'مثال: Cyberbuds X9 — سماعات بلوتوث' : 'Ex: سماعات بلوتوث'}
-                        className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white outline-none text-right"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
-                        <span>{lang === 'ar' ? 'اسم المنتج بالفرنسية *' : 'Nom en Français *'}</span>
-                        <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Requis *'}</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={newProdNameFr}
-                        onChange={(e) => {
-                          setNewProdNameFr(e.target.value);
-                          if (!newProdNameAr) setNewProdNameAr(e.target.value);
-                        }}
-                        placeholder="Ex: Cyberbuds X9 ANC Earbuds"
-                        className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 2. Category & Mandatory Quantity (Stock) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
-                        <span>{t('admin.lbl_category')} *</span>
-                        <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Requis *'}</span>
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={newProdCategory}
-                          onChange={(e) => setNewProdCategory(e.target.value as any)}
-                          className="w-full appearance-none bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-xs text-white outline-none cursor-pointer"
-                        >
-                          {categories.length > 0 ? (
-                            categories.map((c) => (
-                              <option key={c.id || c.slug} value={c.slug} className="bg-[#18181F] text-[#F5F5F7]">
-                                {lang === 'ar' ? c.nameAr : c.nameFr} ({c.slug})
-                              </option>
-                            ))
-                          ) : (
-                            <>
-                              <option value="earbuds" className="bg-[#18181F] text-[#F5F5F7]">{t('products.earbuds')}</option>
-                              <option value="headphones" className="bg-[#18181F] text-[#F5F5F7]">{t('products.headphones')}</option>
-                              <option value="speakers" className="bg-[#18181F] text-[#F5F5F7]">{t('products.speakers')}</option>
-                              <option value="chargers" className="bg-[#18181F] text-[#F5F5F7]">{t('products.chargers')}</option>
-                              <option value="powerbanks" className="bg-[#18181F] text-[#F5F5F7]">{t('products.powerbanks')}</option>
-                            </>
-                          )}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 ltr:right-2.5 rtl:left-2.5 flex items-center text-[#A1A1AA]">
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        </div>
+                  {/* STEP 1: General Info & Mandatory Stock */}
+                  {newProdStep === 1 && (
+                    <div className="space-y-3.5 animate-in fade-in duration-200">
+                      <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3">
+                        <span className="text-xs font-bold text-[#FFAA2C] block mb-0.5">
+                          {lang === 'ar' ? 'الخطوة 1: اسم وتصنيف ومخزون المنتج' : 'Étape 1 : Nom, Catégorie & Stock'}
+                        </span>
+                        <p className="text-[11px] text-[#A1A1AA]">
+                          {lang === 'ar' ? 'حدد اسم المنتج بدقة والكمية المتوفرة في المخزون' : 'Renseignez les détails d’inventaire du produit'}
+                        </p>
                       </div>
-                    </div>
 
-                    <div>
-                      <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
-                        <span>{lang === 'ar' ? 'الكمية في المخزون (Stock) *' : 'Quantité en Stock *'}</span>
-                        <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Obligatoire *'}</span>
-                      </label>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min="0"
-                        required
-                        value={newProdStock}
-                        onChange={(e) => setNewProdStock(e.target.value)}
-                        placeholder="20"
-                        className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white font-mono font-bold outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 3. Price & Original Price */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
-                        <span>{t('admin.lbl_price')} (DZD) *</span>
-                        <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Requis *'}</span>
-                      </label>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        required
-                        min="1"
-                        value={newProdPrice}
-                        onChange={(e) => setNewProdPrice(e.target.value)}
-                        placeholder="Ex: 8500"
-                        className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white font-mono font-bold outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
-                        <span>{lang === 'ar' ? 'السعر القديم المشطوب (د.ج)' : 'Prix barré (DZD)'}</span>
-                        <span className="text-[10px] text-[#A1A1AA] font-normal">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
-                      </label>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min="0"
-                        value={newProdOriginalPrice}
-                        onChange={(e) => setNewProdOriginalPrice(e.target.value)}
-                        placeholder="Ex: 11000"
-                        className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white font-mono outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 4. Product Image (DEVICE UPLOAD ONLY - NO URL LINK INPUT) */}
-                  <div className="space-y-2">
-                    <label className="block text-[#A1A1AA] font-bold flex items-center justify-between">
-                      <span>{lang === 'ar' ? 'صورة المنتج *' : 'Photo du Produit *'}</span>
-                      <span className="text-[10px] text-[#FF6B00] font-bold">
-                        {lang === 'ar' ? 'رفع من جهازك (إجباري) *' : 'Téléversement obligatoire *'}
-                      </span>
-                    </label>
-
-                    {!newProdImage ? (
-                      <div>
-                        <label className={`flex flex-col items-center justify-center p-5 bg-[#18181F] hover:bg-[#22222B] border-2 border-dashed ${uploadError && !newProdImage ? 'border-red-500/50' : 'border-white/20'} hover:border-[#FF6B00] rounded-2xl cursor-pointer transition-all group text-center`}>
-                          <UploadCloud className={`w-8 h-8 mb-2 transition-transform group-hover:scale-110 ${isUploading ? 'animate-bounce text-[#FF6B00]' : 'text-[#FFAA2C]'}`} />
-                          <span className="font-bold text-xs text-white mb-1">
-                            {isUploading
-                              ? (lang === 'ar' ? 'جارٍ رفع الصورة ومعالجتها...' : 'Téléversement en cours...')
-                              : (lang === 'ar' ? 'اضغط هنا لرفع صورة المنتج من هاتفك أو جهازك' : 'Cliquez pour téléverser une photo')}
-                          </span>
-                          <span className="text-[10px] text-[#A1A1AA]">
-                            PNG, JPG, WEBP — {lang === 'ar' ? 'تُحفظ تلقائياً في السيرفر' : 'Stockage cloud instantané'}
-                          </span>
+                      {/* Product Names (AR & FR) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
+                            <span>{lang === 'ar' ? 'اسم المنتج بالعربية *' : 'Nom en Arabe *'}</span>
+                            <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Requis *'}</span>
+                          </label>
                           <input
-                            type="file"
-                            accept="image/*"
-                            disabled={isUploading}
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              setIsUploading(true);
-                              setUploadError(null);
-                              const { url, error } = await uploadProductImage(file);
-                              setIsUploading(false);
-                              if (url) {
-                                setNewProdImage(url);
-                              } else if (error) {
-                                setUploadError(error);
-                              }
+                            type="text"
+                            required
+                            dir="rtl"
+                            value={newProdNameAr}
+                            onChange={(e) => {
+                              setNewProdNameAr(e.target.value);
+                              if (!newProdNameFr) setNewProdNameFr(e.target.value);
                             }}
-                            className="hidden"
+                            placeholder={lang === 'ar' ? 'مثال: Cyberbuds X9 — سماعات بلوتوث' : 'Ex: سماعات بلوتوث'}
+                            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white outline-none text-right"
                           />
-                        </label>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3 p-3 bg-[#18181F] rounded-2xl border border-emerald-500/40">
-                        <img
-                          src={newProdImage}
-                          alt="Preview"
-                          className="w-16 h-16 object-cover rounded-xl bg-black shrink-0 border border-white/10"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <span className="text-xs text-[#25D366] font-bold flex items-center gap-1.5 mb-1">
-                            <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                            <span>{lang === 'ar' ? 'تم رفع الصورة وتثبيتها بنجاح' : 'Image téléversée avec succès'}</span>
-                          </span>
-                          <span className="text-[10px] text-[#A1A1AA] truncate block font-mono">
-                            {newProdImage.split('/').pop()}
-                          </span>
                         </div>
+
+                        <div>
+                          <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
+                            <span>{lang === 'ar' ? 'اسم المنتج بالفرنسية *' : 'Nom en Français *'}</span>
+                            <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Requis *'}</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={newProdNameFr}
+                            onChange={(e) => {
+                              setNewProdNameFr(e.target.value);
+                              if (!newProdNameAr) setNewProdNameAr(e.target.value);
+                            }}
+                            placeholder="Ex: Cyberbuds X9 ANC Earbuds"
+                            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Category & Mandatory Quantity (Stock) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
+                            <span>{t('admin.lbl_category')} *</span>
+                            <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Requis *'}</span>
+                          </label>
+                          <div className="relative">
+                            <select
+                              value={newProdCategory}
+                              onChange={(e) => setNewProdCategory(e.target.value as any)}
+                              className="w-full appearance-none bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-xs text-white outline-none cursor-pointer"
+                            >
+                              {categories.length > 0 ? (
+                                categories.map((c) => (
+                                  <option key={c.id || c.slug} value={c.slug} className="bg-[#18181F] text-[#F5F5F7]">
+                                    {lang === 'ar' ? c.nameAr : c.nameFr} ({c.slug})
+                                  </option>
+                                ))
+                              ) : (
+                                <>
+                                  <option value="earbuds" className="bg-[#18181F] text-[#F5F5F7]">{t('products.earbuds')}</option>
+                                  <option value="headphones" className="bg-[#18181F] text-[#F5F5F7]">{t('products.headphones')}</option>
+                                  <option value="speakers" className="bg-[#18181F] text-[#F5F5F7]">{t('products.speakers')}</option>
+                                  <option value="chargers" className="bg-[#18181F] text-[#F5F5F7]">{t('products.chargers')}</option>
+                                  <option value="powerbanks" className="bg-[#18181F] text-[#F5F5F7]">{t('products.powerbanks')}</option>
+                                </>
+                              )}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 ltr:right-2.5 rtl:left-2.5 flex items-center text-[#A1A1AA]">
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
+                            <span>{lang === 'ar' ? 'الكمية في المخزون (Stock) *' : 'Quantité en Stock *'}</span>
+                            <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Obligatoire *'}</span>
+                          </label>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            min="0"
+                            required
+                            value={newProdStock}
+                            onChange={(e) => setNewProdStock(e.target.value)}
+                            placeholder="20"
+                            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white font-mono font-bold outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Step 1 Actions */}
+                      <div className="flex items-center gap-3 pt-3 border-t border-white/10">
                         <button
                           type="button"
-                          onClick={() => setNewProdImage('')}
-                          className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer shrink-0"
-                          title={lang === 'ar' ? 'حذف واختيار صورة أخرى' : 'Supprimer'}
+                          onClick={() => setIsAddProductOpen(false)}
+                          className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#A1A1AA] hover:text-white font-bold transition-colors cursor-pointer"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>{lang === 'ar' ? 'حذف الصورة' : 'Supprimer'}</span>
+                          {lang === 'ar' ? 'إلغاء' : 'Annuler'}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (validateStep1()) {
+                              setNewProdStep(2);
+                            }
+                          }}
+                          className="flex-1 py-2.5 bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] hover:from-[#E05E00] hover:to-[#FF9900] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <span>{lang === 'ar' ? 'التالي: السعر والصورة' : 'Suivant: Prix & Photo'}</span>
+                          {lang === 'ar' ? <ArrowLeft className="w-4 h-4 stroke-[2.5]" /> : <ArrowRight className="w-4 h-4 stroke-[2.5]" />}
                         </button>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
-                  {/* 5. Optional Fields Toggle (Taglines, Descriptions, Flash Deal, Badge) */}
-                  <div className="pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowOptionalFields(!showOptionalFields)}
-                      className="w-full py-2.5 px-3 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors flex items-center justify-between cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Sliders className="w-3.5 h-3.5 text-[#FFAA2C]" />
-                        <span>
-                          {lang === 'ar'
-                            ? (showOptionalFields ? 'إخفاء الحقول الإضافية' : 'إظهار الحقول الإضافية (الوصف، الشعارات، العروض)')
-                            : (showOptionalFields ? 'Masquer les champs optionnels' : 'Afficher les champs optionnels (Description, Slogans, Offres)')}
+                  {/* STEP 2: Pricing & Device Image Upload */}
+                  {newProdStep === 2 && (
+                    <div className="space-y-3.5 animate-in fade-in duration-200">
+                      <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3">
+                        <span className="text-xs font-bold text-[#FFAA2C] block mb-0.5">
+                          {lang === 'ar' ? 'الخطوة 2: التسعير ورفع صورة المنتج' : 'Étape 2 : Tarification & Photo du produit'}
                         </span>
-                      </span>
-                      <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showOptionalFields ? 'rotate-180 text-[#FFAA2C]' : ''}`} />
-                    </button>
+                        <p className="text-[11px] text-[#A1A1AA]">
+                          {lang === 'ar' ? 'حدد سعر البيع وارفع صورة واضحة للمنتج مباشرة من جهازك' : 'Fixez le prix et téléversez la photo depuis votre appareil'}
+                        </p>
+                      </div>
 
-                    {showOptionalFields && (
-                      <div className="mt-3 p-3.5 bg-white/[0.02] border border-white/10 rounded-2xl space-y-3">
-                        {/* Taglines */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
-                              <span>{lang === 'ar' ? 'عبارة تسويقية بالعربية' : 'Slogan court (Arabe)'}</span>
-                              <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
-                            </label>
-                            <input
-                              type="text"
-                              dir="rtl"
-                              value={newProdTaglineAr}
-                              onChange={(e) => setNewProdTaglineAr(e.target.value)}
-                              placeholder={lang === 'ar' ? 'مثال: عزل ضوضاء فائق وبطارية تدوم 40 ساعة' : 'Slogan en arabe'}
-                              className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none text-right"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
-                              <span>{lang === 'ar' ? 'عبارة تسويقية بالفرنسية' : 'Slogan court (Français)'}</span>
-                              <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
-                            </label>
-                            <input
-                              type="text"
-                              value={newProdTaglineFr}
-                              onChange={(e) => setNewProdTaglineFr(e.target.value)}
-                              placeholder="Ex: Réduction active du bruit & 40h d'autonomie"
-                              className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Detailed Descriptions */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
-                              <span>{lang === 'ar' ? 'الوصف التفصيلي بالعربية' : 'Description détaillée (Arabe)'}</span>
-                              <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
-                            </label>
-                            <textarea
-                              rows={3}
-                              dir="rtl"
-                              value={newProdDescAr}
-                              onChange={(e) => setNewProdDescAr(e.target.value)}
-                              placeholder={lang === 'ar' ? 'اكتب تفاصيل وميزات المنتج هنا...' : 'Description en arabe'}
-                              className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none text-right resize-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
-                              <span>{lang === 'ar' ? 'الوصف التفصيلي بالفرنسية' : 'Description détaillée (Français)'}</span>
-                              <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
-                            </label>
-                            <textarea
-                              rows={3}
-                              value={newProdDescFr}
-                              onChange={(e) => setNewProdDescFr(e.target.value)}
-                              placeholder="Description complète du produit, caractéristiques..."
-                              className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none resize-none"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Flash Deal & Badge */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center pt-1">
-                          <label className="flex items-center gap-3 p-3 bg-[#18181F] rounded-xl border border-white/10 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={newProdIsFlashDeal}
-                              onChange={(e) => setNewProdIsFlashDeal(e.target.checked)}
-                              className="w-4 h-4 rounded text-[#FF6B00] accent-[#FF6B00] cursor-pointer"
-                            />
-                            <div>
-                              <span className="font-bold text-white text-xs block flex items-center gap-1.5">
-                                <Flame className="w-3.5 h-3.5 text-[#FF6B00]" />
-                                <span>{lang === 'ar' ? 'عرض فلاش خاص (Flash Deal)' : 'Offre Flash Spéciale'}</span>
-                              </span>
-                              <span className="text-[10px] text-[#A1A1AA]">
-                                {lang === 'ar' ? 'يظهر مع عداد وتأثير بصري ترويجي' : 'Badge promo avec compte à rebours'}
-                              </span>
-                            </div>
+                      {/* Price & Original Price */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
+                            <span>{t('admin.lbl_price')} (DZD) *</span>
+                            <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Requis *'}</span>
                           </label>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            required
+                            min="1"
+                            value={newProdPrice}
+                            onChange={(e) => setNewProdPrice(e.target.value)}
+                            placeholder="Ex: 8500"
+                            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white font-mono font-bold outline-none"
+                          />
+                        </div>
 
-                          <div>
-                            <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
-                              <span>{lang === 'ar' ? 'نص شارة العرض' : 'Badge Promo'}</span>
-                              <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
-                            </label>
-                            <input
-                              type="text"
-                              value={newProdBadge}
-                              onChange={(e) => setNewProdBadge(e.target.value)}
-                              placeholder="Ex: PROMO, جديد, الأكثر طلباً"
-                              className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none"
-                            />
-                          </div>
+                        <div>
+                          <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
+                            <span>{lang === 'ar' ? 'السعر القديم المشطوب (د.ج)' : 'Prix barré (DZD)'}</span>
+                            <span className="text-[10px] text-[#A1A1AA] font-normal">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
+                          </label>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            min="0"
+                            value={newProdOriginalPrice}
+                            onChange={(e) => setNewProdOriginalPrice(e.target.value)}
+                            placeholder="Ex: 11000"
+                            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white font-mono outline-none"
+                          />
                         </div>
                       </div>
-                    )}
-                  </div>
 
-                  {/* 6. Modal Actions */}
-                  <div className="flex items-center gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsAddProductOpen(false)}
-                      className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-[#A1A1AA] hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
-                    >
-                      {lang === 'ar' ? 'إلغاء' : 'Annuler'}
-                    </button>
+                      {/* Product Image (DEVICE UPLOAD ONLY - NO URL LINK INPUT) */}
+                      <div className="space-y-2">
+                        <label className="block text-[#A1A1AA] font-bold flex items-center justify-between">
+                          <span>{lang === 'ar' ? 'صورة المنتج *' : 'Photo du Produit *'}</span>
+                          <span className="text-[10px] text-[#FF6B00] font-bold">
+                            {lang === 'ar' ? 'رفع من جهازك (إجباري) *' : 'Téléversement obligatoire *'}
+                          </span>
+                        </label>
 
-                    <button
-                      type="submit"
-                      disabled={isUploading}
-                      className="flex-[2] py-3 bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] hover:from-[#E05E00] hover:to-[#FF9900] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      <Plus className="w-4 h-4 stroke-[3]" />
-                      <span>{t('admin.btn_save')}</span>
-                    </button>
-                  </div>
+                        {!newProdImage ? (
+                          <div>
+                            <label className={`flex flex-col items-center justify-center p-5 bg-[#18181F] hover:bg-[#22222B] border-2 border-dashed ${uploadError && !newProdImage ? 'border-red-500/50' : 'border-white/20'} hover:border-[#FF6B00] rounded-2xl cursor-pointer transition-all group text-center`}>
+                              <UploadCloud className={`w-8 h-8 mb-2 transition-transform group-hover:scale-110 ${isUploading ? 'animate-bounce text-[#FF6B00]' : 'text-[#FFAA2C]'}`} />
+                              <span className="font-bold text-xs text-white mb-1">
+                                {isUploading
+                                  ? (lang === 'ar' ? 'جارٍ رفع الصورة ومعالجتها...' : 'Téléversement en cours...')
+                                  : (lang === 'ar' ? 'اضغط هنا لرفع صورة المنتج من جهازك' : 'Cliquez pour téléverser une photo')}
+                              </span>
+                              <span className="text-[10px] text-[#A1A1AA]">
+                                PNG, JPG, WEBP — {lang === 'ar' ? 'تُحفظ تلقائياً في السيرفر' : 'Stockage cloud instantané'}
+                              </span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                disabled={isUploading}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  setIsUploading(true);
+                                  setUploadError(null);
+                                  const { url, error } = await uploadProductImage(file);
+                                  setIsUploading(false);
+                                  if (url) {
+                                    setNewProdImage(url);
+                                  } else if (error) {
+                                    setUploadError(error);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3 p-3 bg-[#18181F] rounded-2xl border border-emerald-500/40">
+                            <img
+                              src={newProdImage}
+                              alt="Preview"
+                              className="w-16 h-16 object-cover rounded-xl bg-black shrink-0 border border-white/10"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <span className="text-xs text-[#25D366] font-bold flex items-center gap-1.5 mb-1">
+                                <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                                <span>{lang === 'ar' ? 'تم رفع الصورة وتثبيتها بنجاح' : 'Image téléversée avec succès'}</span>
+                              </span>
+                              <span className="text-[10px] text-[#A1A1AA] truncate block font-mono">
+                                {newProdImage.split('/').pop()}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setNewProdImage('')}
+                              className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer shrink-0"
+                              title={lang === 'ar' ? 'حذف واختيار صورة أخرى' : 'Supprimer'}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>{lang === 'ar' ? 'حذف الصورة' : 'Supprimer'}</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Step 2 Actions */}
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-3 border-t border-white/10">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUploadError(null);
+                            setNewProdStep(1);
+                          }}
+                          className="px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#A1A1AA] hover:text-white font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          {lang === 'ar' ? <ArrowRight className="w-4 h-4 stroke-[2.5]" /> : <ArrowLeft className="w-4 h-4 stroke-[2.5]" />}
+                          <span>{lang === 'ar' ? 'السابق' : 'Précédent'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (validateStep1() && validateStep2()) {
+                              setNewProdStep(3);
+                            }
+                          }}
+                          className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <span>{lang === 'ar' ? 'تفاصيل إضافية (اختياري)' : 'Détails (Optionnel)'}</span>
+                          {lang === 'ar' ? <ArrowLeft className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
+                        </button>
+
+                        <button
+                          type="submit"
+                          disabled={isUploading}
+                          className="flex-1 py-2.5 bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] hover:from-[#E05E00] hover:to-[#FF9900] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          <CheckCircle className="w-4 h-4 stroke-[2.5]" />
+                          <span>{lang === 'ar' ? 'حفظ ونشر الآن' : 'Enregistrer'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 3: Marketing & Optional Details */}
+                  {newProdStep === 3 && (
+                    <div className="space-y-3.5 animate-in fade-in duration-200">
+                      <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-[#FFAA2C]" />
+                          <span className="text-xs font-bold text-[#FFAA2C]">
+                            {lang === 'ar' ? 'الخطوة 3: تفاصيل تسويقية اختيارية' : 'Étape 3 : Détails marketing (Optionnels)'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#A1A1AA] mt-0.5">
+                          {lang === 'ar' ? 'يمكنك ترك هذه الحقول فارغة وحفظ المنتج مباشرة' : 'Ces champs sont facultatifs, vous pouvez enregistrer directement'}
+                        </p>
+                      </div>
+
+                      {/* Taglines */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
+                            <span>{lang === 'ar' ? 'عبارة تسويقية بالعربية' : 'Slogan court (Arabe)'}</span>
+                            <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
+                          </label>
+                          <input
+                            type="text"
+                            dir="rtl"
+                            value={newProdTaglineAr}
+                            onChange={(e) => setNewProdTaglineAr(e.target.value)}
+                            placeholder={lang === 'ar' ? 'مثال: عزل ضوضاء فائق وبطارية تدوم 40 ساعة' : 'Slogan en arabe'}
+                            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none text-right"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
+                            <span>{lang === 'ar' ? 'عبارة تسويقية بالفرنسية' : 'Slogan court (Français)'}</span>
+                            <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={newProdTaglineFr}
+                            onChange={(e) => setNewProdTaglineFr(e.target.value)}
+                            placeholder="Ex: Réduction active du bruit & 40h d'autonomie"
+                            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Detailed Descriptions */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
+                            <span>{lang === 'ar' ? 'الوصف التفصيلي بالعربية' : 'Description détaillée (Arabe)'}</span>
+                            <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
+                          </label>
+                          <textarea
+                            rows={3}
+                            dir="rtl"
+                            value={newProdDescAr}
+                            onChange={(e) => setNewProdDescAr(e.target.value)}
+                            placeholder={lang === 'ar' ? 'اكتب تفاصيل وميزات المنتج هنا...' : 'Description en arabe'}
+                            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none text-right resize-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
+                            <span>{lang === 'ar' ? 'الوصف التفصيلي بالفرنسية' : 'Description détaillée (Français)'}</span>
+                            <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={newProdDescFr}
+                            onChange={(e) => setNewProdDescFr(e.target.value)}
+                            placeholder="Description complète du produit, caractéristiques..."
+                            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none resize-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Flash Deal & Badge */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center pt-1">
+                        <label className="flex items-center gap-3 p-3 bg-[#18181F] rounded-xl border border-white/10 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={newProdIsFlashDeal}
+                            onChange={(e) => setNewProdIsFlashDeal(e.target.checked)}
+                            className="w-4 h-4 rounded text-[#FF6B00] accent-[#FF6B00] cursor-pointer"
+                          />
+                          <div>
+                            <span className="font-bold text-white text-xs block flex items-center gap-1.5">
+                              <Flame className="w-3.5 h-3.5 text-[#FF6B00]" />
+                              <span>{lang === 'ar' ? 'عرض فلاش خاص (Flash Deal)' : 'Offre Flash Spéciale'}</span>
+                            </span>
+                            <span className="text-[10px] text-[#A1A1AA]">
+                              {lang === 'ar' ? 'يظهر مع عداد وتأثير بصري ترويجي' : 'Badge promo avec compte à rebours'}
+                            </span>
+                          </div>
+                        </label>
+
+                        <div>
+                          <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
+                            <span>{lang === 'ar' ? 'نص شارة العرض' : 'Badge Promo'}</span>
+                            <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={newProdBadge}
+                            onChange={(e) => setNewProdBadge(e.target.value)}
+                            placeholder="Ex: PROMO, جديد, الأكثر طلباً"
+                            className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Step 3 Actions */}
+                      <div className="flex items-center gap-3 pt-3 border-t border-white/10">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUploadError(null);
+                            setNewProdStep(2);
+                          }}
+                          className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#A1A1AA] hover:text-white font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                        >
+                          {lang === 'ar' ? <ArrowRight className="w-4 h-4 stroke-[2.5]" /> : <ArrowLeft className="w-4 h-4 stroke-[2.5]" />}
+                          <span>{lang === 'ar' ? 'السابق' : 'Précédent'}</span>
+                        </button>
+
+                        <button
+                          type="submit"
+                          disabled={isUploading}
+                          className="flex-1 py-3 bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] hover:from-[#E05E00] hover:to-[#FF9900] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          <Plus className="w-4 h-4 stroke-[3]" />
+                          <span>{lang === 'ar' ? 'حفظ وإضافة المنتج للمتجر' : 'Enregistrer le Produit'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </form>
               )}
             </div>
