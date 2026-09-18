@@ -174,16 +174,73 @@ export default function ProductDetailPage() {
 
   if (isPageLoading) {
     return (
-      <div className="min-h-[75vh] flex flex-col items-center justify-center text-center px-4 bg-[var(--obsidian)] text-[var(--white-titanium)]">
-        <div className="w-12 h-12 rounded-2xl bg-[#FF6B00]/10 border border-[#FF6B00]/30 flex items-center justify-center mb-4 shadow-xl shadow-[#FF6B00]/10">
-          <Loader2 className="w-6 h-6 text-[#FF6B00] animate-spin" />
+      <div className="py-8 sm:py-12 pb-28 sm:pb-32 bg-[var(--obsidian)] text-[var(--white-titanium)] min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Breadcrumb Skeleton */}
+          <div className="mb-6 flex items-center gap-2">
+            <div className="h-4 w-20 bg-white/10 rounded-full animate-pulse" />
+            <span className="text-white/20">/</span>
+            <div className="h-4 w-16 bg-white/10 rounded-full animate-pulse" />
+            <span className="text-white/20">/</span>
+            <div className="h-4 w-28 bg-white/10 rounded-full animate-pulse" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            {/* Gallery Skeleton */}
+            <div className="lg:col-span-7 space-y-4">
+              <div className="aspect-square sm:aspect-[4/3] w-full rounded-3xl bg-[#14141B] border border-white/10 flex flex-col items-center justify-center relative overflow-hidden">
+                <div className="w-14 h-14 rounded-2xl bg-[#FF6B00]/15 border border-[#FF6B00]/30 flex items-center justify-center mb-3 shadow-lg shadow-[#FF6B00]/20">
+                  <Loader2 className="w-7 h-7 text-[#FF6B00] animate-spin" />
+                </div>
+                <p className="text-sm font-bold text-[#F5F5F7]">
+                  {lang === 'ar' ? 'جارٍ تحميل تفاصيل المنتج...' : 'Chargement du produit...'}
+                </p>
+                <p className="text-xs text-[#A1A1AA] font-mono mt-1">
+                  {lang === 'ar' ? 'يرجى الانتظار لحظة' : 'Veuillez patienter un instant...'}
+                </p>
+              </div>
+
+              {/* Thumbnails row skeleton */}
+              <div className="flex gap-3">
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="w-20 h-20 rounded-2xl bg-[#18181F] border border-white/10 animate-pulse shrink-0"
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Product Meta & Checkout Form Skeleton */}
+            <div className="lg:col-span-5 space-y-6">
+              <div className="bg-[#14141B] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5">
+                <div className="h-6 w-32 bg-[#FF6B00]/20 border border-[#FF6B00]/30 rounded-full animate-pulse" />
+                <div className="h-8 w-4/5 bg-white/10 rounded-xl animate-pulse" />
+                <div className="h-4 w-1/2 bg-white/5 rounded-lg animate-pulse" />
+                <div className="h-10 w-48 bg-[#FF6B00]/20 rounded-2xl animate-pulse" />
+
+                <div className="pt-4 border-t border-white/10 space-y-3">
+                  <div className="h-4 w-28 bg-white/10 rounded animate-pulse" />
+                  <div className="flex gap-2.5">
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className="h-10 w-24 bg-white/5 border border-white/10 rounded-xl animate-pulse"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/10 space-y-3">
+                  <div className="h-10 w-full bg-white/5 border border-white/10 rounded-xl animate-pulse" />
+                  <div className="h-10 w-full bg-white/5 border border-white/10 rounded-xl animate-pulse" />
+                </div>
+
+                <div className="h-14 w-full bg-gradient-to-r from-[#FF6B00]/40 via-[#FFAA2C]/40 to-[#FF6B00]/40 border border-[#FF6B00]/50 rounded-2xl animate-pulse mt-6" />
+              </div>
+            </div>
+          </div>
         </div>
-        <p className="text-sm font-bold text-[#F5F5F7]">
-          {lang === 'ar' ? 'جارٍ تحميل تفاصيل المنتج...' : 'Chargement du produit...'}
-        </p>
-        <p className="text-xs text-[#A1A1AA] font-mono mt-1">
-          {lang === 'ar' ? 'يرجى الانتظار لحظة' : 'Veuillez patienter un instant...'}
-        </p>
       </div>
     );
   }

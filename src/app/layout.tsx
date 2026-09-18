@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { cookies } from 'next/headers';
 import { Plus_Jakarta_Sans, Readex_Pro, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import AppProviders from '@/components/providers/AppProviders';
@@ -60,17 +61,31 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  let initialLang: 'fr' | 'ar' = 'fr';
+  try {
+    const cookieStore = await cookies();
+    const cookieVal = cookieStore.get('electronics_lang')?.value;
+    if (cookieVal === 'ar' || cookieVal === 'fr') {
+      initialLang = cookieVal;
+    }
+  } catch (e) {
+    // Ignore error
+  }
+
+  const isArabic = initialLang === 'ar';
+
   return (
     <html
-      lang="fr"
-      dir="ltr"
-      className={`light ${plusJakartaSans.variable} ${readexPro.variable} ${jetbrainsMono.variable} scroll-smooth`}
+      lang={initialLang}
+      dir={isArabic ? 'rtl' : 'ltr'}
+      className={`light ${isArabic ? 'font-arabic' : 'font-latin'} ${plusJakartaSans.variable} ${readexPro.variable} ${jetbrainsMono.variable} scroll-smooth`}
       data-theme="light"
+      data-lang={initialLang}
       suppressHydrationWarning
     >
       <head>
@@ -91,6 +106,21 @@ export default function RootLayout({
                     document.documentElement.setAttribute('data-theme', 'light');
                     document.documentElement.style.colorScheme = 'light';
                   }
+
+                  var l = localStorage.getItem('electronics_lang');
+                  if (l === 'ar') {
+                    document.documentElement.lang = 'ar';
+                    document.documentElement.dir = 'rtl';
+                    document.documentElement.setAttribute('data-lang', 'ar');
+                    document.documentElement.classList.add('font-arabic');
+                    document.documentElement.classList.remove('font-latin');
+                  } else if (l === 'fr') {
+                    document.documentElement.lang = 'fr';
+                    document.documentElement.dir = 'ltr';
+                    document.documentElement.setAttribute('data-lang', 'fr');
+                    document.documentElement.classList.add('font-latin');
+                    document.documentElement.classList.remove('font-arabic');
+                  }
                 } catch(e) {}
               })();
             `,
@@ -104,7 +134,7 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-[var(--obsidian)] text-[var(--white-titanium)] min-h-screen transition-colors duration-200">
-        <AppProviders>{children}</AppProviders>
+        <AppProviders initialLang={initialLang}>{children}</AppProviders>
       </body>
     </html>
   );

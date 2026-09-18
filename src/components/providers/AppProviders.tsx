@@ -15,10 +15,16 @@ import CartDrawer from '@/components/cart/CartDrawer';
 import FastCheckoutModal from '@/components/checkout/FastCheckoutModal';
 import FloatingWhatsApp from '@/components/common/FloatingWhatsApp';
 
-export default function AppProviders({ children }: { children: React.ReactNode }) {
+export default function AppProviders({
+  children,
+  initialLang,
+}: {
+  children: React.ReactNode;
+  initialLang?: 'fr' | 'ar';
+}) {
   return (
     <ThemeProvider>
-      <LanguageProvider>
+      <LanguageProvider initialLang={initialLang}>
         <AuthProvider>
           <ProductProvider>
             <CartProvider>

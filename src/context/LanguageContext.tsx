@@ -526,25 +526,47 @@ const translations: Record<Language, Record<string, string>> = {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Language>('fr');
+function getInitialLanguage(propLang?: Language): Language {
+  if (propLang === 'ar' || propLang === 'fr') return propLang;
+  if (typeof document !== 'undefined') {
+    const attr = document.documentElement.getAttribute('data-lang') as Language | null;
+    if (attr === 'ar' || attr === 'fr') return attr;
+    try {
+      const saved = localStorage.getItem('electronics_lang') as Language | null;
+      if (saved === 'ar' || saved === 'fr') return saved;
+    } catch {}
+  }
+  return 'fr';
+}
+
+export function LanguageProvider({
+  children,
+  initialLang,
+}: {
+  children: React.ReactNode;
+  initialLang?: Language;
+}) {
+  const [lang, setLangState] = useState<Language>(() => getInitialLanguage(initialLang));
 
   useEffect(() => {
-    // Read preference from localStorage
+    // Read preference from localStorage or cookie
     const saved = localStorage.getItem('electronics_lang') as Language | null;
     if (saved === 'ar' || saved === 'fr') {
       setLangState(saved);
       applyLang(saved);
+    } else if (initialLang) {
+      applyLang(initialLang);
     } else {
       applyLang('fr');
     }
-  }, []);
+  }, [initialLang]);
 
   const applyLang = (targetLang: Language) => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
     root.lang = targetLang;
     root.dir = targetLang === 'ar' ? 'rtl' : 'ltr';
+    root.setAttribute('data-lang', targetLang);
     if (targetLang === 'ar') {
       root.classList.add('font-arabic');
       root.classList.remove('font-latin');
@@ -560,7 +582,12 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const setLanguage = (newLang: Language) => {
     setLangState(newLang);
-    localStorage.setItem('electronics_lang', newLang);
+    try {
+      localStorage.setItem('electronics_lang', newLang);
+      document.cookie = `electronics_lang=${newLang}; path=/; max-age=31536000; SameSite=Lax`;
+    } catch (e) {
+      // Ignore
+    }
     applyLang(newLang);
   };
 
