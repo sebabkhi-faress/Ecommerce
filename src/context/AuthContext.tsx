@@ -48,34 +48,6 @@ export interface User {
   createdAt?: string;
 }
 
-// Built-in accounts for immediate fallback & zero-config operation
-export const DEFAULT_ACCOUNTS = [
-  {
-    id: 'usr-admin-01',
-    email: 'admin@electronics.dz',
-    password: 'admin2026',
-    name: 'Directeur Admin DZ',
-    phone: '0550123456',
-    role: 'admin' as UserRole,
-  },
-  {
-    id: 'usr-delivery-01',
-    email: 'delivery@electronics.dz',
-    password: 'delivery2026',
-    name: 'Karim Livreur Express',
-    phone: '0661987654',
-    role: 'delivery' as UserRole,
-  },
-  {
-    id: 'usr-customer-01',
-    email: 'client@electronics.dz',
-    password: 'client2026',
-    name: 'Amine Client VIP',
-    phone: '0770334455',
-    role: 'customer' as UserRole,
-  },
-];
-
 interface AuthContextType {
   user: User | null;
   role: UserRole | null;
@@ -90,7 +62,6 @@ interface AuthContextType {
     role?: UserRole;
   }) => Promise<{ success: boolean; error?: string; user?: User }>;
   logout: () => void;
-  switchQuickAccount: (role: UserRole) => Promise<{ success: boolean; user?: User }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -128,11 +99,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const email = emailInput.trim().toLowerCase();
       const password = passwordInput.trim();
 
-      // 1. Try querying Supabase public.users if connected
+      if (!email || !password) {
+        return {
+          success: false,
+          error: 'Veuillez saisir votre email et mot de passe / يرجى إدخال البريد وكلمة المرور',
+        };
+      }
+
+      // Query Supabase public.users directly - NO static data fallback
       if (isSupabaseConfigured && supabase) {
         try {
           // Attempt 1: Direct search by email
-          const { data: userByEmail } = await supabase
+          const { data: userByEmail, error: emailErr } = await supabase
             .from('users')
             .select('*')
             .eq('email', email)
@@ -140,8 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           let userRow = userByEmail;
 
-          // Attempt 2: If not found by email, check if the email column contains a bcrypt hash
-          // (Handles the screenshot case where bcrypt hash was accidentally pasted into the email column)
+          // Attempt 2: Resilience if the bcrypt hash was mistakenly pasted into the email column
           if (!userRow) {
             const fallbackId =
               email === 'admin@electronics.dz'
@@ -197,38 +174,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
         } catch (err) {
-          console.warn('Supabase auth query error, falling back to local verification', err);
+          console.warn('Supabase auth query error:', err);
         }
-      }
-
-      // 2. Fallback check against built-in accounts
-      const matched = DEFAULT_ACCOUNTS.find(
-        (acc) => acc.email.toLowerCase() === email && verifyPassword(password, acc.password)
-      );
-
-      if (matched) {
-        const loggedInUser: User = {
-          id: matched.id,
-          email: matched.email,
-          name: matched.name,
-          phone: matched.phone,
-          role: matched.role,
-        };
-
-        setUser(loggedInUser);
-        localStorage.setItem('electronics_auth_user', JSON.stringify(loggedInUser));
-        if (loggedInUser.role === 'admin') {
-          localStorage.setItem('electronics_admin_auth', 'true');
-        } else {
-          localStorage.removeItem('electronics_admin_auth');
-        }
-
-        return { success: true, user: loggedInUser };
       }
 
       return {
         success: false,
-        error: 'Identifiants invalides / البريد أو كلمة المرور غير صحيحة',
+        error: 'Identifiants invalides / البريد الإلكتروني أو كلمة المرور غير صحيحة',
       };
     },
     []
@@ -256,7 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         createdAt: new Date().toISOString(),
       };
 
-      // Try inserting into Supabase
+      // Insert directly into Supabase public.users
       if (isSupabaseConfigured && supabase) {
         try {
           const { error } = await supabase.from('users').insert({
@@ -273,9 +225,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (error.code === '23505') {
               return { success: false, error: 'Cet email est déjà enregistré' };
             }
+            return { success: false, error: error.message };
           }
         } catch (err: any) {
           console.warn('Failed to insert user into Supabase', err);
+          return { success: false, error: 'Erreur de connexion à la base de données' };
         }
       }
 
@@ -296,14 +250,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('electronics_admin_auth');
   }, []);
 
-  const switchQuickAccount = useCallback(
-    async (targetRole: UserRole): Promise<{ success: boolean; user?: User }> => {
-      const account = DEFAULT_ACCOUNTS.find((a) => a.role === targetRole) || DEFAULT_ACCOUNTS[0];
-      return login(account.email, account.password);
-    },
-    [login]
-  );
-
   return (
     <AuthContext.Provider
       value={{
@@ -314,7 +260,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         logout,
-        switchQuickAccount,
       }}
     >
       {children}

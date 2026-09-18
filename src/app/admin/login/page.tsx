@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { Zap, Lock, Mail, Eye, EyeOff, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Zap, Lock, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { lang, t } = useLanguage();
   const { login } = useAuth();
-  const [email, setEmail] = useState('admin@electronics.dz');
-  const [password, setPassword] = useState('admin2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,15 +72,6 @@ export default function AdminLoginPage() {
               <p className="text-xs text-[#A1A1AA]">
                 {t('admin.login_subtitle')}
               </p>
-            </div>
-
-            {/* Quick Credentials Helper Box */}
-            <div className="p-3 bg-[#18181F] border border-white/5 rounded-xl text-[11px] text-[#FFAA2C] flex items-center justify-between">
-              <div>
-                <span className="font-semibold block">{t('admin.default_creds')}</span>
-                <span className="font-mono text-[#A1A1AA]">admin@electronics.dz / admin2026</span>
-              </div>
-              <ShieldCheck className="w-4 h-4 text-[#25D366]" />
             </div>
 
             {error && (

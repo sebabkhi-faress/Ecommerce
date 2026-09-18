@@ -10,12 +10,9 @@ import {
   Mail,
   Eye,
   EyeOff,
-  ShieldCheck,
   ArrowLeft,
   ArrowRight,
   Zap,
-  Truck,
-  UserCheck,
   Sparkles,
   Phone,
   User as UserIcon,
@@ -30,29 +27,14 @@ function LoginForm() {
   const { login, register, isAuthenticated, role: currentRole } = useAuth();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('admin@electronics.dz');
-  const [password, setPassword] = useState('admin2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [regRole, setRegRole] = useState<UserRole>('customer');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const handleQuickSelect = (type: 'admin' | 'delivery' | 'customer') => {
-    setMode('login');
-    setError('');
-    if (type === 'admin') {
-      setEmail('admin@electronics.dz');
-      setPassword('admin2026');
-    } else if (type === 'delivery') {
-      setEmail('delivery@electronics.dz');
-      setPassword('delivery2026');
-    } else {
-      setEmail('client@electronics.dz');
-      setPassword('client2026');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,56 +106,6 @@ function LoginForm() {
           {lang === 'ar' ? <ArrowRight className="w-3.5 h-3.5" /> : <ArrowLeft className="w-3.5 h-3.5" />}
           <span>{lang === 'ar' ? 'العودة إلى المتجر' : 'Retour à la boutique'}</span>
         </Link>
-
-        {/* Quick Role Fill Chips */}
-        <div className="space-y-2">
-          <p className="text-[11px] font-mono uppercase tracking-widest text-[#A1A1AA] text-center font-bold">
-            {lang === 'ar' ? '⚡ تجربة الحسابات السريعة بنقرة واحدة' : '⚡ Comptes démo en 1 clic'}
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickSelect('admin')}
-              className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
-                email === 'admin@electronics.dz'
-                  ? 'border-[#FF6B00] bg-[#FF6B00]/15 text-[#FF6B00] shadow-lg shadow-[#FF6B00]/20 scale-105'
-                  : 'border-white/10 bg-[#18181F] text-[#A1A1AA] hover:text-white'
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4 mx-auto mb-1 text-[#FF6B00]" />
-              <span className="text-xs font-bold block">Admin</span>
-              <span className="text-[9px] text-[#A1A1AA] block truncate">Direction</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickSelect('delivery')}
-              className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
-                email === 'delivery@electronics.dz'
-                  ? 'border-[#FFAA2C] bg-[#FFAA2C]/15 text-[#FFAA2C] shadow-lg shadow-[#FFAA2C]/20 scale-105'
-                  : 'border-white/10 bg-[#18181F] text-[#A1A1AA] hover:text-white'
-              }`}
-            >
-              <Truck className="w-4 h-4 mx-auto mb-1 text-[#FFAA2C]" />
-              <span className="text-xs font-bold block">{lang === 'ar' ? 'عامل توصيل' : 'Livreur'}</span>
-              <span className="text-[9px] text-[#A1A1AA] block truncate">{lang === 'ar' ? 'توصيل الطلبيات' : 'Course Express'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickSelect('customer')}
-              className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
-                email === 'client@electronics.dz'
-                  ? 'border-[#25D366] bg-[#25D366]/15 text-[#25D366] shadow-lg shadow-[#25D366]/20 scale-105'
-                  : 'border-white/10 bg-[#18181F] text-[#A1A1AA] hover:text-white'
-              }`}
-            >
-              <UserCheck className="w-4 h-4 mx-auto mb-1 text-[#25D366]" />
-              <span className="text-xs font-bold block">{lang === 'ar' ? 'زبون' : 'Client'}</span>
-              <span className="text-[9px] text-[#A1A1AA] block truncate">Suivi colis</span>
-            </button>
-          </div>
-        </div>
 
         {/* Main Card */}
         <div className="relative rounded-3xl p-[1px] bg-gradient-to-b from-[#FF6B00]/40 via-white/10 to-transparent shadow-2xl shadow-black/90">

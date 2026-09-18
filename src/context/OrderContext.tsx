@@ -53,151 +53,6 @@ interface OrderContextType {
   };
 }
 
-const INITIAL_ORDERS: Order[] = [
-  {
-    id: 'ord-101',
-    trackingCode: 'DZ-92841-COD',
-    fullName: 'Yacine Brahimi',
-    phone: '0550123456',
-    wilayaCode: '16',
-    wilayaNameFr: 'Alger',
-    wilayaNameAr: 'الجزائر العاصمة',
-    commune: 'Hydra, Résidence Les Pins',
-    deliveryMode: 'home',
-    notes: 'Appeler avant 14h svp',
-    items: [
-      {
-        productId: 'prod-1',
-        productNameFr: 'Aura Pro 2 — Écouteurs ANC Transparent',
-        productNameAr: 'أورا برو 2 — سماعات لاسلكية شفافة مع عزل نشط',
-        price: 6800,
-        quantity: 1,
-        selectedColor: 'Noir Obsidian Fumé',
-        image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=300&auto=format&fit=crop',
-      },
-    ],
-    subtotal: 6800,
-    deliveryFee: 400,
-    total: 7200,
-    status: 'in_delivery',
-    createdAt: '2026-09-17T14:30:00Z',
-  },
-  {
-    id: 'ord-102',
-    trackingCode: 'DZ-74198-COD',
-    fullName: 'Sara Mansouri',
-    phone: '0661987654',
-    wilayaCode: '31',
-    wilayaNameFr: 'Oran',
-    wilayaNameAr: 'وهران',
-    commune: 'Akid Lotfi, Face Clinique',
-    deliveryMode: 'desk',
-    items: [
-      {
-        productId: 'prod-2',
-        productNameFr: 'Apex Studio 90 — Casque Hi-Res Wireless',
-        productNameAr: 'أبيكس ستوديو 90 — سماعات رأس محيطية احترافية Hi-Res',
-        price: 14900,
-        quantity: 1,
-        selectedColor: 'Gris Sidéral Brossé',
-        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=300&auto=format&fit=crop',
-      },
-      {
-        productId: 'prod-7',
-        productNameFr: 'Pack Câbles Armored Kevlar 240W',
-        productNameAr: 'حزمة كابلات كيفلار المدرعة 240 واط',
-        price: 3200,
-        quantity: 1,
-        selectedColor: 'Noir & Tissage Orange',
-      },
-    ],
-    subtotal: 18100,
-    deliveryFee: 300,
-    total: 18400,
-    status: 'confirmed',
-    createdAt: '2026-09-17T11:15:00Z',
-  },
-  {
-    id: 'ord-103',
-    trackingCode: 'DZ-61520-COD',
-    fullName: 'Karim Ziane',
-    phone: '0770456123',
-    wilayaCode: '25',
-    wilayaNameFr: 'Constantine',
-    wilayaNameAr: 'قسنطينة',
-    commune: 'Ali Mendjeli, UV 05',
-    deliveryMode: 'home',
-    items: [
-      {
-        productId: 'prod-4',
-        productNameFr: 'HyperGaN 120W — Chargeur 4 Ports Ultra-Compact',
-        productNameAr: 'هايبر جان 120 واط — شاحن GaN فائق السرعة',
-        price: 7200,
-        quantity: 2,
-        selectedColor: 'Noir Mat Graphite',
-      },
-    ],
-    subtotal: 14400,
-    deliveryFee: 600,
-    total: 15000,
-    status: 'delivered',
-    createdAt: '2026-09-16T18:45:00Z',
-  },
-  {
-    id: 'ord-104',
-    trackingCode: 'DZ-48209-COD',
-    fullName: 'Mehdi Belkacem',
-    phone: '0555332211',
-    wilayaCode: '19',
-    wilayaNameFr: 'Sétif',
-    wilayaNameAr: 'سطيف',
-    commune: 'El Eulma Centre',
-    deliveryMode: 'home',
-    items: [
-      {
-        productId: 'prod-5',
-        productNameFr: 'TitanMag 10000 — Batterie MagSafe Transparent',
-        productNameAr: 'تيتان ماج 10000 — بطارية ماغ سيف شفافة سريعة Qi2',
-        price: 6400,
-        quantity: 1,
-        selectedColor: 'Noir Fumé Transparent',
-      },
-    ],
-    subtotal: 6400,
-    deliveryFee: 600,
-    total: 7000,
-    status: 'pending',
-    createdAt: '2026-09-17T18:10:00Z',
-  },
-  {
-    id: 'ord-105',
-    trackingCode: 'DZ-31902-COD',
-    fullName: 'Amine Benali',
-    phone: '0561884422',
-    wilayaCode: '06',
-    wilayaNameFr: 'Béjaïa',
-    wilayaNameAr: 'بجاية',
-    commune: 'Akbou Centre',
-    deliveryMode: 'home',
-    notes: 'Motif retour: Client injoignable au téléphone après 3 tentatives d\'appel',
-    items: [
-      {
-        productId: 'prod-3',
-        productNameFr: 'Horizon Ultra — Smartwatch AMOLED Titane',
-        productNameAr: 'هورايزون ألترا — ساعة ذكية تيتانيوم شاشة أموليد',
-        price: 18500,
-        quantity: 1,
-        selectedColor: 'Titane Naturel',
-      },
-    ],
-    subtotal: 18500,
-    deliveryFee: 500,
-    total: 19000,
-    status: 'retour',
-    createdAt: '2026-09-15T09:20:00Z',
-  },
-];
-
 // Helper to map Supabase snake_case rows to Order interface
 function mapRowToOrder(row: any): Order {
   return {
@@ -226,7 +81,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
 
-  // Fetch orders from Supabase (or fallback to localStorage)
+  // Fetch orders from Supabase (strictly dynamic database data)
   const fetchOrders = useCallback(async () => {
     if (isSupabaseConfigured && supabase) {
       try {
@@ -235,7 +90,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           const mappedOrders = data.map(mapRowToOrder);
           setOrders(mappedOrders);
           setIsSupabaseConnected(true);
@@ -245,25 +100,22 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
             // Ignore storage errors
           }
           return;
-        } else if (!error && data && data.length === 0) {
-          setIsSupabaseConnected(true);
         }
       } catch (err) {
-        console.warn('Supabase fetch failed, falling back to local data', err);
+        console.warn('Supabase fetch orders failed:', err);
       }
     }
 
-    // Fallback to localStorage or INITIAL_ORDERS
+    // Fallback only to client's locally persisted orders from this session
     try {
       const saved = localStorage.getItem('electronics_orders');
       if (saved) {
         setOrders(JSON.parse(saved));
       } else {
-        setOrders(INITIAL_ORDERS);
-        localStorage.setItem('electronics_orders', JSON.stringify(INITIAL_ORDERS));
+        setOrders([]);
       }
     } catch (e) {
-      setOrders(INITIAL_ORDERS);
+      setOrders([]);
     }
   }, []);
 
