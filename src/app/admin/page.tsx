@@ -3340,10 +3340,10 @@ export default function AdminDashboardPage() {
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-[#FFAA2C]">
+                            <span className="font-mono font-bold text-[#FF6B00] dark:text-[#FFAA2C]">
                               {ord.trackingCode}
                             </span>
-                            <span className="text-[11px] text-white font-medium truncate">
+                            <span className="text-[11px] text-[#0F172A] dark:text-white font-bold truncate">
                               {ord.fullName}
                             </span>
                           </div>
@@ -3376,21 +3376,21 @@ export default function AdminDashboardPage() {
             )}
 
             {/* EXPLICIT CONFIRMATION MESSAGE & CHECKBOX */}
-            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2">
+            <div className="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 space-y-2">
               <label className="flex items-start gap-3 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={deleteModal.isConfirmed}
                   onChange={(e) => setDeleteModal((prev) => ({ ...prev, isConfirmed: e.target.checked }))}
-                  className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-red-500 focus:ring-red-500 cursor-pointer accent-red-500"
+                  className="mt-0.5 w-4 h-4 rounded border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 text-red-500 focus:ring-red-500 cursor-pointer accent-red-500"
                 />
                 <div className="text-xs">
-                  <p className="font-bold text-[#F5F5F7]">
+                  <p className="font-bold text-[#0F172A] dark:text-[#F5F5F7]">
                     {lang === 'ar'
                       ? 'رسالة تأكيد الحذف النهائي وغير القابل للاسترجاع'
                       : 'Confirmation explicite de suppression irréversible'}
                   </p>
-                  <p className="text-[#A1A1AA] text-[11px] mt-0.5 leading-relaxed">
+                  <p className="text-[#64748B] dark:text-[#A1A1AA] text-[11px] mt-0.5 leading-relaxed font-medium">
                     {deleteModal.linkedOrders.length > 0
                       ? (lang === 'ar'
                           ? `أؤكد رغبتي الكاملة في حذف هذا المنتج وأوافق على حذف جميع الـ ${deleteModal.linkedOrders.length} طلبية المرتبطة به نهائياً.`
@@ -3404,12 +3404,12 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/10">
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-black/10 dark:border-white/10">
               <button
                 type="button"
                 onClick={() => setDeleteModal({ isOpen: false, products: [], linkedOrders: [], isDeleting: false, isConfirmed: false })}
                 disabled={deleteModal.isDeleting}
-                className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                className="px-4 py-2.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-xs font-bold text-[#64748B] dark:text-[#A1A1AA] hover:text-[#0F172A] dark:hover:text-white transition-colors cursor-pointer disabled:opacity-50"
               >
                 {lang === 'ar' ? 'إلغاء' : 'Annuler'}
               </button>
@@ -3615,19 +3615,19 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Description Body */}
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-white/[0.03] border border-white/10">
-              <p className="text-xs sm:text-sm text-[#E4E4E7] leading-relaxed font-medium">
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-black/[0.04] dark:bg-white/[0.04] border border-black/10 dark:border-white/10">
+              <p className="text-xs sm:text-sm text-[#0F172A] dark:text-[#E4E4E7] leading-relaxed font-semibold">
                 {genericConfirmModal.description}
               </p>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-white/10">
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-black/10 dark:border-white/10">
               <button
                 type="button"
                 onClick={() => setGenericConfirmModal((prev) => ({ ...prev, isOpen: false }))}
                 disabled={genericConfirmModal.isLoading}
-                className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                className="px-4 py-2.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-xs font-bold text-[#64748B] dark:text-[#A1A1AA] hover:text-[#0F172A] dark:hover:text-white transition-colors cursor-pointer disabled:opacity-50"
               >
                 {genericConfirmModal.cancelText || (lang === 'ar' ? 'إلغاء' : 'Annuler')}
               </button>

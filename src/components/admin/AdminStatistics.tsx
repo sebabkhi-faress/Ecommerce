@@ -432,14 +432,14 @@ export default function AdminStatistics() {
           </div>
 
           {/* Histogram Controls */}
-          <div className="flex items-center gap-1.5 p-1 bg-white/[0.03] border border-white/10 rounded-2xl self-start sm:self-auto">
+          <div className="flex items-center gap-1.5 p-1 bg-black/5 dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-2xl self-start sm:self-auto">
             <button
               type="button"
               onClick={() => setWilayaHistogramView('top10')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 wilayaHistogramView === 'top10'
-                  ? 'bg-white/15 text-white font-bold'
-                  : 'text-[#A1A1AA] hover:text-white'
+                  ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black shadow-md shadow-[#FF6B00]/25'
+                  : 'text-[#64748B] dark:text-[#A1A1AA] hover:text-[#0F172A] dark:hover:text-white'
               }`}
             >
               {lang === 'ar' ? 'أفضل 10' : 'Top 10'}
@@ -447,10 +447,10 @@ export default function AdminStatistics() {
             <button
               type="button"
               onClick={() => setWilayaHistogramView('top20')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 wilayaHistogramView === 'top20'
-                  ? 'bg-white/15 text-white font-bold'
-                  : 'text-[#A1A1AA] hover:text-white'
+                  ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black shadow-md shadow-[#FF6B00]/25'
+                  : 'text-[#64748B] dark:text-[#A1A1AA] hover:text-[#0F172A] dark:hover:text-white'
               }`}
             >
               {lang === 'ar' ? 'أفضل 20' : 'Top 20'}
@@ -458,10 +458,10 @@ export default function AdminStatistics() {
             <button
               type="button"
               onClick={() => setWilayaHistogramView('active')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 wilayaHistogramView === 'active'
-                  ? 'bg-white/15 text-white font-bold'
-                  : 'text-[#A1A1AA] hover:text-white'
+                  ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black shadow-md shadow-[#FF6B00]/25'
+                  : 'text-[#64748B] dark:text-[#A1A1AA] hover:text-[#0F172A] dark:hover:text-white'
               }`}
             >
               {lang === 'ar' ? 'كل الولايات النشطة' : 'Toutes actives'}
@@ -635,10 +635,10 @@ export default function AdminStatistics() {
                   </span>
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">
-                  <span className="text-base font-mono font-bold text-white">
+                  <span className="text-base font-mono font-black text-[#0F172A] dark:text-white">
                     {s.count}
                   </span>
-                  <span className="text-[11px] font-mono text-[#A1A1AA]">
+                  <span className="text-[11px] font-mono text-[#64748B] dark:text-[#A1A1AA]">
                     {s.percentage}%
                   </span>
                 </div>
@@ -717,7 +717,7 @@ export default function AdminStatistics() {
               value={wilayaSearch}
               onChange={(e) => setWilayaSearch(e.target.value)}
               placeholder={lang === 'ar' ? 'بحث بالاسم أو رقم الولاية...' : 'Filtrer par nom ou code...'}
-              className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 pl-9 text-xs text-white outline-none font-mono placeholder:text-[#A1A1AA]"
+              className="w-full bg-white dark:bg-[#18181F] border border-black/10 dark:border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 pl-9 text-xs text-[#0F172A] dark:text-white outline-none font-mono placeholder:text-[#64748B] dark:placeholder:text-[#A1A1AA]"
             />
             <Search className="w-4 h-4 text-[#A1A1AA] absolute left-3 top-2.5" />
           </div>
@@ -744,10 +744,10 @@ export default function AdminStatistics() {
                     <td className="p-3 font-mono font-bold text-[#FFAA2C]">
                       {w.code}
                     </td>
-                    <td className="p-3 font-bold text-white">
+                    <td className="p-3 font-bold text-[#0F172A] dark:text-white">
                       {lang === 'ar' ? w.nameAr : w.nameFr}
                     </td>
-                    <td className="p-3 font-mono font-bold text-[#F5F5F7]">
+                    <td className="p-3 font-mono font-bold text-[#0F172A] dark:text-[#F5F5F7]">
                       {w.totalOrders}
                     </td>
                     <td className="p-3 font-mono font-bold text-[#FF6B00]">

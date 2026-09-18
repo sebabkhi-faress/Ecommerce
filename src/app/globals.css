@@ -366,6 +366,12 @@ html:not(.dark) .text-\[\#F5F5F7\] {
   color: #0F172A !important;
 }
 
+html:not(.dark) .text-\[\#E4E4E7\],
+html:not(.dark) .text-\[\#E2E8F0\],
+html:not(.dark) .text-\[\#D4D4D8\] {
+  color: #0F172A !important;
+}
+
 html:not(.dark) .text-\[\#A1A1AA\] {
   color: #64748B !important;
 }
@@ -375,6 +381,20 @@ html:not(.dark) .hover\:text-white:hover {
 }
 
 html:not(.dark) .group:hover .group-hover\:text-white {
+  color: #0F172A !important;
+}
+
+/* Light mode transparent backgrounds mapping to subtle slate tint */
+html:not(.dark) .bg-white\/\[0\.02\],
+html:not(.dark) .bg-white\/\[0\.03\],
+html:not(.dark) .bg-white\/\[0\.04\],
+html:not(.dark) .bg-white\/\[0\.05\] {
+  background-color: rgba(15, 23, 42, 0.04) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+html:not(.dark) .bg-white\/15 {
+  background-color: rgba(15, 23, 42, 0.08) !important;
   color: #0F172A !important;
 }
 
