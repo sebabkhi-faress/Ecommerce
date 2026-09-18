@@ -377,12 +377,17 @@ ON CONFLICT (id) DO UPDATE SET
     category = EXCLUDED.category;
 
 -- 8. INITIAL SEED DATA FOR USERS & ROLES (Admin, Delivery Guy, Customer)
+-- Passwords hashed with bcrypt (Cost factor 10):
+-- 'admin2026'    -> '$2b$10$ELm9xmwqXGLyDdLyLwtXJeZxRnEeiIKcBONHOp8S.AKyeRaFKQwU6'
+-- 'delivery2026' -> '$2b$10$wlN2gLUB7Gsb8I8KOzPuCeBvdgt0IxKwuFBbwccY9cSRrvx9FzjtG'
+-- 'client2026'   -> '$2b$10$9Ras8tjUZQXG1Vijx0qes.iyXEMeKPCPV3.z25ak0lHwpclwhOhZu'
+
 INSERT INTO public.users (id, email, password, name, phone, role)
 VALUES
 (
     'usr-admin-01',
     'admin@electronics.dz',
-    'admin2026',
+    '$2b$10$ELm9xmwqXGLyDdLyLwtXJeZxRnEeiIKcBONHOp8S.AKyeRaFKQwU6',
     'Directeur Admin DZ',
     '0550123456',
     'admin'
@@ -390,7 +395,7 @@ VALUES
 (
     'usr-delivery-01',
     'delivery@electronics.dz',
-    'delivery2026',
+    '$2b$10$wlN2gLUB7Gsb8I8KOzPuCeBvdgt0IxKwuFBbwccY9cSRrvx9FzjtG',
     'Karim Livreur Express',
     '0661987654',
     'delivery'
@@ -398,12 +403,13 @@ VALUES
 (
     'usr-customer-01',
     'client@electronics.dz',
-    'client2026',
+    '$2b$10$9Ras8tjUZQXG1Vijx0qes.iyXEMeKPCPV3.z25ak0lHwpclwhOhZu',
     'Amine Client VIP',
     '0770334455',
     'customer'
 )
-ON CONFLICT (email) DO UPDATE SET
+ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
     password = EXCLUDED.password,
     name = EXCLUDED.name,
     phone = EXCLUDED.phone,

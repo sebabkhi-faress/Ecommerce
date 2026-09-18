@@ -1,7 +1,41 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import bcrypt from 'bcryptjs';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+
+/**
+ * Verifies a plain password against a stored password (bcrypt hash or plain text).
+ */
+export function verifyPassword(plainPassword: string, storedPasswordOrHash?: string | null): boolean {
+  if (!plainPassword || !storedPasswordOrHash) return false;
+
+  const trimmedStored = storedPasswordOrHash.trim();
+
+  // If stored value is a standard bcrypt hash ($2a$, $2b$, or $2y$)
+  if (
+    trimmedStored.startsWith('$2a$') ||
+    trimmedStored.startsWith('$2b$') ||
+    trimmedStored.startsWith('$2y$')
+  ) {
+    try {
+      return bcrypt.compareSync(plainPassword, trimmedStored);
+    } catch (err) {
+      console.warn('Bcrypt compare failed:', err);
+      return false;
+    }
+  }
+
+  // Fallback: plain text comparison
+  return plainPassword === trimmedStored;
+}
+
+/**
+ * Hashes a plain password using bcrypt (10 rounds).
+ */
+export function hashPassword(plainPassword: string): string {
+  return bcrypt.hashSync(plainPassword.trim(), 10);
+}
 
 export type UserRole = 'admin' | 'delivery' | 'customer';
 
@@ -97,32 +131,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // 1. Try querying Supabase public.users if connected
       if (isSupabaseConfigured && supabase) {
         try {
-          const { data, error } = await supabase
+          // Attempt 1: Direct search by email
+          const { data: userByEmail } = await supabase
             .from('users')
             .select('*')
             .eq('email', email)
-            .eq('password', password)
-            .single();
+            .maybeSingle();
 
-          if (!error && data) {
-            const loggedInUser: User = {
-              id: data.id,
-              email: data.email,
-              name: data.name,
-              phone: data.phone || '',
-              role: (data.role as UserRole) || 'customer',
-              createdAt: data.created_at,
-            };
+          let userRow = userByEmail;
 
-            setUser(loggedInUser);
-            localStorage.setItem('electronics_auth_user', JSON.stringify(loggedInUser));
-            if (loggedInUser.role === 'admin') {
-              localStorage.setItem('electronics_admin_auth', 'true');
-            } else {
-              localStorage.removeItem('electronics_admin_auth');
+          // Attempt 2: If not found by email, check if the email column contains a bcrypt hash
+          // (Handles the screenshot case where bcrypt hash was accidentally pasted into the email column)
+          if (!userRow) {
+            const fallbackId =
+              email === 'admin@electronics.dz'
+                ? 'usr-admin-01'
+                : email === 'delivery@electronics.dz'
+                ? 'usr-delivery-01'
+                : email === 'client@electronics.dz'
+                ? 'usr-customer-01'
+                : null;
+
+            if (fallbackId) {
+              const { data: userById } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', fallbackId)
+                .maybeSingle();
+
+              if (userById) {
+                userRow = userById;
+              }
+            }
+          }
+
+          if (userRow) {
+            // Verify password:
+            // 1. Standard: stored in userRow.password (supports bcrypt or plain)
+            let isMatch = verifyPassword(password, userRow.password);
+
+            // 2. Resilience: if bcrypt hash was accidentally placed in userRow.email
+            if (!isMatch && userRow.email && (userRow.email.startsWith('$2a$') || userRow.email.startsWith('$2b$') || userRow.email.startsWith('$2y$'))) {
+              isMatch = verifyPassword(password, userRow.email) || userRow.password === password;
             }
 
-            return { success: true, user: loggedInUser };
+            if (isMatch) {
+              const loggedInUser: User = {
+                id: userRow.id,
+                email: userRow.email.includes('@') ? userRow.email : email,
+                name: userRow.name,
+                phone: userRow.phone || '',
+                role: (userRow.role as UserRole) || 'customer',
+                createdAt: userRow.created_at,
+              };
+
+              setUser(loggedInUser);
+              localStorage.setItem('electronics_auth_user', JSON.stringify(loggedInUser));
+              if (loggedInUser.role === 'admin') {
+                localStorage.setItem('electronics_admin_auth', 'true');
+              } else {
+                localStorage.removeItem('electronics_admin_auth');
+              }
+
+              return { success: true, user: loggedInUser };
+            }
           }
         } catch (err) {
           console.warn('Supabase auth query error, falling back to local verification', err);
@@ -131,7 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // 2. Fallback check against built-in accounts
       const matched = DEFAULT_ACCOUNTS.find(
-        (acc) => acc.email.toLowerCase() === email && acc.password === password
+        (acc) => acc.email.toLowerCase() === email && verifyPassword(password, acc.password)
       );
 
       if (matched) {
@@ -173,6 +245,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const email = userData.email.trim().toLowerCase();
       const role = userData.role || 'customer';
       const id = `usr-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+      const hashedPassword = hashPassword(userData.password);
 
       const newUser: User = {
         id,
@@ -189,7 +262,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { error } = await supabase.from('users').insert({
             id: newUser.id,
             email: newUser.email,
-            password: userData.password,
+            password: hashedPassword,
             name: newUser.name,
             phone: newUser.phone,
             role: newUser.role,
