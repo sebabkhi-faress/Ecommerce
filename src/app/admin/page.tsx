@@ -334,15 +334,23 @@ export default function AdminDashboardPage() {
 
   // Quick Add Product Drawer state
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
-  const [newProdName, setNewProdName] = useState('');
+  const [newProdNameFr, setNewProdNameFr] = useState('');
+  const [newProdNameAr, setNewProdNameAr] = useState('');
   const [newProdCategory, setNewProdCategory] = useState('earbuds');
   const [newProdPrice, setNewProdPrice] = useState('');
-  const [newProdImage, setNewProdImage] = useState(
-    'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=600&auto=format&fit=crop'
-  );
+  const [newProdOriginalPrice, setNewProdOriginalPrice] = useState('');
+  const [newProdStock, setNewProdStock] = useState('20');
+  const [newProdTaglineFr, setNewProdTaglineFr] = useState('');
+  const [newProdTaglineAr, setNewProdTaglineAr] = useState('');
+  const [newProdDescFr, setNewProdDescFr] = useState('');
+  const [newProdDescAr, setNewProdDescAr] = useState('');
+  const [newProdIsFlashDeal, setNewProdIsFlashDeal] = useState(false);
+  const [newProdBadge, setNewProdBadge] = useState('');
+  const [newProdImage, setNewProdImage] = useState('');
   const [newProdSuccess, setNewProdSuccess] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
 
   const { user, role: authRole, logout: authLogout } = useAuth();
 
@@ -473,30 +481,77 @@ export default function AdminDashboardPage() {
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploadError(null);
-    const trimmedName = newProdName.trim();
-    if (!trimmedName) {
-      setUploadError(lang === 'ar' ? 'يرجى إدخال اسم المنتج' : 'Veuillez renseigner le nom du produit');
+
+    const nameFr = newProdNameFr.trim() || newProdNameAr.trim();
+    const nameAr = newProdNameAr.trim() || newProdNameFr.trim();
+    if (!nameFr && !nameAr) {
+      setUploadError(lang === 'ar' ? 'يرجى إدخال اسم المنتج (بالعربية أو الفرنسية)' : 'Veuillez renseigner le nom du produit');
       return;
     }
+
+    const priceNum = Number(newProdPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      setUploadError(lang === 'ar' ? 'يرجى إدخال سعر صالح أكبر من 0 دج' : 'Veuillez saisir un prix valide');
+      return;
+    }
+
+    const stockNum = Number(newProdStock);
+    if (isNaN(stockNum) || stockNum < 0 || newProdStock === '') {
+      setUploadError(lang === 'ar' ? 'الكمية في المخزون إجبارية (يرجى إدخال رقم 0 أو أكثر)' : 'La quantité en stock est obligatoire');
+      return;
+    }
+
+    if (!newProdImage) {
+      setUploadError(lang === 'ar' ? 'صورة المنتج إجبارية (يرجى رفع صورة من جهازك)' : 'L’image du produit est obligatoire (téléversez depuis votre appareil)');
+      return;
+    }
+
+    const origPriceNum = newProdOriginalPrice ? Number(newProdOriginalPrice) : undefined;
+
     const result = await addProduct({
-      nameFr: trimmedName,
-      nameAr: trimmedName,
-      price: Number(newProdPrice) || 0,
+      nameFr,
+      nameAr,
+      price: priceNum,
+      originalPrice: origPriceNum && origPriceNum > priceNum ? origPriceNum : undefined,
       category: newProdCategory,
+      stockCount: stockNum,
       images: [newProdImage],
-      stockCount: 15,
+      taglineFr: newProdTaglineFr.trim() || undefined,
+      taglineAr: newProdTaglineAr.trim() || undefined,
+      descriptionFr: newProdDescFr.trim() || undefined,
+      descriptionAr: newProdDescAr.trim() || undefined,
+      isFlashDeal: newProdIsFlashDeal,
+      badgeFr: newProdBadge.trim() || (newProdIsFlashDeal ? 'PROMO' : undefined),
+      badgeAr: newProdBadge.trim() || (newProdIsFlashDeal ? 'تخفيض' : undefined),
     });
 
     if (result.success) {
       setNewProdSuccess(true);
+      showToast(
+        lang === 'ar' ? 'تمت إضافة المنتج بنجاح' : 'Produit ajouté avec succès',
+        'success',
+        lang === 'ar' ? `تم نشر ${nameAr || nameFr} في المتجر` : `${nameFr} est maintenant disponible`
+      );
       setTimeout(() => {
         setNewProdSuccess(false);
         setIsAddProductOpen(false);
-        setNewProdName('');
+        // Reset form fields
+        setNewProdNameFr('');
+        setNewProdNameAr('');
         setNewProdPrice('');
-      }, 1200);
+        setNewProdOriginalPrice('');
+        setNewProdStock('20');
+        setNewProdImage('');
+        setNewProdTaglineFr('');
+        setNewProdTaglineAr('');
+        setNewProdDescFr('');
+        setNewProdDescAr('');
+        setNewProdIsFlashDeal(false);
+        setNewProdBadge('');
+        setShowOptionalFields(false);
+      }, 1000);
     } else {
-      setUploadError(result.error || 'Erreur lors de l’enregistrement');
+      setUploadError(result.error || (lang === 'ar' ? 'حدث خطأ أثناء حفظ المنتج' : 'Erreur lors de l’enregistrement'));
     }
   };
 
@@ -2748,56 +2803,98 @@ export default function AdminDashboardPage() {
             className="fixed inset-0 bg-black/80 backdrop-blur-sm"
           />
 
-          <div className="min-h-full flex items-center justify-center p-4">
-            <div className="relative bg-[#14141B] border border-white/15 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl">
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/10">
-                <h3 className="text-base font-black text-[#F5F5F7] uppercase tracking-wider">
-                  {t('admin.modal_add_title')}
-                </h3>
+          <div className="min-h-full flex items-center justify-center p-3 sm:p-4">
+            <div className="relative bg-[#14141B] border border-white/15 rounded-3xl w-[95vw] sm:max-w-xl max-h-[92vh] overflow-y-auto p-4 sm:p-7 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between pb-3.5 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-[#FF6B00]/15 border border-[#FF6B00]/30 text-[#FF6B00] flex items-center justify-center">
+                    <Plus className="w-4 h-4 stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-black text-[#F5F5F7]">
+                      {lang === 'ar' ? 'إضافة منتج جديد للمتجر' : 'Ajouter un Nouveau Produit'}
+                    </h3>
+                    <p className="text-[11px] text-[#A1A1AA]">
+                      {lang === 'ar' ? 'الحقول بعلامة (*) إجبارية' : 'Les champs marqués d’une (*) sont obligatoires'}
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setIsAddProductOpen(false)}
-                  className="p-1 rounded-lg text-[#A1A1AA] hover:text-white"
+                  className="p-1.5 rounded-xl text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {newProdSuccess ? (
-                <div className="p-8 text-center space-y-2">
-                  <CheckCircle className="w-12 h-12 text-[#25D366] mx-auto animate-bounce" />
-                  <p className="text-sm font-bold text-white">{t('admin.add_success')}</p>
+                <div className="p-8 text-center space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-[#25D366] mx-auto flex items-center justify-center animate-bounce">
+                    <CheckCircle className="w-8 h-8" />
+                  </div>
+                  <p className="text-sm font-black text-white">{t('admin.add_success')}</p>
                 </div>
               ) : (
                 <form onSubmit={handleAddProduct} className="space-y-4 text-xs">
-                  {/* Unified Product Name */}
-                  <div>
-                    <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
-                      <span>{lang === 'ar' ? 'اسم المنتج *' : 'Nom du Produit *'}</span>
-                      <span className="text-[10px] text-[#FFAA2C] font-normal">
-                        {lang === 'ar' ? 'اسم موحد لجميع اللغات' : 'Nom unique de l’article'}
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={newProdName}
-                      onChange={(e) => setNewProdName(e.target.value)}
-                      placeholder={lang === 'ar' ? 'مثال: Cyberbuds X9 — سماعات ANC 2026' : 'Ex: Cyberbuds X9 — Écouteurs ANC 2026'}
-                      className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white outline-none focus:border-[#FF6B00]"
-                    />
+                  {uploadError && (
+                    <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-semibold flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                      <span>{uploadError}</span>
+                    </div>
+                  )}
+
+                  {/* 1. Product Names (AR & FR) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
+                        <span>{lang === 'ar' ? 'اسم المنتج بالعربية *' : 'Nom en Arabe *'}</span>
+                        <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Requis *'}</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        dir="rtl"
+                        value={newProdNameAr}
+                        onChange={(e) => {
+                          setNewProdNameAr(e.target.value);
+                          if (!newProdNameFr) setNewProdNameFr(e.target.value);
+                        }}
+                        placeholder={lang === 'ar' ? 'مثال: Cyberbuds X9 — سماعات بلوتوث' : 'Ex: سماعات بلوتوث'}
+                        className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white outline-none text-right"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
+                        <span>{lang === 'ar' ? 'اسم المنتج بالفرنسية *' : 'Nom en Français *'}</span>
+                        <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Requis *'}</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newProdNameFr}
+                        onChange={(e) => {
+                          setNewProdNameFr(e.target.value);
+                          if (!newProdNameAr) setNewProdNameAr(e.target.value);
+                        }}
+                        placeholder="Ex: Cyberbuds X9 ANC Earbuds"
+                        className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white outline-none"
+                      />
+                    </div>
                   </div>
 
-                  {/* Category & Price */}
-                  <div className="grid grid-cols-2 gap-3">
+                  {/* 2. Category & Mandatory Quantity (Stock) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[#A1A1AA] mb-1 font-semibold">
-                        {t('admin.lbl_category')}
+                      <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
+                        <span>{t('admin.lbl_category')} *</span>
+                        <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Requis *'}</span>
                       </label>
                       <div className="relative">
                         <select
                           value={newProdCategory}
                           onChange={(e) => setNewProdCategory(e.target.value as any)}
-                          className="w-full appearance-none bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-base sm:text-xs text-white outline-none cursor-pointer"
+                          className="w-full appearance-none bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-xs text-white outline-none cursor-pointer"
                         >
                           {categories.length > 0 ? (
                             categories.map((c) => (
@@ -2822,96 +2919,271 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <div>
-                      <label className="block text-[#A1A1AA] mb-1 font-semibold">
-                        {t('admin.lbl_price')}
+                      <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
+                        <span>{lang === 'ar' ? 'الكمية في المخزون (Stock) *' : 'Quantité en Stock *'}</span>
+                        <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Obligatoire *'}</span>
+                      </label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        required
+                        value={newProdStock}
+                        onChange={(e) => setNewProdStock(e.target.value)}
+                        placeholder="20"
+                        className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white font-mono font-bold outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3. Price & Original Price */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
+                        <span>{t('admin.lbl_price')} (DZD) *</span>
+                        <span className="text-[10px] text-[#FF6B00] font-bold">{lang === 'ar' ? 'إجباري *' : 'Requis *'}</span>
                       </label>
                       <input
                         type="number"
                         inputMode="numeric"
                         required
+                        min="1"
                         value={newProdPrice}
                         onChange={(e) => setNewProdPrice(e.target.value)}
                         placeholder="Ex: 8500"
-                        className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-[#FF6B00]"
+                        className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white font-mono font-bold outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[#A1A1AA] mb-1 font-bold flex items-center justify-between">
+                        <span>{lang === 'ar' ? 'السعر القديم المشطوب (د.ج)' : 'Prix barré (DZD)'}</span>
+                        <span className="text-[10px] text-[#A1A1AA] font-normal">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
+                      </label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        value={newProdOriginalPrice}
+                        onChange={(e) => setNewProdOriginalPrice(e.target.value)}
+                        placeholder="Ex: 11000"
+                        className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 text-white font-mono outline-none"
                       />
                     </div>
                   </div>
 
-                  {/* Image Upload & URL */}
+                  {/* 4. Product Image (DEVICE UPLOAD ONLY - NO URL LINK INPUT) */}
                   <div className="space-y-2">
-                    <label className="block text-[#A1A1AA] font-semibold">
-                      {lang === 'ar' ? 'صورة المنتج (رفع صورة أو رابط مباشر)' : 'Image du produit (Téléversement ou Lien URL)'}
+                    <label className="block text-[#A1A1AA] font-bold flex items-center justify-between">
+                      <span>{lang === 'ar' ? 'صورة المنتج *' : 'Photo du Produit *'}</span>
+                      <span className="text-[10px] text-[#FF6B00] font-bold">
+                        {lang === 'ar' ? 'رفع من جهازك (إجباري) *' : 'Téléversement obligatoire *'}
+                      </span>
                     </label>
 
-                    {/* File Upload Button */}
-                    <div>
-                      <label className="flex items-center justify-center gap-2 p-3 bg-[#18181F] hover:bg-[#22222B] border border-dashed border-white/20 hover:border-[#FF6B00] rounded-xl text-xs cursor-pointer transition-colors text-[#F5F5F7]">
-                        <UploadCloud className={`w-4 h-4 ${isUploading ? 'animate-bounce text-[#FF6B00]' : 'text-[#FFAA2C]'}`} />
-                        <span className="font-semibold">
-                          {isUploading
-                            ? (lang === 'ar' ? 'جارٍ رفع الصورة...' : 'Téléversement en cours...')
-                            : (lang === 'ar' ? 'رفع صورة من جهازك' : 'Téléverser une image')}
-                        </span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          disabled={isUploading}
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            setIsUploading(true);
-                            setUploadError(null);
-                            const { url, error } = await uploadProductImage(file);
-                            setIsUploading(false);
-                            if (url) {
-                              setNewProdImage(url);
-                            } else if (error) {
-                              setUploadError(error);
-                            }
-                          }}
-                          className="hidden"
-                        />
-                      </label>
-                      {uploadError && (
-                        <p className="text-[11px] text-red-400 mt-1">{uploadError}</p>
-                      )}
-                    </div>
-
-                    {/* Direct URL input */}
-                    <input
-                      type="url"
-                      required
-                      value={newProdImage}
-                      onChange={(e) => setNewProdImage(e.target.value)}
-                      placeholder="https://..."
-                      className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-[#FF6B00]"
-                    />
-
-                    {newProdImage && (
-                      <div className="mt-2 flex items-center gap-3 p-2 bg-[#18181F] rounded-xl border border-white/10">
+                    {!newProdImage ? (
+                      <div>
+                        <label className={`flex flex-col items-center justify-center p-5 bg-[#18181F] hover:bg-[#22222B] border-2 border-dashed ${uploadError && !newProdImage ? 'border-red-500/50' : 'border-white/20'} hover:border-[#FF6B00] rounded-2xl cursor-pointer transition-all group text-center`}>
+                          <UploadCloud className={`w-8 h-8 mb-2 transition-transform group-hover:scale-110 ${isUploading ? 'animate-bounce text-[#FF6B00]' : 'text-[#FFAA2C]'}`} />
+                          <span className="font-bold text-xs text-white mb-1">
+                            {isUploading
+                              ? (lang === 'ar' ? 'جارٍ رفع الصورة ومعالجتها...' : 'Téléversement en cours...')
+                              : (lang === 'ar' ? 'اضغط هنا لرفع صورة المنتج من هاتفك أو جهازك' : 'Cliquez pour téléverser une photo')}
+                          </span>
+                          <span className="text-[10px] text-[#A1A1AA]">
+                            PNG, JPG, WEBP — {lang === 'ar' ? 'تُحفظ تلقائياً في السيرفر' : 'Stockage cloud instantané'}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploading}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setIsUploading(true);
+                              setUploadError(null);
+                              const { url, error } = await uploadProductImage(file);
+                              setIsUploading(false);
+                              if (url) {
+                                setNewProdImage(url);
+                              } else if (error) {
+                                setUploadError(error);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 p-3 bg-[#18181F] rounded-2xl border border-emerald-500/40">
                         <img
                           src={newProdImage}
                           alt="Preview"
-                          className="w-14 h-14 object-cover rounded-lg bg-black shrink-0 border border-white/10"
+                          className="w-16 h-16 object-cover rounded-xl bg-black shrink-0 border border-white/10"
                         />
                         <div className="min-w-0 flex-1">
-                          <span className="text-[11px] text-[#25D366] font-semibold block">
-                            {t('admin.img_validated')}
+                          <span className="text-xs text-[#25D366] font-bold flex items-center gap-1.5 mb-1">
+                            <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>{lang === 'ar' ? 'تم رفع الصورة وتثبيتها بنجاح' : 'Image téléversée avec succès'}</span>
                           </span>
                           <span className="text-[10px] text-[#A1A1AA] truncate block font-mono">
-                            {newProdImage}
+                            {newProdImage.split('/').pop()}
                           </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setNewProdImage('')}
+                          className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer shrink-0"
+                          title={lang === 'ar' ? 'حذف واختيار صورة أخرى' : 'Supprimer'}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>{lang === 'ar' ? 'حذف الصورة' : 'Supprimer'}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 5. Optional Fields Toggle (Taglines, Descriptions, Flash Deal, Badge) */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowOptionalFields(!showOptionalFields)}
+                      className="w-full py-2.5 px-3 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors flex items-center justify-between cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Sliders className="w-3.5 h-3.5 text-[#FFAA2C]" />
+                        <span>
+                          {lang === 'ar'
+                            ? (showOptionalFields ? 'إخفاء الحقول الإضافية' : 'إظهار الحقول الإضافية (الوصف، الشعارات، العروض)')
+                            : (showOptionalFields ? 'Masquer les champs optionnels' : 'Afficher les champs optionnels (Description, Slogans, Offres)')}
+                        </span>
+                      </span>
+                      <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showOptionalFields ? 'rotate-180 text-[#FFAA2C]' : ''}`} />
+                    </button>
+
+                    {showOptionalFields && (
+                      <div className="mt-3 p-3.5 bg-white/[0.02] border border-white/10 rounded-2xl space-y-3">
+                        {/* Taglines */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
+                              <span>{lang === 'ar' ? 'عبارة تسويقية بالعربية' : 'Slogan court (Arabe)'}</span>
+                              <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
+                            </label>
+                            <input
+                              type="text"
+                              dir="rtl"
+                              value={newProdTaglineAr}
+                              onChange={(e) => setNewProdTaglineAr(e.target.value)}
+                              placeholder={lang === 'ar' ? 'مثال: عزل ضوضاء فائق وبطارية تدوم 40 ساعة' : 'Slogan en arabe'}
+                              className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none text-right"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
+                              <span>{lang === 'ar' ? 'عبارة تسويقية بالفرنسية' : 'Slogan court (Français)'}</span>
+                              <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={newProdTaglineFr}
+                              onChange={(e) => setNewProdTaglineFr(e.target.value)}
+                              placeholder="Ex: Réduction active du bruit & 40h d'autonomie"
+                              className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Detailed Descriptions */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
+                              <span>{lang === 'ar' ? 'الوصف التفصيلي بالعربية' : 'Description détaillée (Arabe)'}</span>
+                              <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
+                            </label>
+                            <textarea
+                              rows={3}
+                              dir="rtl"
+                              value={newProdDescAr}
+                              onChange={(e) => setNewProdDescAr(e.target.value)}
+                              placeholder={lang === 'ar' ? 'اكتب تفاصيل وميزات المنتج هنا...' : 'Description en arabe'}
+                              className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none text-right resize-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
+                              <span>{lang === 'ar' ? 'الوصف التفصيلي بالفرنسية' : 'Description détaillée (Français)'}</span>
+                              <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
+                            </label>
+                            <textarea
+                              rows={3}
+                              value={newProdDescFr}
+                              onChange={(e) => setNewProdDescFr(e.target.value)}
+                              placeholder="Description complète du produit, caractéristiques..."
+                              className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none resize-none"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Flash Deal & Badge */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center pt-1">
+                          <label className="flex items-center gap-3 p-3 bg-[#18181F] rounded-xl border border-white/10 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={newProdIsFlashDeal}
+                              onChange={(e) => setNewProdIsFlashDeal(e.target.checked)}
+                              className="w-4 h-4 rounded text-[#FF6B00] accent-[#FF6B00] cursor-pointer"
+                            />
+                            <div>
+                              <span className="font-bold text-white text-xs block flex items-center gap-1.5">
+                                <Flame className="w-3.5 h-3.5 text-[#FF6B00]" />
+                                <span>{lang === 'ar' ? 'عرض فلاش خاص (Flash Deal)' : 'Offre Flash Spéciale'}</span>
+                              </span>
+                              <span className="text-[10px] text-[#A1A1AA]">
+                                {lang === 'ar' ? 'يظهر مع عداد وتأثير بصري ترويجي' : 'Badge promo avec compte à rebours'}
+                              </span>
+                            </div>
+                          </label>
+
+                          <div>
+                            <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
+                              <span>{lang === 'ar' ? 'نص شارة العرض' : 'Badge Promo'}</span>
+                              <span className="text-[10px] text-[#A1A1AA]">{lang === 'ar' ? 'اختياري' : 'Optionnel'}</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={newProdBadge}
+                              onChange={(e) => setNewProdBadge(e.target.value)}
+                              placeholder="Ex: PROMO, جديد, الأكثر طلباً"
+                              className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2 text-white outline-none"
+                            />
+                          </div>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  <button
-                    type="submit"
-                    className="w-full py-3 bg-[#FF6B00] hover:bg-[#E05E00] text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 transition-all cursor-pointer mt-4"
-                  >
-                    {t('admin.btn_save')}
-                  </button>
+                  {/* 6. Modal Actions */}
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddProductOpen(false)}
+                      className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-[#A1A1AA] hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
+                    >
+                      {lang === 'ar' ? 'إلغاء' : 'Annuler'}
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={isUploading}
+                      className="flex-[2] py-3 bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] hover:from-[#E05E00] hover:to-[#FF9900] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <Plus className="w-4 h-4 stroke-[3]" />
+                      <span>{t('admin.btn_save')}</span>
+                    </button>
+                  </div>
                 </form>
               )}
             </div>
