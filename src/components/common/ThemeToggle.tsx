@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { Sun, Moon } from 'lucide-react';
@@ -20,6 +20,9 @@ export default function ThemeToggle({
 }: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme();
   const { lang } = useLanguage();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const isDark = theme === 'dark';
 
@@ -42,6 +45,20 @@ export default function ThemeToggle({
     md: 'w-4 h-4',
     lg: 'w-5 h-5',
   }[size];
+
+  if (!mounted) {
+    // Render a stable placeholder during SSR/hydration to avoid flash
+    return (
+      <button
+        type="button"
+        disabled
+        className={`relative inline-flex items-center justify-center rounded-xl border transition-all cursor-pointer group select-none ${sizeClasses} bg-white/5 border-white/10 ${className}`}
+        aria-label="Theme toggle"
+      >
+        <span className={`${iconSizes} opacity-0`} />
+      </button>
+    );
+  }
 
   if (variant === 'pill') {
     return (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -12,23 +12,17 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Light mode is the default
-  const [theme, setThemeState] = useState<Theme>('light');
-  const [mounted, setMounted] = useState(false);
+function getInitialTheme(): Theme {
+  if (typeof document !== 'undefined') {
+    const attr = document.documentElement.getAttribute('data-theme');
+    if (attr === 'dark' || attr === 'light') return attr;
+  }
+  return 'light';
+}
 
-  useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem('electronics_theme') as Theme | null;
-    if (saved === 'dark' || saved === 'light') {
-      setThemeState(saved);
-      applyTheme(saved);
-    } else {
-      // Default to light mode
-      setThemeState('light');
-      applyTheme('light');
-    }
-  }, []);
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  // Read the theme already applied by the blocking inline script — no flash
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
 
   const applyTheme = (newTheme: Theme) => {
     const root = document.documentElement;
