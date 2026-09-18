@@ -3,7 +3,8 @@
 import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
-import { useOrders } from '@/context/OrderContext';
+import { useOrders, useDeliveryFees } from '@/context/OrderContext';
+import { usePromotions } from '@/context/ProductContext';
 import { useCart } from '@/context/CartContext';
 import { WILAYAS, Wilaya, getWilayaByCode } from '@/data/wilayas';
 import { Product, formatDZD } from '@/data/products';
@@ -19,6 +20,7 @@ import {
   User,
   MapPin,
   ChevronDown,
+  Tag,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -36,6 +38,8 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
   const router = useRouter();
   const { lang, t } = useLanguage();
   const { createOrder, checkPhoneBannedAsync, isPhoneBanned } = useOrders();
+  const { getDeliveryFeeForWilaya } = useDeliveryFees();
+  const { getPromotionForProduct } = usePromotions();
   const { clearCart } = useCart();
 
   const [fullName, setFullName] = useState('');
@@ -54,16 +58,47 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
     [selectedWilayaCode]
   );
 
-  const subtotal = useMemo(
-    () => items.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
-    [items]
+  // Dynamic delivery fees from database / context
+  const homeDeliveryFee = useMemo(
+    () => getDeliveryFeeForWilaya(selectedWilaya.code, 'home'),
+    [getDeliveryFeeForWilaya, selectedWilaya.code]
   );
 
-  const deliveryFee = useMemo(() => {
-    return deliveryMode === 'home'
-      ? selectedWilaya.homeDeliveryFee
-      : selectedWilaya.deskDeliveryFee;
-  }, [deliveryMode, selectedWilaya]);
+  const deskDeliveryFee = useMemo(
+    () => getDeliveryFeeForWilaya(selectedWilaya.code, 'desk'),
+    [getDeliveryFeeForWilaya, selectedWilaya.code]
+  );
+
+  const deliveryFee = deliveryMode === 'home' ? homeDeliveryFee : deskDeliveryFee;
+
+  // Calculate promotional prices for all items in checkout
+  const itemsWithPricing = useMemo(() => {
+    return items.map((item) => {
+      const promo = getPromotionForProduct(item.product);
+      const unitPrice = promo ? promo.finalPrice : item.product.price;
+      const originalUnitPrice = item.product.price;
+      const hasDiscount = promo !== null && promo.savings > 0;
+      return {
+        ...item,
+        unitPrice,
+        originalUnitPrice,
+        hasDiscount,
+        promo,
+        itemTotal: unitPrice * item.quantity,
+        totalSavings: hasDiscount && promo ? promo.savings * item.quantity : 0,
+      };
+    });
+  }, [items, getPromotionForProduct]);
+
+  const subtotal = useMemo(
+    () => itemsWithPricing.reduce((sum, item) => sum + item.itemTotal, 0),
+    [itemsWithPricing]
+  );
+
+  const totalPromoSavings = useMemo(
+    () => itemsWithPricing.reduce((sum, item) => sum + item.totalSavings, 0),
+    [itemsWithPricing]
+  );
 
   const total = subtotal + deliveryFee;
 
@@ -116,11 +151,11 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
     }
 
     try {
-      const orderItems = items.map((item) => ({
+      const orderItems = itemsWithPricing.map((item) => ({
         productId: item.product.id,
         productNameFr: item.product.nameFr,
         productNameAr: item.product.nameAr,
-        price: item.product.price,
+        price: item.unitPrice,
         quantity: item.quantity,
         selectedColor: item.selectedColor,
         image: item.product.images[0],
@@ -178,26 +213,38 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
           </span>
         </h4>
 
-        <div className="space-y-2 max-h-40 overflow-y-auto">
-          {items.map((item, idx) => (
-            <div key={idx} className="flex items-center gap-3 text-xs">
+        <div className="space-y-2.5 max-h-48 overflow-y-auto">
+          {itemsWithPricing.map((item, idx) => (
+            <div key={idx} className="flex items-center gap-3 text-xs bg-white/[0.02] p-2 rounded-xl border border-white/5">
               <img
                 src={item.product.images[0]}
                 alt={item.product.nameFr}
-                className="w-12 h-12 object-cover rounded-lg bg-black/40 border border-white/10"
+                className="w-12 h-12 object-cover rounded-lg bg-black/40 border border-white/10 shrink-0"
               />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-[#F5F5F7] truncate">
                   {lang === 'ar' ? item.product.nameAr : item.product.nameFr}
                 </p>
-                <div className="flex items-center gap-2 text-[11px] text-[#A1A1AA]">
+                <div className="flex items-center gap-2 text-[11px] text-[#A1A1AA] mt-0.5">
                   <span>{t('checkout.qty_label')} {item.quantity}</span>
                   {item.selectedColor && <span>• {item.selectedColor}</span>}
+                  {item.hasDiscount && (
+                    <span className="px-1.5 py-0.5 rounded bg-[#FF6B00]/20 text-[#FFAA2C] font-mono text-[10px] font-bold border border-[#FF6B00]/30">
+                      -{item.promo?.discountPercent}%
+                    </span>
+                  )}
                 </div>
               </div>
-              <span className="font-mono font-bold text-[#FF6B00]">
-                {formatDZD(item.product.price * item.quantity, lang)}
-              </span>
+              <div className="text-right shrink-0">
+                <span className="font-mono font-bold text-[#FF6B00] block">
+                  {formatDZD(item.itemTotal, lang)}
+                </span>
+                {item.hasDiscount && (
+                  <span className="font-mono text-[10px] text-[#A1A1AA]/60 line-through block">
+                    {formatDZD(item.originalUnitPrice * item.quantity, lang)}
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -342,7 +389,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
                   {t('checkout.home_delivery')}
                 </p>
                 <p className="text-[11px] font-mono text-[#FFAA2C] font-semibold mt-0.5">
-                  +{selectedWilaya.homeDeliveryFee} DZD ({selectedWilaya.estimatedDays} {t('checkout.days')})
+                  +{homeDeliveryFee} DZD ({selectedWilaya.estimatedDays} {t('checkout.days')})
                 </p>
               </div>
             </button>
@@ -370,7 +417,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
                   {t('checkout.desk_delivery')}
                 </p>
                 <p className="text-[11px] font-mono text-[#FFAA2C] font-semibold mt-0.5">
-                  +{selectedWilaya.deskDeliveryFee} DZD ({selectedWilaya.estimatedDays} {t('checkout.days')})
+                  +{deskDeliveryFee} DZD ({selectedWilaya.estimatedDays} {t('checkout.days')})
                 </p>
               </div>
             </button>
@@ -397,9 +444,20 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
         <div className="flex justify-between text-[#A1A1AA]">
           <span>{t('checkout.subtotal')}</span>
           <span className="font-mono font-bold text-[#F5F5F7]">
-            {formatDZD(subtotal, lang)}
+            {formatDZD(subtotal + totalPromoSavings, lang)}
           </span>
         </div>
+        {totalPromoSavings > 0 && (
+          <div className="flex justify-between text-[#25D366]">
+            <span className="flex items-center gap-1 font-semibold">
+              <Tag className="w-3.5 h-3.5" />
+              {lang === 'ar' ? 'تخفيض ترويجي' : 'Remise promotionnelle'}
+            </span>
+            <span className="font-mono font-bold">
+              -{formatDZD(totalPromoSavings, lang)}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between text-[#A1A1AA]">
           <span>{t('checkout.delivery_fee')} ({lang === 'ar' ? selectedWilaya.nameAr : selectedWilaya.nameFr})</span>
           <span className="font-mono font-bold text-[#FFAA2C]">

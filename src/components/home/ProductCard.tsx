@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Product, formatDZD } from '@/data/products';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
-import { Star, ShoppingBag, Zap, Eye, CheckCircle2, Flame } from 'lucide-react';
+import { usePromotions } from '@/context/ProductContext';
+import { Star, ShoppingBag, Zap, Eye, CheckCircle2, Flame, Tag } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -16,7 +17,12 @@ export default function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const { lang, t } = useLanguage();
   const { addToCart, openDirectCheckout } = useCart();
+  const { getPromotionForProduct } = usePromotions();
   const productUrl = `/products/${product.slug || product.id}`;
+
+  const promo = getPromotionForProduct(product);
+  const displayPrice = promo ? promo.finalPrice : product.price;
+  const originalPrice = promo ? product.price : product.originalPrice;
 
   return (
     <div
@@ -25,7 +31,12 @@ export default function ProductCard({ product }: ProductCardProps) {
     >
       {/* Top Badges */}
       <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between pointer-events-none">
-        {product.isFlashDeal ? (
+        {promo ? (
+          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-extrabold text-[10px] uppercase tracking-wider shadow-lg shadow-[#FF6B00]/40 animate-pulse">
+            <Tag className="w-3 h-3 fill-black" />
+            <span>PROMO -{promo.discountPercent}%</span>
+          </span>
+        ) : product.isFlashDeal ? (
           <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FF6B00] text-black font-extrabold text-[10px] uppercase tracking-wider shadow-lg shadow-[#FF6B00]/40">
             <Flame className="w-3 h-3 fill-black" />
             {lang === 'ar' ? product.badgeAr || 'عرض حصري' : product.badgeFr || 'VENTE FLASH'}
@@ -94,11 +105,11 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Price Row */}
         <div className="flex items-baseline gap-2 pt-1">
           <span className="text-base sm:text-lg font-mono font-black text-[#FF6B00]">
-            {formatDZD(product.price, lang)}
+            {formatDZD(displayPrice, lang)}
           </span>
-          {product.originalPrice && (
+          {originalPrice && originalPrice > displayPrice && (
             <span className="text-xs font-mono text-[#A1A1AA]/60 line-through">
-              {formatDZD(product.originalPrice, lang)}
+              {formatDZD(originalPrice, lang)}
             </span>
           )}
         </div>

@@ -63,6 +63,66 @@ export const DEFAULT_CATEGORIES: Category[] = [
   },
 ];
 
+export interface Promotion {
+  id: string;
+  name: string;
+  targetType: 'category' | 'product';
+  targetId: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  startAt: string;
+  endAt: string;
+  isActive: boolean;
+  bannerTextFr?: string;
+  bannerTextAr?: string;
+  createdAt: string;
+}
+
+export interface AppliedPromotion {
+  promotion: Promotion;
+  originalPrice: number;
+  discountedPrice: number;
+  finalPrice: number;
+  discountPercent: number;
+  savingsDZD: number;
+  savings: number;
+  isExpiringSoon: boolean;
+}
+
+export const DEFAULT_PROMOTIONS: Promotion[] = [
+  {
+    id: 'prm-sample-1',
+    name: 'Offre Spéciale Écouteurs Sans Fil (-20%)',
+    targetType: 'category',
+    targetId: 'earbuds',
+    discountType: 'percentage',
+    discountValue: 20,
+    startAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
+    endAt: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
+    isActive: true,
+    bannerTextFr: 'Remise exceptionnelle de 20% sur tous les écouteurs sans fil !',
+    bannerTextAr: 'تخفيض استثنائي 20% على جميع السماعات اللاسلكية لفترة محدودة !',
+    createdAt: new Date().toISOString(),
+  },
+];
+
+export function mapRowToPromotion(row: any): Promotion {
+  return {
+    id: row.id,
+    name: row.name || 'Promotion',
+    targetType: row.target_type || 'category',
+    targetId: row.target_id || '',
+    discountType: row.discount_type || 'percentage',
+    discountValue: Number(row.discount_value || 0),
+    startAt: row.start_at || new Date().toISOString(),
+    endAt: row.end_at || new Date().toISOString(),
+    isActive: row.is_active !== false,
+    bannerTextFr: row.banner_text_fr || undefined,
+    bannerTextAr: row.banner_text_ar || undefined,
+    createdAt: row.created_at || new Date().toISOString(),
+  };
+}
+
 export function mapRowToCategory(row: any): Category {
   return {
     id: row.id,
@@ -79,10 +139,12 @@ export function mapRowToCategory(row: any): Category {
 interface ProductContextType {
   products: Product[];
   categories: Category[];
+  promotions: Promotion[];
   isLoading: boolean;
   isDbConnected: boolean;
   getProductBySlug: (slug: string) => Product | undefined;
   getProductById: (id: string) => Product | undefined;
+  getPromotionForProduct: (product: Product) => AppliedPromotion | null;
   addProduct: (productData: Partial<Product> & { nameFr: string; nameAr: string; price: number; category: string }) => Promise<{ success: boolean; error?: string }>;
   deleteProduct: (id: string) => Promise<{ success: boolean; error?: string }>;
   refreshProducts: () => Promise<void>;
@@ -96,6 +158,10 @@ interface ProductContextType {
   }) => Promise<{ success: boolean; error?: string }>;
   deleteCategory: (id: string) => Promise<{ success: boolean; error?: string }>;
   refreshCategories: () => Promise<void>;
+  addPromotion: (promoData: Omit<Promotion, 'id' | 'createdAt'>) => Promise<{ success: boolean; id?: string; error?: string }>;
+  deletePromotion: (id: string) => Promise<{ success: boolean; error?: string }>;
+  togglePromotion: (id: string, isActive: boolean) => Promise<{ success: boolean; error?: string }>;
+  refreshPromotions: () => Promise<void>;
 }
 
 // Map Supabase snake_case row to TypeScript Product
@@ -138,6 +204,7 @@ const ProductContext = createContext<ProductContextType | undefined>(undefined);
 export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+  const [promotions, setPromotions] = useState<Promotion[]>(DEFAULT_PROMOTIONS);
   const [isLoading, setIsLoading] = useState(false);
   const [isDbConnected, setIsDbConnected] = useState(false);
 
@@ -161,6 +228,30 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         console.warn('Supabase categories fetch failed, using fallback', err);
+      }
+    }
+  }, []);
+
+  // Fetch all promotions from Supabase
+  const fetchPromotions = useCallback(async () => {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('promotions')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const mapped = data.map(mapRowToPromotion);
+          setPromotions(mapped);
+          try {
+            localStorage.setItem('electronics_cached_promotions', JSON.stringify(mapped));
+          } catch (e) {
+            // Ignore
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase promotions fetch failed, using fallback', err);
       }
     }
   }, []);
@@ -206,12 +297,20 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           setProducts(parsed);
         }
       }
+      const cachedPromos = localStorage.getItem('electronics_cached_promotions');
+      if (cachedPromos) {
+        const parsedPromos = JSON.parse(cachedPromos);
+        if (Array.isArray(parsedPromos) && parsedPromos.length > 0) {
+          setPromotions(parsedPromos);
+        }
+      }
     } catch (e) {
       // Ignore
     }
 
     fetchProducts();
     fetchCategories();
+    fetchPromotions();
 
     // Subscribe to Realtime product changes
     if (isSupabaseConfigured && supabase) {
@@ -238,12 +337,24 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         )
         .subscribe();
 
+      const promoChannel = client
+        .channel('public:promotions')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'promotions' },
+          () => {
+            fetchPromotions();
+          }
+        )
+        .subscribe();
+
       return () => {
         client.removeChannel(channel);
         client.removeChannel(catChannel);
+        client.removeChannel(promoChannel);
       };
     }
-  }, [fetchProducts, fetchCategories]);
+  }, [fetchProducts, fetchCategories, fetchPromotions]);
 
   const getProductBySlug = useCallback(
     (slug: string): Product | undefined => {
@@ -427,21 +538,164 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     return { success: true };
   };
 
+  // Calculate discount for a product based on active promotions
+  const getPromotionForProduct = useCallback(
+    (product: Product): AppliedPromotion | null => {
+      if (!product) return null;
+      const now = Date.now();
+
+      const activePromos = promotions.filter((p) => {
+        if (!p.isActive) return false;
+        const startTime = new Date(p.startAt).getTime();
+        const endTime = new Date(p.endAt).getTime();
+        if (now < startTime || now > endTime) return false;
+
+        if (p.targetType === 'product') {
+          return p.targetId === product.id || p.targetId === product.slug;
+        }
+        if (p.targetType === 'category') {
+          return p.targetId === product.category;
+        }
+        return false;
+      });
+
+      if (activePromos.length === 0) return null;
+
+      let bestDiscount = 0;
+      let bestPromo = activePromos[0];
+      let bestDiscountedPrice = product.price;
+
+      for (const promo of activePromos) {
+        let currentDiscounted = product.price;
+        if (promo.discountType === 'percentage') {
+          const discountAmount = (product.price * promo.discountValue) / 100;
+          currentDiscounted = Math.max(0, Math.round(product.price - discountAmount));
+        } else {
+          currentDiscounted = Math.max(0, Math.round(product.price - promo.discountValue));
+        }
+
+        const savings = product.price - currentDiscounted;
+        if (savings > bestDiscount) {
+          bestDiscount = savings;
+          bestPromo = promo;
+          bestDiscountedPrice = currentDiscounted;
+        }
+      }
+
+      const discountPercent = Math.round(((product.price - bestDiscountedPrice) / product.price) * 100);
+      const endTime = new Date(bestPromo.endAt).getTime();
+      const isExpiringSoon = endTime - now < 24 * 3600 * 1000;
+
+      return {
+        promotion: bestPromo,
+        originalPrice: product.price,
+        discountedPrice: bestDiscountedPrice,
+        finalPrice: bestDiscountedPrice,
+        discountPercent: discountPercent > 0 ? discountPercent : 0,
+        savingsDZD: bestDiscount,
+        savings: bestDiscount,
+        isExpiringSoon,
+      };
+    },
+    [promotions]
+  );
+
+  const addPromotion = async (
+    promoData: Omit<Promotion, 'id' | 'createdAt'>
+  ): Promise<{ success: boolean; id?: string; error?: string }> => {
+    const id = 'prm-' + Math.random().toString(36).substring(2, 9);
+    const newPromo: Promotion = {
+      ...promoData,
+      id,
+      createdAt: new Date().toISOString(),
+    };
+    setPromotions((prev) => [newPromo, ...prev]);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('promotions').insert({
+          id: newPromo.id,
+          name: newPromo.name,
+          target_type: newPromo.targetType,
+          target_id: newPromo.targetId,
+          discount_type: newPromo.discountType,
+          discount_value: newPromo.discountValue,
+          start_at: newPromo.startAt,
+          end_at: newPromo.endAt,
+          is_active: newPromo.isActive,
+          banner_text_fr: newPromo.bannerTextFr || null,
+          banner_text_ar: newPromo.bannerTextAr || null,
+        });
+
+        if (error) {
+          console.error('Error inserting promotion:', error.message);
+          return { success: false, error: error.message };
+        }
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Failed to create promotion' };
+      }
+    }
+
+    return { success: true, id };
+  };
+
+  const deletePromotion = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    setPromotions((prev) => prev.filter((p) => p.id !== id));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('promotions').delete().eq('id', id);
+        if (error) {
+          console.error('Error deleting promotion:', error.message);
+          return { success: false, error: error.message };
+        }
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Delete promotion failed' };
+      }
+    }
+
+    return { success: true };
+  };
+
+  const togglePromotion = async (id: string, isActive: boolean): Promise<{ success: boolean; error?: string }> => {
+    setPromotions((prev) => prev.map((p) => (p.id === id ? { ...p, isActive } : p)));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('promotions').update({ is_active: isActive }).eq('id', id);
+        if (error) {
+          console.error('Error updating promotion:', error.message);
+          return { success: false, error: error.message };
+        }
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Toggle promotion failed' };
+      }
+    }
+
+    return { success: true };
+  };
+
   return (
     <ProductContext.Provider
       value={{
         products,
         categories,
+        promotions,
         isLoading,
         isDbConnected,
         getProductBySlug,
         getProductById,
+        getPromotionForProduct,
         addProduct,
         deleteProduct,
         refreshProducts: fetchProducts,
         addCategory,
         deleteCategory,
         refreshCategories: fetchCategories,
+        addPromotion,
+        deletePromotion,
+        togglePromotion,
+        refreshPromotions: fetchPromotions,
       }}
     >
       {children}
@@ -460,4 +714,9 @@ export function useProducts() {
 export function useCategories() {
   const { categories, addCategory, deleteCategory, refreshCategories } = useProducts();
   return { categories, addCategory, deleteCategory, refreshCategories };
+}
+
+export function usePromotions() {
+  const { promotions, addPromotion, deletePromotion, togglePromotion, refreshPromotions, getPromotionForProduct } = useProducts();
+  return { promotions, addPromotion, deletePromotion, togglePromotion, refreshPromotions, getPromotionForProduct };
 }

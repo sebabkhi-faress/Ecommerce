@@ -7,7 +7,8 @@ import { Product, formatDZD } from '@/data/products';
 import { WILAYAS, getWilayaByCode } from '@/data/wilayas';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
-import { useProducts, mapRowToProduct } from '@/context/ProductContext';
+import { useProducts, mapRowToProduct, usePromotions } from '@/context/ProductContext';
+import { useDeliveryFees } from '@/context/OrderContext';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import CodForm from '@/components/checkout/CodForm';
 import {
@@ -28,6 +29,7 @@ import {
   MapPin,
   Loader2,
   Phone,
+  Tag,
 } from 'lucide-react';
 
 export default function ProductDetailPage() {
@@ -36,6 +38,8 @@ export default function ProductDetailPage() {
   const { lang, t } = useLanguage();
   const { addToCart, openDirectCheckout } = useCart();
   const { products, getProductBySlug, getProductById, isLoading } = useProducts();
+  const { getPromotionForProduct } = usePromotions();
+  const { getDeliveryFeeForWilaya } = useDeliveryFees();
 
   const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const cleanIdOrSlug = rawId ? decodeURIComponent(rawId).trim() : '';
@@ -129,6 +133,11 @@ export default function ProductDetailPage() {
   }
 
   const selectedColor = product.colors[selectedColorIndex];
+  const promo = getPromotionForProduct(product);
+  const displayPrice = promo ? promo.finalPrice : product.price;
+  const originalPrice = promo ? product.price : product.originalPrice;
+  const homeDeliveryFee = getDeliveryFeeForWilaya(selectedWilaya.code, 'home');
+  const deskDeliveryFee = getDeliveryFeeForWilaya(selectedWilaya.code, 'desk');
 
   return (
     <div className="py-8 sm:py-12 pb-28 sm:pb-32 bg-[var(--obsidian)] text-[var(--white-titanium)] min-h-screen">
@@ -155,9 +164,16 @@ export default function ProductDetailPage() {
               <div className="flex items-start justify-between gap-3">
                 {/* Product Title & Offer Hook */}
                 <div className="space-y-1 flex-1">
-                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FF6B00]/20 text-[#FFAA2C] border border-[#FF6B00]/30 text-[10px] font-mono font-bold uppercase tracking-wider">
-                    {lang === 'ar' ? 'عرض خاص محدود ⚡' : 'OFFRE LIMITÉE ⚡'}
-                  </span>
+                  {promo ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-mono font-bold text-[10px] uppercase tracking-wider shadow-md">
+                      <Tag className="w-3 h-3 fill-black" />
+                      <span>PROMO -{promo.discountPercent}%</span>
+                    </span>
+                  ) : (
+                    <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FF6B00]/20 text-[#FFAA2C] border border-[#FF6B00]/30 text-[10px] font-mono font-bold uppercase tracking-wider">
+                      {lang === 'ar' ? 'عرض خاص محدود ⚡' : 'OFFRE LIMITÉE ⚡'}
+                    </span>
+                  )}
                   <h1 className="text-xl font-black text-[#F5F5F7] leading-tight">
                     {lang === 'ar' ? product.nameAr : product.nameFr} ⚡
                   </h1>
@@ -192,11 +208,11 @@ export default function ProductDetailPage() {
                 {/* Big Bold Price */}
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-mono font-black text-[#FF6B00]">
-                    {formatDZD(product.price, lang)}
+                    {formatDZD(displayPrice, lang)}
                   </span>
-                  {product.originalPrice && (
+                  {originalPrice && originalPrice > displayPrice && (
                     <span className="text-xs font-mono text-[#A1A1AA]/60 line-through">
-                      {formatDZD(product.originalPrice, lang)}
+                      {formatDZD(originalPrice, lang)}
                     </span>
                   )}
                 </div>
@@ -213,11 +229,15 @@ export default function ProductDetailPage() {
 
               {/* Tag / Badge */}
               <div className="absolute top-4 left-4 flex items-center gap-2">
-                {product.isFlashDeal && (
+                {promo ? (
+                  <span className="px-3 py-1 rounded-full bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-extrabold text-[11px] uppercase tracking-wider shadow-lg shadow-[#FF6B00]/40 animate-pulse">
+                    PROMO -{promo.discountPercent}%
+                  </span>
+                ) : product.isFlashDeal ? (
                   <span className="px-3 py-1 rounded-full bg-[#FF6B00] text-black font-extrabold text-[11px] uppercase tracking-wider shadow-lg shadow-[#FF6B00]/40">
                     {lang === 'ar' ? product.badgeAr || 'تخفيض حصري' : product.badgeFr || 'PROMO FLASH'}
                   </span>
-                )}
+                ) : null}
                 <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white font-mono text-[11px]">
                   {t('products.original_badge')}
                 </span>
@@ -360,7 +380,7 @@ export default function ProductDetailPage() {
                       <div className="bg-[#14141B] p-3 rounded-xl border border-white/5">
                         <p className="text-[11px] text-[#A1A1AA]">{t('pdp.delivery_home')}</p>
                         <p className="text-sm font-mono font-bold text-[#FF6B00] mt-0.5">
-                          {selectedWilaya.homeDeliveryFee} DZD
+                          {homeDeliveryFee} DZD
                         </p>
                         <p className="text-[10px] text-[#A1A1AA] mt-0.5">
                           {t('pdp.delivery_delay')} {selectedWilaya.estimatedDays} {t('pdp.business_days')}
@@ -370,7 +390,7 @@ export default function ProductDetailPage() {
                       <div className="bg-[#14141B] p-3 rounded-xl border border-white/5">
                         <p className="text-[11px] text-[#A1A1AA]">{t('pdp.delivery_desk')}</p>
                         <p className="text-sm font-mono font-bold text-[#FFAA2C] mt-0.5">
-                          {selectedWilaya.deskDeliveryFee} DZD
+                          {deskDeliveryFee} DZD
                         </p>
                         <p className="text-[10px] text-[#A1A1AA] mt-0.5">
                           {t('pdp.delivery_delay')} {selectedWilaya.estimatedDays} {t('pdp.business_days')}
@@ -417,17 +437,29 @@ export default function ProductDetailPage() {
               <div className="p-4 bg-[#14141B] rounded-2xl border border-white/5 flex items-baseline justify-between">
                 <div>
                   <span className="text-2xl sm:text-3xl font-mono font-black text-[#FF6B00]">
-                    {formatDZD(product.price, lang)}
+                    {formatDZD(displayPrice, lang)}
                   </span>
-                  {product.originalPrice && (
+                  {originalPrice && originalPrice > displayPrice && (
                     <span className="text-xs font-mono text-[#A1A1AA]/60 line-through ml-3">
-                      {formatDZD(product.originalPrice, lang)}
+                      {formatDZD(originalPrice, lang)}
                     </span>
                   )}
+                  {promo && promo.savings > 0 && (
+                    <div className="text-[11px] text-[#25D366] font-mono font-semibold mt-1 flex items-center gap-1">
+                      <Tag className="w-3 h-3" />
+                      <span>{lang === 'ar' ? `وفرت ${promo.savings} دج` : `Économie de ${promo.savings} DZD`}</span>
+                    </div>
+                  )}
                 </div>
-                <span className="text-xs font-mono text-[#FFAA2C] bg-[#FFAA2C]/10 px-2.5 py-1 rounded-full font-bold">
-                  {t('pdp.cod_badge')}
-                </span>
+                {promo ? (
+                  <span className="text-xs font-mono text-black bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-md shadow-[#FF6B00]/30 animate-pulse">
+                    PROMO -{promo.discountPercent}%
+                  </span>
+                ) : (
+                  <span className="text-xs font-mono text-[#FFAA2C] bg-[#FFAA2C]/10 px-2.5 py-1 rounded-full font-bold">
+                    {t('pdp.cod_badge')}
+                  </span>
+                )}
               </div>
 
               {/* Description */}

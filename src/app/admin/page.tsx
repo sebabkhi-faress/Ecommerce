@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useOrders, Order, OrderStatus } from '@/context/OrderContext';
+import { useOrders, Order, OrderStatus, useDeliveryFees, WilayaDeliveryFee } from '@/context/OrderContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { WILAYAS } from '@/data/wilayas';
 import { formatDZD } from '@/data/products';
@@ -39,9 +39,18 @@ import {
   FolderPlus,
   PhoneOff,
   Check,
+  Percent,
+  Calendar,
+  Flame,
+  Sliders,
+  Edit3,
+  Save,
+  MapPin,
+  RotateCcw,
+  Sparkles,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured, uploadProductImage } from '@/lib/supabase';
-import { useProducts } from '@/context/ProductContext';
+import { useProducts, usePromotions, Promotion } from '@/context/ProductContext';
 import { useAuth } from '@/context/AuthContext';
 
 export default function AdminDashboardPage() {
@@ -70,13 +79,59 @@ export default function AdminDashboardPage() {
     refreshCategories,
     isDbConnected: isProductsDbConnected,
   } = useProducts();
+  const {
+    promotions,
+    addPromotion,
+    deletePromotion,
+    togglePromotion,
+    refreshPromotions,
+  } = usePromotions();
+  const {
+    deliveryFees,
+    updateDeliveryFee,
+    bulkUpdateDeliveryFees,
+    refreshDeliveryFees,
+  } = useDeliveryFees();
+
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [adminTab, setAdminTab] = useState<'orders' | 'products' | 'categories' | 'banned'>('orders');
+  const [adminTab, setAdminTab] = useState<'orders' | 'products' | 'categories' | 'promotions' | 'delivery_fees' | 'banned'>('orders');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [wilayaFilter, setWilayaFilter] = useState<string>('all');
+
+  // Promotion management states
+  const [isAddPromoOpen, setIsAddPromoOpen] = useState(false);
+  const [newPromoName, setNewPromoName] = useState('');
+  const [newPromoTargetType, setNewPromoTargetType] = useState<'category' | 'product'>('category');
+  const [newPromoTargetId, setNewPromoTargetId] = useState('earbuds');
+  const [newPromoDiscountType, setNewPromoDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [newPromoDiscountValue, setNewPromoDiscountValue] = useState('20');
+  const [newPromoDurationPreset, setNewPromoDurationPreset] = useState<'24h' | '3d' | '7d' | '30d' | 'custom'>('7d');
+  const [newPromoStartAt, setNewPromoStartAt] = useState(() => new Date().toISOString().slice(0, 16));
+  const [newPromoEndAt, setNewPromoEndAt] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().slice(0, 16);
+  });
+  const [newPromoBannerFr, setNewPromoBannerFr] = useState('');
+  const [newPromoBannerAr, setNewPromoBannerAr] = useState('');
+  const [newPromoError, setNewPromoError] = useState<string | null>(null);
+  const [newPromoSuccess, setNewPromoSuccess] = useState(false);
+  const [promoSearchQuery, setPromoSearchQuery] = useState('');
+
+  // Delivery fee management states
+  const [feeSearchQuery, setFeeSearchQuery] = useState('');
+  const [feeZoneFilter, setFeeZoneFilter] = useState<'all' | 'centre' | 'est' | 'ouest' | 'sud'>('all');
+  const [feeEditedRows, setFeeEditedRows] = useState<Record<string, { homeFee: number; deskFee: number; isActive: boolean; isSaving?: boolean; isSaved?: boolean }>>({});
+  const [isBulkFeeOpen, setIsBulkFeeOpen] = useState(false);
+  const [bulkTarget, setBulkTarget] = useState<'home' | 'desk' | 'both'>('both');
+  const [bulkMode, setBulkMode] = useState<'set' | 'add'>('set');
+  const [bulkAmount, setBulkAmount] = useState('500');
+  const [bulkSuccess, setBulkSuccess] = useState<string | null>(null);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const [isBulkSaving, setIsBulkSaving] = useState(false);
 
   // Category management modal states
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
@@ -272,6 +327,212 @@ export default function AdminDashboardPage() {
         (b.notes && b.notes.toLowerCase().includes(q))
     );
   }, [bannedPhones, banSearchQuery]);
+
+  // Promotion Actions & Duration Presets
+  const handlePresetDurationChange = (preset: '24h' | '3d' | '7d' | '30d' | 'custom') => {
+    setNewPromoDurationPreset(preset);
+    const start = new Date();
+    setNewPromoStartAt(start.toISOString().slice(0, 16));
+    const end = new Date(start);
+    if (preset === '24h') end.setHours(end.getHours() + 24);
+    else if (preset === '3d') end.setDate(end.getDate() + 3);
+    else if (preset === '7d') end.setDate(end.getDate() + 7);
+    else if (preset === '30d') end.setDate(end.getDate() + 30);
+    if (preset !== 'custom') {
+      setNewPromoEndAt(end.toISOString().slice(0, 16));
+    }
+  };
+
+  const handleCreatePromotion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNewPromoError(null);
+
+    const trimmedName = newPromoName.trim();
+    if (!trimmedName) {
+      setNewPromoError(lang === 'ar' ? 'يرجى إدخال اسم العرض الترويجي' : 'Veuillez saisir le nom de la promotion');
+      return;
+    }
+
+    const val = Number(newPromoDiscountValue);
+    if (isNaN(val) || val <= 0) {
+      setNewPromoError(lang === 'ar' ? 'قيمة الخصم يجب أن تكون أكبر من 0' : 'La valeur de remise doit être supérieure à 0');
+      return;
+    }
+
+    if (newPromoDiscountType === 'percentage' && val > 95) {
+      setNewPromoError(lang === 'ar' ? 'نسبة الخصم لا يمكن أن تتجاوز 95%' : 'Le pourcentage ne peut pas dépasser 95%');
+      return;
+    }
+
+    const startDate = new Date(newPromoStartAt).toISOString();
+    const endDate = new Date(newPromoEndAt).toISOString();
+    if (new Date(endDate).getTime() <= new Date(startDate).getTime()) {
+      setNewPromoError(lang === 'ar' ? 'تاريخ نهاية العرض يجب أن يكون بعد تاريخ البداية' : 'La date de fin doit être postérieure à la date de début');
+      return;
+    }
+
+    const targetId = newPromoTargetType === 'category'
+      ? (newPromoTargetId || (categories[0]?.slug || 'earbuds'))
+      : (newPromoTargetId || (products[0]?.id || ''));
+
+    const res = await addPromotion({
+      name: trimmedName,
+      targetType: newPromoTargetType,
+      targetId,
+      discountType: newPromoDiscountType,
+      discountValue: val,
+      startAt: startDate,
+      endAt: endDate,
+      isActive: true,
+      bannerTextFr: newPromoBannerFr.trim() || undefined,
+      bannerTextAr: newPromoBannerAr.trim() || undefined,
+    });
+
+    if (res.success) {
+      setNewPromoSuccess(true);
+      setTimeout(() => {
+        setNewPromoSuccess(false);
+        setIsAddPromoOpen(false);
+        setNewPromoName('');
+        setNewPromoBannerFr('');
+        setNewPromoBannerAr('');
+      }, 1200);
+    } else {
+      setNewPromoError(res.error || 'Erreur lors de la création de la promotion');
+    }
+  };
+
+  const handleDeletePromotion = async (id: string, name: string) => {
+    const isConfirmed = window.confirm(
+      lang === 'ar'
+        ? `هل أنت متأكد من حذف العرض الترويجي "${name}"؟`
+        : `Êtes-vous sûr de vouloir supprimer la promotion "${name}" ?`
+    );
+    if (!isConfirmed) return;
+    await deletePromotion(id);
+  };
+
+  const handleTogglePromoStatus = async (promo: Promotion) => {
+    await togglePromotion(promo.id, !promo.isActive);
+  };
+
+  // Delivery Fees Actions
+  const handleFeeRowChange = (code: string, field: 'homeFee' | 'deskFee' | 'isActive', value: any) => {
+    setFeeEditedRows((prev) => {
+      const current = prev[code] || {
+        homeFee: deliveryFees.find((f) => f.code === code)?.homeFee ?? 600,
+        deskFee: deliveryFees.find((f) => f.code === code)?.deskFee ?? 350,
+        isActive: deliveryFees.find((f) => f.code === code)?.isActive ?? true,
+      };
+      return {
+        ...prev,
+        [code]: {
+          ...current,
+          [field]: value,
+          isSaved: false,
+        },
+      };
+    });
+  };
+
+  const handleSaveFeeRow = async (code: string) => {
+    const current = feeEditedRows[code];
+    const original = deliveryFees.find((f) => f.code === code);
+    const homeFee = current?.homeFee ?? original?.homeFee ?? 600;
+    const deskFee = current?.deskFee ?? original?.deskFee ?? 350;
+    const isActive = current?.isActive ?? original?.isActive ?? true;
+
+    setFeeEditedRows((prev) => ({
+      ...prev,
+      [code]: { homeFee, deskFee, isActive, isSaving: true, isSaved: false },
+    }));
+
+    const res = await updateDeliveryFee(code, homeFee, deskFee, isActive);
+
+    setFeeEditedRows((prev) => ({
+      ...prev,
+      [code]: {
+        homeFee,
+        deskFee,
+        isActive,
+        isSaving: false,
+        isSaved: res.success,
+      },
+    }));
+
+    if (res.success) {
+      setTimeout(() => {
+        setFeeEditedRows((prev) => {
+          if (prev[code]?.isSaved) {
+            return {
+              ...prev,
+              [code]: { ...prev[code], isSaved: false },
+            };
+          }
+          return prev;
+        });
+      }, 2000);
+    }
+  };
+
+  const handleBulkApplyFees = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBulkError(null);
+    setBulkSuccess(null);
+
+    const amount = Number(bulkAmount);
+    if (isNaN(amount) || amount < 0) {
+      setBulkError(lang === 'ar' ? 'يرجى إدخال مبلغ صحيح' : 'Veuillez saisir un montant valide');
+      return;
+    }
+
+    setIsBulkSaving(true);
+    const res = await bulkUpdateDeliveryFees(bulkTarget, amount, bulkMode);
+    setIsBulkSaving(false);
+
+    if (res.success) {
+      setBulkSuccess(
+        lang === 'ar'
+          ? 'تم تحديث أسعار جميع الولايات الـ 68 بنجاح في قاعدة البيانات!'
+          : 'Les tarifs des 68 Wilayas ont été mis à jour avec succès dans la base de données !'
+      );
+      setFeeEditedRows({});
+      setTimeout(() => {
+        setIsBulkFeeOpen(false);
+        setBulkSuccess(null);
+      }, 1500);
+    } else {
+      setBulkError(res.error || 'Erreur lors de la mise à jour groupée');
+    }
+  };
+
+  // Filtered promotions
+  const filteredPromotions = useMemo(() => {
+    const q = promoSearchQuery.trim().toLowerCase();
+    if (!q) return promotions;
+    return promotions.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.targetId.toLowerCase().includes(q) ||
+        (p.bannerTextFr && p.bannerTextFr.toLowerCase().includes(q)) ||
+        (p.bannerTextAr && p.bannerTextAr.includes(q))
+    );
+  }, [promotions, promoSearchQuery]);
+
+  // Filtered delivery fees
+  const filteredDeliveryFees = useMemo(() => {
+    const q = feeSearchQuery.trim().toLowerCase();
+    return deliveryFees.filter((fee) => {
+      const matchesZone = feeZoneFilter === 'all' || fee.zone === feeZoneFilter;
+      if (!matchesZone) return false;
+      if (!q) return true;
+      return (
+        fee.code.includes(q) ||
+        fee.nameFr.toLowerCase().includes(q) ||
+        fee.nameAr.includes(q)
+      );
+    });
+  }, [deliveryFees, feeSearchQuery, feeZoneFilter]);
 
   // Filter orders based on queries
   const filteredOrders = useMemo(() => {
@@ -513,6 +774,30 @@ export default function AdminDashboardPage() {
           >
             <Tag className="w-4 h-4" />
             <span>{lang === 'ar' ? `الأقسام (${categories.length})` : `Catégories (${categories.length})`}</span>
+          </button>
+
+          <button
+            onClick={() => setAdminTab('promotions')}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              adminTab === 'promotions'
+                ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black shadow-lg shadow-[#FF6B00]/30'
+                : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
+            }`}
+          >
+            <Flame className="w-4 h-4 text-inherit" />
+            <span>{lang === 'ar' ? `العروض والترويج (${promotions.length})` : `Promotions (${promotions.length})`}</span>
+          </button>
+
+          <button
+            onClick={() => setAdminTab('delivery_fees')}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              adminTab === 'delivery_fees'
+                ? 'bg-emerald-500 text-black font-black shadow-lg shadow-emerald-500/30'
+                : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
+            }`}
+          >
+            <Truck className="w-4 h-4 text-inherit" />
+            <span>{lang === 'ar' ? 'أسعار التوصيل (68 ولاية)' : 'Tarifs Livraison (68 Wilayas)'}</span>
           </button>
 
           <button
@@ -1146,6 +1431,437 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         )}
+
+        {/* TAB 4: PROMOTIONS & DISCOUNTS ENGINE */}
+        {adminTab === 'promotions' && (
+          <div className="space-y-6">
+            {/* Promotions Header & Quick Action */}
+            <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+              <div className="space-y-1 max-w-xl">
+                <div className="flex items-center gap-2">
+                  <span className="p-2 rounded-xl bg-orange-500/10 text-[#FF6B00] border border-[#FF6B00]/20">
+                    <Flame className="w-5 h-5" />
+                  </span>
+                  <h2 className="text-lg font-black text-[#F5F5F7]">
+                    {lang === 'ar' ? 'إدارة العروض الترويجية والتخفيضات' : 'Gestion des Promotions & Réductions'}
+                  </h2>
+                </div>
+                <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                  {lang === 'ar'
+                    ? 'أنشئ تخفيضات مباشرة على قسم كامل (مثل كل السماعات) أو منتج معين مع تحديد مدة العرض والعد التنازلي التلقائي.'
+                    : 'Appliquez des remises sur une catégorie complète ou un produit spécifique avec durée automatique et compte à rebours en temps réel.'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsAddPromoOpen(true)}
+                  className="w-full md:w-auto px-5 py-3 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] hover:scale-[1.02] active:scale-[0.98] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 stroke-[3]" />
+                  <span>{lang === 'ar' ? 'إنشاء عرض جديد' : 'Nouvelle Promotion'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Promotions Search Bar */}
+            <div className="bg-[#18181F] border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-[#A1A1AA] absolute left-3.5 top-3.5" />
+                <input
+                  type="text"
+                  value={promoSearchQuery}
+                  onChange={(e) => setPromoSearchQuery(e.target.value)}
+                  placeholder={lang === 'ar' ? 'بحث عن عرض بالاسم أو القسم أو المنتج...' : 'Rechercher une promotion par nom, cible...'}
+                  className="w-full bg-[#14141B] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-[#F5F5F7] placeholder-[#A1A1AA]/60 outline-none focus:border-[#FF6B00]"
+                />
+              </div>
+              <span className="text-xs font-mono font-bold text-[#FFAA2C] whitespace-nowrap">
+                {filteredPromotions.length} {lang === 'ar' ? 'عروض' : 'promotions'}
+              </span>
+            </div>
+
+            {/* Promotions Cards Grid */}
+            {filteredPromotions.length === 0 ? (
+              <div className="bg-[#18181F] border border-white/10 rounded-3xl p-12 text-center space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-[#FFAA2C] flex items-center justify-center mx-auto">
+                  <Percent className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    {lang === 'ar' ? 'لا توجد عروض ترويجية نشطة' : 'Aucune promotion active'}
+                  </h3>
+                  <p className="text-xs text-[#A1A1AA] max-w-sm mx-auto mt-1">
+                    {lang === 'ar'
+                      ? 'قم بإنشاء أول عرض ترويجي لجذب الزبائن وتخفيض الأسعار تلقائياً.'
+                      : 'Créez votre première promotion pour booster vos ventes et appliquer des remises immédiates.'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddPromoOpen(true)}
+                  className="px-5 py-2.5 bg-[#FF6B00] text-black font-extrabold text-xs rounded-xl shadow-md cursor-pointer inline-flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{lang === 'ar' ? 'إنشاء عرض الآن' : 'Créer une promotion'}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filteredPromotions.map((promo) => {
+                  const now = Date.now();
+                  const startTime = new Date(promo.startAt).getTime();
+                  const endTime = new Date(promo.endAt).getTime();
+                  const isExpired = now > endTime;
+                  const isUpcoming = now < startTime;
+                  const isLive = promo.isActive && !isExpired && !isUpcoming;
+
+                  let targetLabel = '';
+                  if (promo.targetType === 'category') {
+                    const cat = categories.find((c) => c.slug === promo.targetId);
+                    targetLabel = cat ? (lang === 'ar' ? `قسم: ${cat.nameAr}` : `Catégorie: ${cat.nameFr}`) : `Catégorie: ${promo.targetId}`;
+                  } else {
+                    const prod = products.find((p) => p.id === promo.targetId || p.slug === promo.targetId);
+                    targetLabel = prod ? (lang === 'ar' ? `منتج: ${prod.nameAr}` : `Produit: ${prod.nameFr}`) : `Produit: ${promo.targetId}`;
+                  }
+
+                  const remainingDiff = endTime - now;
+                  const remainingDays = Math.max(0, Math.floor(remainingDiff / (1000 * 3600 * 24)));
+                  const remainingHours = Math.max(0, Math.floor((remainingDiff % (1000 * 3600 * 24)) / (1000 * 3600)));
+
+                  return (
+                    <div
+                      key={promo.id}
+                      className={`bg-[#18181F] border rounded-3xl p-5 relative overflow-hidden transition-all flex flex-col justify-between ${
+                        isLive
+                          ? 'border-orange-500/40 shadow-xl shadow-orange-950/20'
+                          : 'border-white/10 opacity-75'
+                      }`}
+                    >
+                      <div>
+                        {/* Top Target Badge & Status */}
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-[#FFAA2C]">
+                            {promo.targetType === 'category' ? <Layers className="w-3 h-3" /> : <Package className="w-3 h-3" />}
+                            <span className="truncate max-w-[140px]">{targetLabel}</span>
+                          </span>
+
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border ${
+                              isLive
+                                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 animate-pulse'
+                                : isExpired
+                                ? 'bg-red-500/15 border-red-500/30 text-red-400'
+                                : 'bg-gray-500/15 border-gray-500/30 text-gray-400'
+                            }`}
+                          >
+                            {isLive
+                              ? (lang === 'ar' ? 'نشط الآن' : 'En cours')
+                              : isExpired
+                              ? (lang === 'ar' ? 'منتهي' : 'Expirée')
+                              : isUpcoming
+                              ? (lang === 'ar' ? 'مجدول قريباً' : 'À venir')
+                              : (lang === 'ar' ? 'معطل' : 'Désactivée')}
+                          </span>
+                        </div>
+
+                        {/* Title & Discount Highlight */}
+                        <h3 className="text-base font-bold text-[#F5F5F7] line-clamp-1 mb-2">
+                          {promo.name}
+                        </h3>
+
+                        <div className="flex items-baseline gap-2 mb-3">
+                          <span className="text-2xl font-mono font-black text-[#FF6B00]">
+                            {promo.discountType === 'percentage'
+                              ? `-${promo.discountValue}%`
+                              : `-${formatDZD(promo.discountValue, lang)}`}
+                          </span>
+                          <span className="text-xs text-[#A1A1AA] font-mono">
+                            {promo.discountType === 'percentage'
+                              ? (lang === 'ar' ? 'تخفيض نسبي' : 'Remise en %')
+                              : (lang === 'ar' ? 'تخفيض نقدي ثابت' : 'Montant fixe déduit')}
+                          </span>
+                        </div>
+
+                        {/* Dates & Duration Countdown */}
+                        <div className="bg-[#14141B] rounded-2xl p-3 border border-white/5 space-y-1.5 text-xs font-mono">
+                          <div className="flex items-center justify-between text-[#A1A1AA]">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-[#FFAA2C]" />
+                              <span>{lang === 'ar' ? 'تاريخ النهاية:' : 'Fin le :'}</span>
+                            </span>
+                            <span className="text-[#F5F5F7]">
+                              {new Date(promo.endAt).toLocaleDateString(lang === 'ar' ? 'ar-DZ' : 'fr-FR', {
+                                day: '2-digit',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+
+                          {!isExpired && isLive && (
+                            <div className="flex items-center justify-between text-[#FFAA2C] pt-1 border-t border-white/5 font-bold">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                <span>{lang === 'ar' ? 'الوقت المتبقي:' : 'Temps restant :'}</span>
+                              </span>
+                              <span>
+                                {remainingDays > 0 ? `${remainingDays}j ` : ''}{remainingHours}h
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Optional Banner Text Preview */}
+                        {(promo.bannerTextFr || promo.bannerTextAr) && (
+                          <p className="text-[11px] text-[#A1A1AA] italic bg-white/[0.02] p-2 rounded-xl border border-white/5 mt-3 line-clamp-2">
+                            "{lang === 'ar' ? (promo.bannerTextAr || promo.bannerTextFr) : (promo.bannerTextFr || promo.bannerTextAr)}"
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Card Actions Footer */}
+                      <div className="pt-4 mt-4 border-t border-white/10 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePromoStatus(promo)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                            promo.isActive
+                              ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30'
+                              : 'bg-white/5 text-[#A1A1AA] hover:text-white border border-white/10'
+                          }`}
+                        >
+                          <span className={`w-2 h-2 rounded-full ${promo.isActive ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`} />
+                          <span>{promo.isActive ? (lang === 'ar' ? 'مفعل' : 'Actif') : (lang === 'ar' ? 'معطل' : 'Inactif')}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePromotion(promo.id, promo.name)}
+                          className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
+                          title={lang === 'ar' ? 'حذف العرض' : 'Supprimer'}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 5: 68 WILAYAS DELIVERY FEES ENGINE */}
+        {adminTab === 'delivery_fees' && (
+          <div className="space-y-6">
+            {/* Delivery Fees Header */}
+            <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+              <div className="space-y-1 max-w-xl">
+                <div className="flex items-center gap-2">
+                  <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <Truck className="w-5 h-5" />
+                  </span>
+                  <h2 className="text-lg font-black text-[#F5F5F7]">
+                    {lang === 'ar' ? 'التحكم في أسعار التوصيل — 68 ولاية جزائرية' : 'Contrôle des Tarifs de Livraison — 68 Wilayas'}
+                  </h2>
+                </div>
+                <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                  {lang === 'ar'
+                    ? 'تحكم كامل ومباشر في أسعار التوصيل إلى المنزل أو المكتب (Point Relais / Desk) لجميع الولايات الـ 68 مع الحفظ التلقائي في قاعدة البيانات.'
+                    : 'Gérez directement les frais de livraison à domicile et en bureau (point relais) pour l’ensemble des 68 wilayas d’Algérie avec mise à jour immédiate en base de données.'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsBulkFeeOpen(true)}
+                  className="w-full md:w-auto px-5 py-3 bg-gradient-to-r from-emerald-500 to-teal-400 hover:scale-[1.02] active:scale-[0.98] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Sliders className="w-4 h-4 stroke-[2.5]" />
+                  <span>{lang === 'ar' ? 'تعديل جماعي للأسعار' : 'Ajustement Groupé'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="bg-[#18181F] border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="relative flex-1 w-full">
+                <Search className="w-4 h-4 text-[#A1A1AA] absolute left-3.5 top-3.5" />
+                <input
+                  type="text"
+                  value={feeSearchQuery}
+                  onChange={(e) => setFeeSearchQuery(e.target.value)}
+                  placeholder={lang === 'ar' ? 'بحث بالرقم أو اسم الولاية (مثال: 16 أو الجزائر أو Oran)...' : 'Rechercher par code (16, 31) ou nom (Alger, Oran)...'}
+                  className="w-full bg-[#14141B] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-[#F5F5F7] placeholder-[#A1A1AA]/60 outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              {/* Zone Filter */}
+              <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
+                {(['all', 'centre', 'est', 'ouest', 'sud'] as const).map((z) => (
+                  <button
+                    key={z}
+                    type="button"
+                    onClick={() => setFeeZoneFilter(z)}
+                    className={`px-3 py-2 rounded-xl text-xs font-mono font-bold uppercase transition-colors whitespace-nowrap cursor-pointer ${
+                      feeZoneFilter === z
+                        ? 'bg-emerald-500 text-black'
+                        : 'bg-[#14141B] text-[#A1A1AA] hover:text-white border border-white/10'
+                    }`}
+                  >
+                    {z === 'all' ? (lang === 'ar' ? 'الكل' : 'Toutes') : z}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Wilayas Delivery Fees Table */}
+            <div className="bg-[#18181F] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-[#14141B] text-[#A1A1AA] font-mono text-[11px] uppercase">
+                      <th className="p-4">{lang === 'ar' ? 'الرقم' : 'Code'}</th>
+                      <th className="p-4">{lang === 'ar' ? 'الولاية' : 'Wilaya'}</th>
+                      <th className="p-4">{lang === 'ar' ? 'المنطقة' : 'Zone'}</th>
+                      <th className="p-4">{lang === 'ar' ? 'توصيل للمنزل (دج)' : 'À Domicile (DZD)'}</th>
+                      <th className="p-4">{lang === 'ar' ? 'توصيل للمكتب (دج)' : 'Au Bureau / Desk (DZD)'}</th>
+                      <th className="p-4">{lang === 'ar' ? 'المدة المقدرة' : 'Délai'}</th>
+                      <th className="p-4 text-center">{lang === 'ar' ? 'الحالة' : 'Statut'}</th>
+                      <th className="p-4 text-right">{lang === 'ar' ? 'حفظ' : 'Action'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredDeliveryFees.map((fee) => {
+                      const edited = feeEditedRows[fee.code];
+                      const currentHomeFee = edited?.homeFee ?? fee.homeFee;
+                      const currentDeskFee = edited?.deskFee ?? fee.deskFee;
+                      const currentIsActive = edited?.isActive ?? fee.isActive;
+                      const isSaving = edited?.isSaving;
+                      const isSaved = edited?.isSaved;
+
+                      return (
+                        <tr key={fee.code} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="p-4 font-mono font-bold text-[#FFAA2C] whitespace-nowrap">
+                            {fee.code}
+                          </td>
+
+                          <td className="p-4 whitespace-nowrap">
+                            <span className="font-bold text-[#F5F5F7] block">
+                              {fee.nameFr}
+                            </span>
+                            <span className="text-[11px] text-[#A1A1AA] font-arabic">
+                              {fee.nameAr}
+                            </span>
+                          </td>
+
+                          <td className="p-4 whitespace-nowrap font-mono text-xs">
+                            <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[#A1A1AA] uppercase text-[10px]">
+                              {fee.zone}
+                            </span>
+                          </td>
+
+                          {/* Home Delivery Fee Input */}
+                          <td className="p-4 whitespace-nowrap">
+                            <div className="relative w-28">
+                              <input
+                                type="number"
+                                inputMode="numeric"
+                                min={0}
+                                step={50}
+                                value={currentHomeFee}
+                                onChange={(e) =>
+                                  handleFeeRowChange(fee.code, 'homeFee', Number(e.target.value))
+                                }
+                                className="w-full bg-[#14141B] border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-1.5 text-xs text-white font-mono font-bold outline-none"
+                              />
+                              <span className="absolute right-2 top-2 text-[10px] text-[#A1A1AA] pointer-events-none">
+                                DA
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Desk Delivery Fee Input */}
+                          <td className="p-4 whitespace-nowrap">
+                            <div className="relative w-28">
+                              <input
+                                type="number"
+                                inputMode="numeric"
+                                min={0}
+                                step={50}
+                                value={currentDeskFee}
+                                onChange={(e) =>
+                                  handleFeeRowChange(fee.code, 'deskFee', Number(e.target.value))
+                                }
+                                className="w-full bg-[#14141B] border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-1.5 text-xs text-white font-mono font-bold outline-none"
+                              />
+                              <span className="absolute right-2 top-2 text-[10px] text-[#A1A1AA] pointer-events-none">
+                                DA
+                              </span>
+                            </div>
+                          </td>
+
+                          <td className="p-4 font-mono text-[11px] text-[#A1A1AA] whitespace-nowrap">
+                            {fee.estimatedDays} {t('checkout.days')}
+                          </td>
+
+                          {/* Active switch */}
+                          <td className="p-4 text-center whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleFeeRowChange(fee.code, 'isActive', !currentIsActive)
+                              }
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase transition-colors cursor-pointer border ${
+                                currentIsActive
+                                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                                  : 'bg-red-500/15 border-red-500/30 text-red-400'
+                              }`}
+                            >
+                              {currentIsActive ? (lang === 'ar' ? 'متاح' : 'Actif') : (lang === 'ar' ? 'موقوف' : 'Inactif')}
+                            </button>
+                          </td>
+
+                          {/* Save Button */}
+                          <td className="p-4 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => handleSaveFeeRow(fee.code)}
+                              disabled={isSaving}
+                              className={`px-3 py-1.5 rounded-xl font-bold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                                isSaved
+                                  ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/30'
+                                  : 'bg-[#14141B] hover:bg-emerald-500 hover:text-black text-[#F5F5F7] border border-white/15'
+                              }`}
+                            >
+                              {isSaving ? (
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                              ) : isSaved ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>{lang === 'ar' ? 'تم الحفظ' : 'Enregistré'}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Save className="w-3.5 h-3.5" />
+                                  <span>{lang === 'ar' ? 'حفظ' : 'Sauvegarder'}</span>
+                                </>
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add Category Modal Dialog */}
@@ -1429,6 +2145,432 @@ export default function AdminDashboardPage() {
                   </button>
                 </form>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Promotion Creation Modal Dialog */}
+      {isAddPromoOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div
+            onClick={() => setIsAddPromoOpen(false)}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+          />
+
+          <div className="min-h-full flex items-center justify-center p-4">
+            <div className="relative bg-[#14141B] border border-white/15 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl">
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <Flame className="w-5 h-5 text-[#FF6B00]" />
+                  <h3 className="text-base font-black text-[#F5F5F7] uppercase tracking-wider">
+                    {lang === 'ar' ? 'إنشاء عرض ترويجي جديد' : 'Nouvelle Promotion'}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setIsAddPromoOpen(false)}
+                  className="p-1 rounded-lg text-[#A1A1AA] hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {newPromoSuccess ? (
+                <div className="p-8 text-center space-y-2">
+                  <CheckCircle className="w-12 h-12 text-[#25D366] mx-auto animate-bounce" />
+                  <p className="text-sm font-bold text-white">
+                    {lang === 'ar' ? 'تم تفعيل العرض الترويجي بنجاح!' : 'Promotion activée avec succès !'}
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleCreatePromotion} className="space-y-4 text-xs">
+                  {newPromoError && (
+                    <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-bold">
+                      {newPromoError}
+                    </div>
+                  )}
+
+                  {/* Promo Name */}
+                  <div>
+                    <label className="block text-[#A1A1AA] mb-1 font-semibold">
+                      {lang === 'ar' ? 'اسم العرض الترويجي *' : 'Nom de l’offre promotionnelle *'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newPromoName}
+                      onChange={(e) => setNewPromoName(e.target.value)}
+                      placeholder={lang === 'ar' ? 'مثال: تخفيضات الصيف على السماعات -20%' : 'Ex: Solde d’été Écouteurs -20%'}
+                      className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white outline-none focus:border-[#FF6B00]"
+                    />
+                  </div>
+
+                  {/* Target Type Selector: Category vs Product */}
+                  <div>
+                    <label className="block text-[#A1A1AA] mb-1.5 font-semibold">
+                      {lang === 'ar' ? 'تطبيق العرض على: *' : 'Appliquer la remise sur : *'}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewPromoTargetType('category');
+                          if (!newPromoTargetId || !categories.some((c) => c.slug === newPromoTargetId)) {
+                            setNewPromoTargetId(categories[0]?.slug || 'earbuds');
+                          }
+                        }}
+                        className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors ${
+                          newPromoTargetType === 'category'
+                            ? 'bg-[#FF6B00]/15 border-[#FF6B00] text-[#FF6B00]'
+                            : 'bg-[#18181F] border-white/10 text-[#A1A1AA] hover:text-white'
+                        }`}
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>{lang === 'ar' ? 'قسم كامل' : 'Une Catégorie'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewPromoTargetType('product');
+                          if (!newPromoTargetId || !products.some((p) => p.id === newPromoTargetId)) {
+                            setNewPromoTargetId(products[0]?.id || '');
+                          }
+                        }}
+                        className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors ${
+                          newPromoTargetType === 'product'
+                            ? 'bg-[#FF6B00]/15 border-[#FF6B00] text-[#FF6B00]'
+                            : 'bg-[#18181F] border-white/10 text-[#A1A1AA] hover:text-white'
+                        }`}
+                      >
+                        <Package className="w-3.5 h-3.5" />
+                        <span>{lang === 'ar' ? 'منتج معين' : 'Un Produit spécifique'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Target Choice Dropdown */}
+                  <div>
+                    <label className="block text-[#A1A1AA] mb-1 font-semibold">
+                      {newPromoTargetType === 'category'
+                        ? (lang === 'ar' ? 'اختر القسم المستهدف *' : 'Choisir la catégorie cible *')
+                        : (lang === 'ar' ? 'اختر المنتج المستهدف *' : 'Choisir le produit cible *')}
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={newPromoTargetId}
+                        onChange={(e) => setNewPromoTargetId(e.target.value)}
+                        className="w-full appearance-none bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-white outline-none cursor-pointer text-xs"
+                      >
+                        {newPromoTargetType === 'category' ? (
+                          categories.length > 0 ? (
+                            categories.map((c) => (
+                              <option key={c.id || c.slug} value={c.slug} className="bg-[#18181F] text-white">
+                                {lang === 'ar' ? c.nameAr : c.nameFr} ({c.slug})
+                              </option>
+                            ))
+                          ) : (
+                            <>
+                              <option value="earbuds" className="bg-[#18181F] text-white">{t('products.earbuds')}</option>
+                              <option value="headphones" className="bg-[#18181F] text-white">{t('products.headphones')}</option>
+                              <option value="speakers" className="bg-[#18181F] text-white">{t('products.speakers')}</option>
+                              <option value="chargers" className="bg-[#18181F] text-white">{t('products.chargers')}</option>
+                              <option value="powerbanks" className="bg-[#18181F] text-white">{t('products.powerbanks')}</option>
+                            </>
+                          )
+                        ) : (
+                          products.map((p) => (
+                            <option key={p.id} value={p.id} className="bg-[#18181F] text-white">
+                              {p.nameFr} — {formatDZD(p.price, lang)}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 ltr:right-2.5 rtl:left-2.5 flex items-center text-[#A1A1AA]">
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Discount Type & Value */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[#A1A1AA] mb-1 font-semibold">
+                        {lang === 'ar' ? 'نوع التخفيض *' : 'Type de remise *'}
+                      </label>
+                      <select
+                        value={newPromoDiscountType}
+                        onChange={(e) => setNewPromoDiscountType(e.target.value as any)}
+                        className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white outline-none cursor-pointer text-xs"
+                      >
+                        <option value="percentage" className="bg-[#18181F]">Pourcentage (%)</option>
+                        <option value="fixed" className="bg-[#18181F]">Montant Fixe (DZD)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[#A1A1AA] mb-1 font-semibold">
+                        {newPromoDiscountType === 'percentage'
+                          ? (lang === 'ar' ? 'النسبة المئوية (%) *' : 'Valeur (%) *')
+                          : (lang === 'ar' ? 'المبلغ بالدينار (DZD) *' : 'Valeur (DZD) *')}
+                      </label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={newPromoDiscountType === 'percentage' ? 95 : 100000}
+                        required
+                        value={newPromoDiscountValue}
+                        onChange={(e) => setNewPromoDiscountValue(e.target.value)}
+                        placeholder={newPromoDiscountType === 'percentage' ? '20' : '1500'}
+                        className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white font-mono font-bold outline-none focus:border-[#FF6B00]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Duration Presets */}
+                  <div>
+                    <label className="block text-[#A1A1AA] mb-1.5 font-semibold flex items-center justify-between">
+                      <span>{lang === 'ar' ? 'مدة العرض الترويجي: *' : 'Durée de la promotion : *'}</span>
+                      <span className="text-[10px] text-[#FFAA2C] font-mono">
+                        {newPromoDurationPreset}
+                      </span>
+                    </label>
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {(['24h', '3d', '7d', '30d', 'custom'] as const).map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => handlePresetDurationChange(preset)}
+                          className={`py-1.5 rounded-lg font-mono text-[11px] font-bold border transition-colors cursor-pointer ${
+                            newPromoDurationPreset === preset
+                              ? 'bg-[#FF6B00] text-black border-[#FF6B00]'
+                              : 'bg-[#18181F] border-white/10 text-[#A1A1AA] hover:text-white'
+                          }`}
+                        >
+                          {preset === '24h' ? '24h' : preset === '3d' ? '3 Jours' : preset === '7d' ? '7 Jours' : preset === '30d' ? '30 Jours' : 'Manuel'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Date Pickers */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[#A1A1AA] mb-1 text-[11px]">
+                        {lang === 'ar' ? 'تاريخ البداية' : 'Date de début'}
+                      </label>
+                      <input
+                        type="datetime-local"
+                        required
+                        value={newPromoStartAt}
+                        onChange={(e) => setNewPromoStartAt(e.target.value)}
+                        className="w-full bg-[#18181F] border border-white/15 rounded-xl px-2.5 py-2 text-[11px] text-white font-mono outline-none focus:border-[#FF6B00]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[#A1A1AA] mb-1 text-[11px]">
+                        {lang === 'ar' ? 'تاريخ النهاية' : 'Date de fin'}
+                      </label>
+                      <input
+                        type="datetime-local"
+                        required
+                        value={newPromoEndAt}
+                        onChange={(e) => {
+                          setNewPromoEndAt(e.target.value);
+                          setNewPromoDurationPreset('custom');
+                        }}
+                        className="w-full bg-[#18181F] border border-white/15 rounded-xl px-2.5 py-2 text-[11px] text-white font-mono outline-none focus:border-[#FF6B00]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Optional Banner Text */}
+                  <div>
+                    <label className="block text-[#A1A1AA] mb-1 font-semibold">
+                      {lang === 'ar' ? 'رسالة الشريط الترويجي (اختياري)' : 'Texte de la bannière promo (optionnel)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={newPromoBannerFr}
+                      onChange={(e) => setNewPromoBannerFr(e.target.value)}
+                      placeholder="Ex: Profitez de 20% de remise immédiate !"
+                      className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#FF6B00]"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 transition-all cursor-pointer mt-2"
+                  >
+                    {lang === 'ar' ? 'تفعيل العرض الترويجي الآن' : 'Lancer la Promotion'}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delivery Fees Adjustment Modal */}
+      {isBulkFeeOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div
+            onClick={() => setIsBulkFeeOpen(false)}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+          />
+
+          <div className="min-h-full flex items-center justify-center p-4">
+            <div className="relative bg-[#14141B] border border-white/15 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl">
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-5 h-5 text-emerald-400" />
+                  <h3 className="text-base font-black text-[#F5F5F7] uppercase tracking-wider">
+                    {lang === 'ar' ? 'تعديل جماعي لأسعار الـ 68 ولاية' : 'Ajustement Groupé (68 Wilayas)'}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setIsBulkFeeOpen(false)}
+                  className="p-1 rounded-lg text-[#A1A1AA] hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {bulkSuccess && (
+                <div className="p-3 mb-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2">
+                  <Check className="w-4 h-4" />
+                  <span>{bulkSuccess}</span>
+                </div>
+              )}
+
+              {bulkError && (
+                <div className="p-3 mb-4 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-bold">
+                  {bulkError}
+                </div>
+              )}
+
+              <form onSubmit={handleBulkApplyFees} className="space-y-4 text-xs">
+                {/* Target Delivery Mode */}
+                <div>
+                  <label className="block text-[#A1A1AA] mb-1.5 font-semibold">
+                    {lang === 'ar' ? 'التعرفة المستهدفة بالعملية: *' : 'Tarifs ciblés par la mise à jour : *'}
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBulkTarget('home')}
+                      className={`p-2.5 rounded-xl border text-[11px] font-bold transition-colors cursor-pointer text-center ${
+                        bulkTarget === 'home'
+                          ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400'
+                          : 'bg-[#18181F] border-white/10 text-[#A1A1AA] hover:text-white'
+                      }`}
+                    >
+                      {lang === 'ar' ? 'المنزل فقط' : 'À Domicile'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBulkTarget('desk')}
+                      className={`p-2.5 rounded-xl border text-[11px] font-bold transition-colors cursor-pointer text-center ${
+                        bulkTarget === 'desk'
+                          ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400'
+                          : 'bg-[#18181F] border-white/10 text-[#A1A1AA] hover:text-white'
+                      }`}
+                    >
+                      {lang === 'ar' ? 'المكتب فقط' : 'En Bureau'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBulkTarget('both')}
+                      className={`p-2.5 rounded-xl border text-[11px] font-bold transition-colors cursor-pointer text-center ${
+                        bulkTarget === 'both'
+                          ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400'
+                          : 'bg-[#18181F] border-white/10 text-[#A1A1AA] hover:text-white'
+                      }`}
+                    >
+                      {lang === 'ar' ? 'كلاهما معاً' : 'Les deux'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Adjustment Mode */}
+                <div>
+                  <label className="block text-[#A1A1AA] mb-1.5 font-semibold">
+                    {lang === 'ar' ? 'نوع العملية: *' : 'Mode d’ajustement : *'}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBulkMode('set')}
+                      className={`p-2.5 rounded-xl border text-[11px] font-bold transition-colors cursor-pointer text-center ${
+                        bulkMode === 'set'
+                          ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400'
+                          : 'bg-[#18181F] border-white/10 text-[#A1A1AA] hover:text-white'
+                      }`}
+                    >
+                      {lang === 'ar' ? 'تعيين سعر موحد' : 'Fixer un prix uniforme'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBulkMode('add')}
+                      className={`p-2.5 rounded-xl border text-[11px] font-bold transition-colors cursor-pointer text-center ${
+                        bulkMode === 'add'
+                          ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400'
+                          : 'bg-[#18181F] border-white/10 text-[#A1A1AA] hover:text-white'
+                      }`}
+                    >
+                      {lang === 'ar' ? 'زيادة مبلغ (+دج)' : 'Ajouter (+DZD)'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Amount */}
+                <div>
+                  <label className="block text-[#A1A1AA] mb-1 font-semibold">
+                    {bulkMode === 'set'
+                      ? (lang === 'ar' ? 'المبلغ الجديد (دج) *' : 'Nouveau prix uniforme (DZD) *')
+                      : (lang === 'ar' ? 'المبلغ المراد إضافته (دج) *' : 'Montant à ajouter (DZD) *')}
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    step={50}
+                    required
+                    value={bulkAmount}
+                    onChange={(e) => setBulkAmount(e.target.value)}
+                    placeholder="Ex: 500"
+                    className="w-full bg-[#18181F] border border-white/15 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-white font-mono font-bold outline-none"
+                  />
+                </div>
+
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[11px] text-[#A1A1AA] leading-relaxed">
+                  ⚠️ {lang === 'ar'
+                    ? 'سيتم تطبيق هذا التعديل مباشرة على جميع الولايات الـ 68 وحفظه في قاعدة البيانات.'
+                    : 'Cette opération s’appliquera immédiatement aux 68 Wilayas dans la base de données.'}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isBulkSaving}
+                  className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {isBulkSaving ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  <span>
+                    {isBulkSaving
+                      ? (lang === 'ar' ? 'جارٍ التحديث...' : 'Mise à jour en cours...')
+                      : (lang === 'ar' ? 'تطبيق على جميع الـ 68 ولاية' : 'Appliquer aux 68 Wilayas')}
+                  </span>
+                </button>
+              </form>
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { WILAYAS } from '@/data/wilayas';
 
 export interface OrderItem {
   productId: string;
@@ -42,6 +43,43 @@ export interface BannedPhone {
   createdAt: string;
 }
 
+export interface WilayaDeliveryFee {
+  code: string;
+  nameFr: string;
+  nameAr: string;
+  zone: string;
+  homeFee: number;
+  deskFee: number;
+  isActive: boolean;
+  estimatedDays: string;
+  updatedAt?: string;
+}
+
+export function mapRowToDeliveryFee(row: any): WilayaDeliveryFee {
+  return {
+    code: String(row.code).padStart(2, '0'),
+    nameFr: row.name_fr || '',
+    nameAr: row.name_ar || '',
+    zone: row.zone || 'centre',
+    homeFee: Number(row.home_fee ?? 0),
+    deskFee: Number(row.desk_fee ?? 0),
+    isActive: row.is_active !== false,
+    estimatedDays: row.estimated_days || '1-2',
+    updatedAt: row.updated_at,
+  };
+}
+
+export const DEFAULT_DELIVERY_FEES: WilayaDeliveryFee[] = WILAYAS.map((w) => ({
+  code: w.code,
+  nameFr: w.nameFr,
+  nameAr: w.nameAr,
+  zone: w.zone,
+  homeFee: w.homeDeliveryFee,
+  deskFee: w.deskDeliveryFee,
+  isActive: true,
+  estimatedDays: w.estimatedDays,
+}));
+
 export function normalizeAlgerianPhone(phone: string): string {
   if (!phone) return '';
   let digits = phone.replace(/\D/g, '');
@@ -59,6 +97,7 @@ export function normalizeAlgerianPhone(phone: string): string {
 interface OrderContextType {
   orders: Order[];
   bannedPhones: BannedPhone[];
+  deliveryFees: WilayaDeliveryFee[];
   isSupabaseConnected: boolean;
   createOrder: (orderData: Omit<Order, 'id' | 'trackingCode' | 'createdAt' | 'status'>) => Order;
   updateOrderStatus: (orderId: string, status: OrderStatus, reason?: string) => void;
@@ -70,6 +109,10 @@ interface OrderContextType {
   isPhoneBanned: (phone: string) => boolean;
   checkPhoneBannedAsync: (phone: string) => Promise<{ isBanned: boolean; reason?: string }>;
   refreshBannedPhones: () => Promise<void>;
+  updateDeliveryFee: (code: string, homeFee: number, deskFee: number, isActive?: boolean) => Promise<{ success: boolean; error?: string }>;
+  bulkUpdateDeliveryFees: (target: 'home' | 'desk' | 'both', amount: number, mode: 'set' | 'add') => Promise<{ success: boolean; error?: string }>;
+  getDeliveryFeeForWilaya: (code: string, mode: 'home' | 'desk') => number;
+  refreshDeliveryFees: () => Promise<void>;
   metrics: {
     totalRevenue: number;
     ordersCount: number;
@@ -119,7 +162,42 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 export function OrderProvider({ children }: { children: React.ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [bannedPhones, setBannedPhones] = useState<BannedPhone[]>([]);
+  const [deliveryFees, setDeliveryFees] = useState<WilayaDeliveryFee[]>(DEFAULT_DELIVERY_FEES);
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
+
+  // Fetch delivery fees from Supabase
+  const fetchDeliveryFees = useCallback(async () => {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('delivery_fees')
+          .select('*')
+          .order('code', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          const mapped = data.map(mapRowToDeliveryFee);
+          setDeliveryFees(mapped);
+          try {
+            localStorage.setItem('electronics_cached_delivery_fees', JSON.stringify(mapped));
+          } catch (e) {
+            // Ignore storage errors
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn('Supabase fetch delivery fees failed:', err);
+      }
+    }
+
+    try {
+      const saved = localStorage.getItem('electronics_cached_delivery_fees');
+      if (saved) {
+        setDeliveryFees(JSON.parse(saved));
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }, []);
 
   // Fetch banned phones from Supabase
   const fetchBannedPhones = useCallback(async () => {
@@ -194,10 +272,24 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Attempt to load from localStorage cache first
+    try {
+      const savedFees = localStorage.getItem('electronics_cached_delivery_fees');
+      if (savedFees) {
+        const parsed = JSON.parse(savedFees);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setDeliveryFees(parsed);
+        }
+      }
+    } catch (e) {
+      // Ignore
+    }
+
     fetchOrders();
     fetchBannedPhones();
+    fetchDeliveryFees();
 
-    // Subscribe to Realtime orders & banned_phones if Supabase is available
+    // Subscribe to Realtime orders, banned_phones & delivery_fees if Supabase is available
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
       const orderChannel = client
@@ -222,12 +314,24 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         )
         .subscribe();
 
+      const feeChannel = client
+        .channel('public:delivery_fees')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'delivery_fees' },
+          () => {
+            fetchDeliveryFees();
+          }
+        )
+        .subscribe();
+
       return () => {
         client.removeChannel(orderChannel);
         client.removeChannel(banChannel);
+        client.removeChannel(feeChannel);
       };
     }
-  }, [fetchOrders, fetchBannedPhones]);
+  }, [fetchOrders, fetchBannedPhones, fetchDeliveryFees]);
 
   const saveLocalOrders = (newOrders: Order[]) => {
     setOrders(newOrders);
@@ -464,6 +568,133 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     return orders.find((ord) => ord.trackingCode.toLowerCase() === code.toLowerCase());
   };
 
+  const getDeliveryFeeForWilaya = useCallback(
+    (code: string, mode: 'home' | 'desk'): number => {
+      const normalizedCode = String(code).padStart(2, '0');
+      const found = deliveryFees.find((f) => f.code === normalizedCode || f.code === code);
+      if (found && found.isActive) {
+        return mode === 'home' ? found.homeFee : found.deskFee;
+      }
+      const staticWilaya = WILAYAS.find((w) => w.code === normalizedCode || w.code === code);
+      if (staticWilaya) {
+        return mode === 'home' ? staticWilaya.homeDeliveryFee : staticWilaya.deskDeliveryFee;
+      }
+      return mode === 'home' ? 600 : 350;
+    },
+    [deliveryFees]
+  );
+
+  const updateDeliveryFee = async (
+    code: string,
+    homeFee: number,
+    deskFee: number,
+    isActive: boolean = true
+  ): Promise<{ success: boolean; error?: string }> => {
+    const normalizedCode = String(code).padStart(2, '0');
+    const updatedAt = new Date().toISOString();
+
+    // 1. Immediate local update
+    setDeliveryFees((prev) => {
+      const next = prev.map((item) =>
+        item.code === normalizedCode
+          ? { ...item, homeFee, deskFee, isActive, updatedAt }
+          : item
+      );
+      try {
+        localStorage.setItem('electronics_cached_delivery_fees', JSON.stringify(next));
+      } catch (e) {
+        // Ignore
+      }
+      return next;
+    });
+
+    // 2. Database update
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase
+          .from('delivery_fees')
+          .update({
+            home_fee: homeFee,
+            desk_fee: deskFee,
+            is_active: isActive,
+            updated_at: updatedAt,
+          })
+          .eq('code', normalizedCode);
+
+        if (error) {
+          console.error('Database update delivery fee error:', error.message);
+          return { success: false, error: error.message };
+        }
+      } catch (err: any) {
+        return { success: false, error: err.message || 'Erreur mise à jour tarif livraison' };
+      }
+    }
+    return { success: true };
+  };
+
+  const bulkUpdateDeliveryFees = async (
+    target: 'home' | 'desk' | 'both',
+    amount: number,
+    mode: 'set' | 'add'
+  ): Promise<{ success: boolean; error?: string }> => {
+    const updatedAt = new Date().toISOString();
+
+    const updated = deliveryFees.map((f) => {
+      let newHome = f.homeFee;
+      let newDesk = f.deskFee;
+
+      if (target === 'home' || target === 'both') {
+        newHome = mode === 'set' ? Math.max(0, amount) : Math.max(0, f.homeFee + amount);
+      }
+      if (target === 'desk' || target === 'both') {
+        newDesk = mode === 'set' ? Math.max(0, amount) : Math.max(0, f.deskFee + amount);
+      }
+
+      return {
+        ...f,
+        homeFee: newHome,
+        deskFee: newDesk,
+        updatedAt,
+      };
+    });
+
+    setDeliveryFees(updated);
+    try {
+      localStorage.setItem('electronics_cached_delivery_fees', JSON.stringify(updated));
+    } catch (e) {
+      // Ignore
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const rows = updated.map((f) => ({
+          code: f.code,
+          name_fr: f.nameFr,
+          name_ar: f.nameAr,
+          zone: f.zone,
+          home_fee: f.homeFee,
+          desk_fee: f.deskFee,
+          is_active: f.isActive,
+          estimated_days: f.estimatedDays,
+          updated_at: updatedAt,
+        }));
+
+        const { error } = await supabase
+          .from('delivery_fees')
+          .upsert(rows, { onConflict: 'code' });
+
+        if (error) {
+          console.error('Database bulk update delivery fees error:', error.message);
+          return { success: false, error: error.message };
+        }
+      } catch (err: any) {
+        return { success: false, error: err.message || 'Erreur mise à jour groupée' };
+      }
+    }
+
+    return { success: true };
+  };
+
   const totalRevenue = orders
     .filter((o) => o.status !== 'cancelled' && o.status !== 'retour')
     .reduce((sum, o) => sum + o.total, 0);
@@ -479,6 +710,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
       value={{
         orders,
         bannedPhones,
+        deliveryFees,
         isSupabaseConnected,
         createOrder,
         updateOrderStatus,
@@ -490,6 +722,10 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         isPhoneBanned,
         checkPhoneBannedAsync,
         refreshBannedPhones: fetchBannedPhones,
+        updateDeliveryFee,
+        bulkUpdateDeliveryFees,
+        getDeliveryFeeForWilaya,
+        refreshDeliveryFees: fetchDeliveryFees,
         metrics: {
           totalRevenue,
           ordersCount: orders.length,
@@ -512,4 +748,18 @@ export function useOrders() {
     throw new Error('useOrders must be used within an OrderProvider');
   }
   return context;
+}
+
+export function useDeliveryFees() {
+  const context = useContext(OrderContext);
+  if (!context) {
+    throw new Error('useDeliveryFees must be used within an OrderProvider');
+  }
+  return {
+    deliveryFees: context.deliveryFees,
+    updateDeliveryFee: context.updateDeliveryFee,
+    bulkUpdateDeliveryFees: context.bulkUpdateDeliveryFees,
+    getDeliveryFeeForWilaya: context.getDeliveryFeeForWilaya,
+    refreshDeliveryFees: context.refreshDeliveryFees,
+  };
 }

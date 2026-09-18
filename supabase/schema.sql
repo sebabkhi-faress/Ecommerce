@@ -511,3 +511,135 @@ VALUES
 )
 ON CONFLICT (phone) DO NOTHING;
 
+-- ==============================================================================
+-- 11. PROMOTIONS TABLE (Category or Product Specific with Duration / العروض الترويجية والخصومات)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.promotions (
+    id TEXT PRIMARY KEY DEFAULT ('prm-' || substr(md5(random()::text), 1, 8)),
+    name TEXT NOT NULL,
+    target_type TEXT NOT NULL CHECK (target_type IN ('category', 'product')),
+    target_id TEXT NOT NULL,
+    discount_type TEXT NOT NULL DEFAULT 'percentage' CHECK (discount_type IN ('percentage', 'fixed')),
+    discount_value NUMERIC NOT NULL,
+    start_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    end_at TIMESTAMPTZ NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    banner_text_fr TEXT,
+    banner_text_ar TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.promotions DISABLE ROW LEVEL SECURITY;
+
+-- Seed Sample Promotion (e.g. 20% off all Earbuds for 7 days)
+INSERT INTO public.promotions (id, name, target_type, target_id, discount_type, discount_value, start_at, end_at, is_active, banner_text_fr, banner_text_ar)
+VALUES
+(
+    'prm-sample-1',
+    'Offre Spéciale Écouteurs Sans Fil (-20%)',
+    'category',
+    'earbuds',
+    'percentage',
+    20,
+    now(),
+    now() + INTERVAL '7 days',
+    true,
+    'Remise exceptionnelle de 20% sur tous les écouteurs sans fil !',
+    'تخفيض استثنائي 20% على جميع السماعات اللاسلكية لفترة محدودة !'
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- ==============================================================================
+-- 12. DELIVERY FEES TABLE (68 Wilayas - Full Desk & Home Control / أسعار التوصيل لجميع الولايات)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.delivery_fees (
+    code TEXT PRIMARY KEY,
+    name_fr TEXT NOT NULL,
+    name_ar TEXT NOT NULL,
+    zone TEXT NOT NULL DEFAULT 'centre',
+    home_fee NUMERIC NOT NULL,
+    desk_fee NUMERIC NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    estimated_days TEXT NOT NULL DEFAULT '1-2',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.delivery_fees DISABLE ROW LEVEL SECURITY;
+
+-- Seed all 68 Wilayas with standard home & desk fees
+INSERT INTO public.delivery_fees (code, name_fr, name_ar, zone, home_fee, desk_fee, estimated_days)
+VALUES
+('01', 'Adrar', 'أدرار', 'sud', 1000, 650, '3-4'),
+('02', 'Chlef', 'الشلف', 'centre', 600, 350, '1-2'),
+('03', 'Laghouat', 'الأغواط', 'hauts_plateaux', 750, 450, '2-3'),
+('04', 'Oum El Bouaghi', 'أم البواقي', 'est', 650, 400, '2-3'),
+('05', 'Batna', 'باتنة', 'est', 650, 400, '2'),
+('06', 'Béjaïa', 'بجاية', 'centre', 600, 350, '1-2'),
+('07', 'Biskra', 'بسكرة', 'hauts_plateaux', 750, 450, '2-3'),
+('08', 'Béchar', 'بشار', 'sud', 950, 600, '3-4'),
+('09', 'Blida', 'البليدة', 'centre', 450, 250, '1'),
+('10', 'Bouira', 'البويرة', 'centre', 550, 300, '1-2'),
+('11', 'Tamanrasset', 'تمنراست', 'grand_sud', 1350, 850, '4-5'),
+('12', 'Tébessa', 'تبسة', 'est', 700, 400, '2-3'),
+('13', 'Tlemcen', 'تلمسان', 'ouest', 650, 400, '2'),
+('14', 'Tiaret', 'تيارت', 'hauts_plateaux', 700, 400, '2'),
+('15', 'Tizi Ouzou', 'تيزي وزو', 'centre', 500, 300, '1-2'),
+('16', 'Alger', 'الجزائر العاصمة', 'centre', 400, 200, '1'),
+('17', 'Djelfa', 'الجلفة', 'hauts_plateaux', 700, 400, '2-3'),
+('18', 'Jijel', 'جيجل', 'est', 650, 350, '2'),
+('19', 'Sétif', 'سطيف', 'est', 600, 350, '1-2'),
+('20', 'Saïda', 'سعيدة', 'ouest', 700, 400, '2-3'),
+('21', 'Skikda', 'سكيكدة', 'est', 650, 350, '2'),
+('22', 'Sidi Bel Abbès', 'سيدي بلعباس', 'ouest', 650, 350, '2'),
+('23', 'Annaba', 'عنابة', 'est', 650, 350, '2'),
+('24', 'Guelma', 'قالمة', 'est', 650, 350, '2'),
+('25', 'Constantine', 'قسنطينة', 'est', 600, 350, '1-2'),
+('26', 'Médéa', 'المدية', 'centre', 500, 300, '1-2'),
+('27', 'Mostaganem', 'مستغانم', 'ouest', 650, 350, '2'),
+('28', 'M''Sila', 'المسيلة', 'hauts_plateaux', 700, 400, '2'),
+('29', 'Mascara', 'معسكر', 'ouest', 650, 350, '2'),
+('30', 'Ouargla', 'ورقلة', 'sud', 850, 500, '2-3'),
+('31', 'Oran', 'وهران', 'ouest', 550, 300, '1-2'),
+('32', 'El Bayadh', 'البيض', 'hauts_plateaux', 800, 500, '2-3'),
+('33', 'Illizi', 'إليزي', 'grand_sud', 1400, 900, '4-5'),
+('34', 'Bordj Bou Arreridj', 'برج بوعريريج', 'est', 600, 350, '1-2'),
+('35', 'Boumerdès', 'بومرداس', 'centre', 450, 250, '1'),
+('36', 'El Tarf', 'الطارف', 'est', 700, 400, '2-3'),
+('37', 'Tindouf', 'تندوف', 'grand_sud', 1400, 900, '4-6'),
+('38', 'Tissemsilt', 'تيسمسيلت', 'hauts_plateaux', 700, 400, '2'),
+('39', 'El Oued', 'الوادي', 'sud', 800, 500, '2-3'),
+('40', 'Khenchela', 'خنشلة', 'est', 700, 400, '2'),
+('41', 'Souk Ahras', 'سوق أهراس', 'est', 700, 400, '2'),
+('42', 'Tipaza', 'تيبازة', 'centre', 450, 250, '1'),
+('43', 'Mila', 'ميلة', 'est', 650, 350, '2'),
+('44', 'Aïn Defla', 'عين الدفلى', 'centre', 550, 300, '1-2'),
+('45', 'Naâma', 'النعامة', 'hauts_plateaux', 800, 500, '2-3'),
+('46', 'Aïn Témouchent', 'عين تموشنت', 'ouest', 650, 350, '2'),
+('47', 'Ghardaïa', 'غرداية', 'sud', 800, 500, '2-3'),
+('48', 'Relizane', 'غليزان', 'ouest', 650, 350, '2'),
+('49', 'El M''Ghair', 'المغير', 'sud', 850, 500, '2-3'),
+('50', 'El Meniaa', 'المنيعة', 'sud', 900, 550, '3'),
+('51', 'Ouled Djellal', 'أولاد جلال', 'hauts_plateaux', 750, 450, '2'),
+('52', 'Bordj Baji Mokhtar', 'برج باجي مختار', 'grand_sud', 1450, 950, '4-6'),
+('53', 'Béni Abbès', 'بني عباس', 'sud', 950, 600, '3-4'),
+('54', 'Timimoun', 'تيميمون', 'sud', 950, 600, '3-4'),
+('55', 'Touggourt', 'تقرت', 'sud', 850, 500, '2-3'),
+('56', 'Djanet', 'جانت', 'grand_sud', 1450, 950, '4-6'),
+('57', 'In Salah', 'عين صالح', 'grand_sud', 1200, 750, '3-5'),
+('58', 'In Guezzam', 'عين قزام', 'grand_sud', 1500, 1000, '4-6'),
+('59', 'Aflou', 'أفلو', 'hauts_plateaux', 750, 450, '2-3'),
+('60', 'Barika', 'بريكة', 'est', 650, 400, '2'),
+('61', 'Ksar Chellala', 'قصر الشلالة', 'hauts_plateaux', 750, 450, '2'),
+('62', 'Messaad', 'مسعد', 'hauts_plateaux', 750, 450, '2-3'),
+('63', 'Aïn Oussera', 'عين وسارة', 'hauts_plateaux', 700, 400, '2'),
+('64', 'Bousaâda', 'بوسعادة', 'hauts_plateaux', 700, 400, '2'),
+('65', 'El Eulma', 'العلمة', 'est', 600, 350, '1-2'),
+('66', 'Sour El Ghozlane', 'سور الغزلان', 'centre', 550, 300, '1-2'),
+('67', 'Akbou', 'أقبو', 'centre', 600, 350, '1-2'),
+('68', 'El Abiodh Sidi Cheikh', 'الأبيض سيدي الشيخ', 'sud', 900, 550, '3')
+ON CONFLICT (code) DO UPDATE SET
+    name_fr = EXCLUDED.name_fr,
+    name_ar = EXCLUDED.name_ar,
+    zone = EXCLUDED.zone,
+    estimated_days = EXCLUDED.estimated_days;
+
