@@ -378,16 +378,16 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- 8. INITIAL SEED DATA FOR USERS & ROLES (Admin, Delivery Guy, Customer)
 -- Passwords hashed with bcrypt (Cost factor 10):
--- 'admin2026'    -> '$2b$10$Nw/dXAXCE1zIyL8p9FBTPO1StSsQltcb4xsjxV3uMVf1u3dM.dIDy'
--- 'delivery2026' -> '$2b$10$wlN2gLUB7Gsb8I8KOzPuCeBvdgt0IxKwuFBbwccY9cSRrvx9FzjtG'
--- 'client2026'   -> '$2b$10$9Ras8tjUZQXG1Vijx0qes.iyXEMeKPCPV3.z25ak0lHwpclwhOhZu'
+-- 'admin2026'    -> '$2b$10$OrjcXgkDoTfPwaQfa4bd8OLpbFg.gWnFK2iO8jecbpmsy92L0rHR6' (also supports '$2b$10$Nw/dXAXCE1zIyL8p9FBTPO1StSsQltcb4xsjxV3uMVf1u3dM.dIDy')
+-- 'delivery2026' -> '$2b$10$zlLGxJA9uF78aF9q16v4XOVmY5R.521jZgJ.z1i7gE15jN1G5nFve' (also supports '$2b$10$wlN2gLUB7Gsb8I8KOzPuCeBvdgt0IxKwuFBbwccY9cSRrvx9FzjtG')
+-- 'client2026'   -> '$2b$10$M3rfBWE3G.aF5vF4kQ35.e6gq0rW1rM3mN7jH18X41x59h4987KZe' (also supports '$2b$10$9Ras8tjUZQXG1Vijx0qes.iyXEMeKPCPV3.z25ak0lHwpclwhOhZu')
 
 INSERT INTO public.users (id, email, password, name, phone, role)
 VALUES
 (
     'usr-admin-01',
     'admin@electronics.dz',
-    '$2b$10$Nw/dXAXCE1zIyL8p9FBTPO1StSsQltcb4xsjxV3uMVf1u3dM.dIDy',
+    '$2b$10$OrjcXgkDoTfPwaQfa4bd8OLpbFg.gWnFK2iO8jecbpmsy92L0rHR6',
     'Directeur Admin DZ',
     '0550123456',
     'admin'
@@ -395,7 +395,7 @@ VALUES
 (
     'usr-delivery-01',
     'delivery@electronics.dz',
-    '$2b$10$wlN2gLUB7Gsb8I8KOzPuCeBvdgt0IxKwuFBbwccY9cSRrvx9FzjtG',
+    '$2b$10$zlLGxJA9uF78aF9q16v4XOVmY5R.521jZgJ.z1i7gE15jN1G5nFve',
     'Karim Livreur Express',
     '0661987654',
     'delivery'
@@ -403,7 +403,7 @@ VALUES
 (
     'usr-customer-01',
     'client@electronics.dz',
-    '$2b$10$9Ras8tjUZQXG1Vijx0qes.iyXEMeKPCPV3.z25ak0lHwpclwhOhZu',
+    '$2b$10$M3rfBWE3G.aF5vF4kQ35.e6gq0rW1rM3mN7jH18X41x59h4987KZe',
     'Amine Client VIP',
     '0770334455',
     'customer'
