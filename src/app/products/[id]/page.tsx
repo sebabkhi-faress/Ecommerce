@@ -62,15 +62,24 @@ export default function ProductDetailPage() {
 
   // 2. Direct Supabase Query Fallback for fresh products or direct URL visits
   const [dbProduct, setDbProduct] = useState<Product | null>(null);
-  const [isSearchingDb, setIsSearchingDb] = useState(false);
+  const [hasCheckedDb, setHasCheckedDb] = useState(false);
 
   useEffect(() => {
-    if (contextProduct || !cleanIdOrSlug) return;
-    if (!isSupabaseConfigured || !supabase) return;
+    if (contextProduct) {
+      setHasCheckedDb(true);
+      return;
+    }
+    if (!cleanIdOrSlug) {
+      setHasCheckedDb(true);
+      return;
+    }
+    if (!isSupabaseConfigured || !supabase) {
+      setHasCheckedDb(true);
+      return;
+    }
 
     let cancelled = false;
     async function fetchFromDb() {
-      setIsSearchingDb(true);
       try {
         const { data, error } = await supabase!
           .from('products')
@@ -78,13 +87,15 @@ export default function ProductDetailPage() {
           .or(`id.eq.${cleanIdOrSlug},slug.eq.${cleanIdOrSlug}`)
           .maybeSingle();
 
-        if (!cancelled && !error && data) {
-          setDbProduct(mapRowToProduct(data));
+        if (!cancelled) {
+          if (!error && data) {
+            setDbProduct(mapRowToProduct(data));
+          }
+          setHasCheckedDb(true);
         }
       } catch (e) {
         console.warn('Direct DB fetch error', e);
-      } finally {
-        if (!cancelled) setIsSearchingDb(false);
+        if (!cancelled) setHasCheckedDb(true);
       }
     }
 
@@ -95,7 +106,8 @@ export default function ProductDetailPage() {
   }, [cleanIdOrSlug, contextProduct]);
 
   const product = contextProduct || dbProduct;
-  const isPageLoading = (isLoading || isSearchingDb) && !product;
+  // If product not yet found, consider page loading until database query has actually completed
+  const isPageLoading = !product && !hasCheckedDb;
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
@@ -157,9 +169,16 @@ export default function ProductDetailPage() {
 
   if (isPageLoading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4 bg-[var(--obsidian)] text-[var(--white-titanium)]">
-        <Loader2 className="w-8 h-8 text-[#FF6B00] animate-spin mb-4" />
-        <p className="text-sm text-[#A1A1AA] font-mono">{lang === 'ar' ? 'جارٍ تحميل تفاصيل المنتج...' : 'Chargement du produit...'}</p>
+      <div className="min-h-[75vh] flex flex-col items-center justify-center text-center px-4 bg-[var(--obsidian)] text-[var(--white-titanium)]">
+        <div className="w-12 h-12 rounded-2xl bg-[#FF6B00]/10 border border-[#FF6B00]/30 flex items-center justify-center mb-4 shadow-xl shadow-[#FF6B00]/10">
+          <Loader2 className="w-6 h-6 text-[#FF6B00] animate-spin" />
+        </div>
+        <p className="text-sm font-bold text-[#F5F5F7]">
+          {lang === 'ar' ? 'جارٍ تحميل تفاصيل المنتج...' : 'Chargement du produit...'}
+        </p>
+        <p className="text-xs text-[#A1A1AA] font-mono mt-1">
+          {lang === 'ar' ? 'يرجى الانتظار لحظة' : 'Veuillez patienter un instant...'}
+        </p>
       </div>
     );
   }
