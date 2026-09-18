@@ -50,15 +50,18 @@ import {
   Sparkles,
   LayoutDashboard,
   ShoppingBag,
+  BarChart3,
   Users,
   User,
   Settings,
   Shield,
+  AlertTriangle,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured, uploadProductImage } from '@/lib/supabase';
 import { useProducts, usePromotions, Promotion } from '@/context/ProductContext';
 import { useAuth } from '@/context/AuthContext';
 import { getInitials } from '@/components/layout/AdminNavbar';
+import AdminStatistics from '@/components/admin/AdminStatistics';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -105,11 +108,28 @@ export default function AdminDashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [adminTab, setAdminTab] = useState<'overview' | 'orders' | 'products' | 'categories' | 'promotions' | 'delivery_fees' | 'users' | 'banned'>('overview');
+  const [adminTab, setAdminTab] = useState<'overview' | 'orders' | 'products' | 'categories' | 'promotions' | 'delivery_fees' | 'users' | 'banned' | 'statics'>('overview');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [productSubTab, setProductSubTab] = useState<'catalog' | 'categories'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Generic responsive confirmation modal state (0 default browser window.confirm!)
+  const [genericConfirmModal, setGenericConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    confirmText?: string;
+    cancelText?: string;
+    isDanger?: boolean;
+    isLoading?: boolean;
+    onConfirm: () => Promise<void> | void;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: () => {},
+  });
 
   // Products Multiselect state
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
@@ -407,19 +427,26 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleDeleteCategory = async (id: string, name: string) => {
-    const isConfirmed = window.confirm(
-      lang === 'ar'
-        ? `هل أنت متأكد من حذف القسم "${name}"؟`
-        : `Êtes-vous sûr de vouloir supprimer la catégorie "${name}" ?`
-    );
-    if (!isConfirmed) return;
-    await deleteCategory(id);
-    showToast(
-      lang === 'ar' ? 'تم تأكيد حذف القسم بنجاح' : 'Catégorie supprimée avec succès',
-      'success',
-      lang === 'ar' ? `تمت إزالة القسم "${name}" من النظام.` : `La catégorie "${name}" a été définitivement retirée.`
-    );
+  const handleDeleteCategory = (id: string, name: string) => {
+    setGenericConfirmModal({
+      isOpen: true,
+      title: lang === 'ar' ? 'حذف القسم' : 'Supprimer la catégorie',
+      description: lang === 'ar'
+        ? `هل أنت متأكد من حذف القسم "${name}"؟ قد يؤثر ذلك على المنتجات المرتبطة به.`
+        : `Êtes-vous sûr de vouloir supprimer la catégorie "${name}" ? Cette action est définitive.`,
+      confirmText: lang === 'ar' ? 'نعم، احذف القسم' : 'Oui, supprimer',
+      cancelText: lang === 'ar' ? 'إلغاء' : 'Annuler',
+      isDanger: true,
+      onConfirm: async () => {
+        await deleteCategory(id);
+        setGenericConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        showToast(
+          lang === 'ar' ? 'تم تأكيد حذف القسم بنجاح' : 'Catégorie supprimée avec succès',
+          'success',
+          lang === 'ar' ? `تمت إزالة القسم "${name}" من النظام.` : `La catégorie "${name}" a été définitivement retirée.`
+        );
+      },
+    });
   };
 
   // Phone Ban Actions
@@ -461,25 +488,49 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleUnbanPhone = async (phoneToUnban: string) => {
-    const isConfirmed = window.confirm(
-      lang === 'ar'
+  const handleUnbanPhone = (phoneToUnban: string) => {
+    setGenericConfirmModal({
+      isOpen: true,
+      title: lang === 'ar' ? 'رفع الحظر عن الرقم' : 'Débloquer le numéro',
+      description: lang === 'ar'
         ? `هل تريد رفع الحظر عن الرقم ${phoneToUnban} والسماح له بالطلب مجدداً؟`
-        : `Débloquer le numéro ${phoneToUnban} et lui réautoriser les commandes ?`
-    );
-    if (!isConfirmed) return;
-    await unbanPhone(phoneToUnban);
+        : `Débloquer le numéro ${phoneToUnban} et lui réautoriser les commandes ?`,
+      confirmText: lang === 'ar' ? 'رفع الحظر' : 'Débloquer',
+      cancelText: lang === 'ar' ? 'إلغاء' : 'Annuler',
+      isDanger: false,
+      onConfirm: async () => {
+        await unbanPhone(phoneToUnban);
+        setGenericConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        showToast(
+          lang === 'ar' ? 'تم رفع الحظر بنجاح' : 'Numéro débloqué',
+          'success',
+          lang === 'ar' ? `تم السماح للرقم ${phoneToUnban} بالطلب مجدداً.` : `Le numéro ${phoneToUnban} peut à nouveau passer des commandes.`
+        );
+      },
+    });
   };
 
-  const handleQuickBanOrder = async (order: Order) => {
+  const handleQuickBanOrder = (order: Order) => {
     const reason = `Refus / Annulation commande ${order.trackingCode}`;
-    const isConfirmed = window.confirm(
-      lang === 'ar'
+    setGenericConfirmModal({
+      isOpen: true,
+      title: lang === 'ar' ? 'حظر الزبون' : 'Bloquer le client',
+      description: lang === 'ar'
         ? `هل تريد حظر رقم الزبون ${order.phone} (${order.fullName}) ومنعه من الطلب مجدداً؟`
-        : `Voulez-vous bloquer le numéro ${order.phone} (${order.fullName}) et interdire ses futures commandes ?`
-    );
-    if (!isConfirmed) return;
-    await banPhone(order.phone, reason, `Client: ${order.fullName}, Wilaya: ${order.wilayaCode}`);
+        : `Voulez-vous bloquer le numéro ${order.phone} (${order.fullName}) et interdire ses futures commandes ?`,
+      confirmText: lang === 'ar' ? 'نعم، احظر الرقم' : 'Oui, bloquer',
+      cancelText: lang === 'ar' ? 'إلغاء' : 'Annuler',
+      isDanger: true,
+      onConfirm: async () => {
+        await banPhone(order.phone, reason, `Client: ${order.fullName}, Wilaya: ${order.wilayaCode}`);
+        setGenericConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        showToast(
+          lang === 'ar' ? 'تم حظر الرقم بنجاح' : 'Numéro bloqué avec succès',
+          'success',
+          lang === 'ar' ? `تم إدراج ${order.phone} في القائمة السوداء.` : `Le numéro ${order.phone} a été mis sur liste noire.`
+        );
+      },
+    });
   };
 
   // Filtered Banned Phones
@@ -568,19 +619,26 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleDeletePromotion = async (id: string, name: string) => {
-    const isConfirmed = window.confirm(
-      lang === 'ar'
+  const handleDeletePromotion = (id: string, name: string) => {
+    setGenericConfirmModal({
+      isOpen: true,
+      title: lang === 'ar' ? 'حذف العرض الترويجي' : 'Supprimer la promotion',
+      description: lang === 'ar'
         ? `هل أنت متأكد من حذف العرض الترويجي "${name}"؟`
-        : `Êtes-vous sûr de vouloir supprimer la promotion "${name}" ?`
-    );
-    if (!isConfirmed) return;
-    await deletePromotion(id);
-    showToast(
-      lang === 'ar' ? 'تم تأكيد حذف العرض الترويجي بنجاح' : 'Promotion supprimée avec succès',
-      'success',
-      lang === 'ar' ? `تمت إزالة العرض "${name}" من النظام.` : `La promotion "${name}" a été définitivement retirée.`
-    );
+        : `Êtes-vous sûr de vouloir supprimer la promotion "${name}" ?`,
+      confirmText: lang === 'ar' ? 'نعم، احذف العرض' : 'Oui, supprimer',
+      cancelText: lang === 'ar' ? 'إلغاء' : 'Annuler',
+      isDanger: true,
+      onConfirm: async () => {
+        await deletePromotion(id);
+        setGenericConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        showToast(
+          lang === 'ar' ? 'تم تأكيد حذف العرض الترويجي بنجاح' : 'Promotion supprimée avec succès',
+          'success',
+          lang === 'ar' ? `تمت إزالة العرض "${name}" من النظام.` : `La promotion "${name}" a été définitivement retirée.`
+        );
+      },
+    });
   };
 
   const handleTogglePromoStatus = async (promo: Promotion) => {
@@ -866,6 +924,28 @@ export default function AdminDashboardPage() {
                   {orders.length}
                 </span>
               </div>
+            </button>
+
+            {/* Statistiques & Wilayas */}
+            <button
+              type="button"
+              onClick={() => {
+                setAdminTab('statics');
+                setIsMobileSidebarOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl font-bold text-xs transition-all cursor-pointer group ${
+                adminTab === 'statics'
+                  ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black shadow-lg shadow-[#FF6B00]/25'
+                  : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.06]'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <BarChart3 className={`w-4 h-4 transition-transform group-hover:scale-110 ${adminTab === 'statics' ? 'text-black' : 'text-[#FFAA2C]'}`} />
+                <span>{lang === 'ar' ? 'الإحصائيات والتحليلات' : 'Statistiques'}</span>
+              </div>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${adminTab === 'statics' ? 'bg-black/20 text-black font-extrabold' : 'bg-[#FF6B00]/10 text-[#FFAA2C]'}`}>
+                68 Wilayas
+              </span>
             </button>
 
             {/* 4. Delivery */}
@@ -2428,6 +2508,13 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         )}
+
+        {/* 8. Statistics & Analytics Tab */}
+        {adminTab === 'statics' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            <AdminStatistics />
+          </div>
+        )}
       </main>
 
       {/* Add Category Modal Dialog */}
@@ -3172,8 +3259,8 @@ export default function AdminDashboardPage() {
 
       {/* ==================== PRODUCT DELETE CONFIRMATION MODAL WITH ORDER CHECK ==================== */}
       {deleteModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-[#14141B] border border-white/15 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-[#14141B] border border-white/15 rounded-3xl w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 animate-in zoom-in-95 duration-150">
             {/* Modal Header */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -3363,8 +3450,8 @@ export default function AdminDashboardPage() {
 
       {/* ==================== ADMIN PROFILE & ACCOUNT MODAL ==================== */}
       {isProfileModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-[#14141B] border border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-6 animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-[#14141B] border border-white/15 rounded-3xl w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-2xl space-y-5 sm:space-y-6 animate-in zoom-in-95 duration-150">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-white/10">
               <div className="flex items-center gap-2.5">
@@ -3480,6 +3567,98 @@ export default function AdminDashboardPage() {
                 className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition-colors cursor-pointer"
               >
                 {lang === 'ar' ? 'إغلاق' : 'Fermer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== GENERIC CUSTOM RESPONSIVE CONFIRMATION MODAL (NO BROWSER DEFAULT POPUP) ==================== */}
+      {genericConfirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#14141B] border border-white/15 rounded-3xl w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 animate-in zoom-in-95 duration-150"
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                    genericConfirmModal.isDanger
+                      ? 'bg-red-500/15 border-red-500/30 text-red-400'
+                      : 'bg-[#FF6B00]/15 border-[#FF6B00]/30 text-[#FFAA2C]'
+                  }`}
+                >
+                  {genericConfirmModal.isDanger ? (
+                    <AlertTriangle className="w-5 h-5" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#F5F5F7]">
+                    {genericConfirmModal.title}
+                  </h3>
+                  <span className="text-[10px] font-mono text-[#A1A1AA] uppercase">
+                    {lang === 'ar' ? 'تأكيد العملية' : 'Action Requise'}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGenericConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+                className="p-1.5 text-[#A1A1AA] hover:text-white rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Description Body */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-white/[0.03] border border-white/10">
+              <p className="text-xs sm:text-sm text-[#E4E4E7] leading-relaxed font-medium">
+                {genericConfirmModal.description}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setGenericConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+                disabled={genericConfirmModal.isLoading}
+                className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {genericConfirmModal.cancelText || (lang === 'ar' ? 'إلغاء' : 'Annuler')}
+              </button>
+
+              <button
+                type="button"
+                disabled={genericConfirmModal.isLoading}
+                onClick={async () => {
+                  try {
+                    setGenericConfirmModal((prev) => ({ ...prev, isLoading: true }));
+                    await genericConfirmModal.onConfirm();
+                  } catch (err) {
+                    console.error('Confirm modal action failed:', err);
+                  } finally {
+                    setGenericConfirmModal((prev) => ({ ...prev, isLoading: false }));
+                  }
+                }}
+                className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all shadow-lg cursor-pointer ${
+                  genericConfirmModal.isDanger
+                    ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/30'
+                    : 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black shadow-[#FF6B00]/25'
+                }`}
+              >
+                {genericConfirmModal.isLoading ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>{lang === 'ar' ? 'جارٍ المعالجة...' : 'En cours...'}</span>
+                  </>
+                ) : (
+                  <span>{genericConfirmModal.confirmText || (lang === 'ar' ? 'تأكيد' : 'Confirmer')}</span>
+                )}
               </button>
             </div>
           </div>
