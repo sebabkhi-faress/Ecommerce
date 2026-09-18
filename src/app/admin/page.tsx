@@ -66,6 +66,52 @@ import { useAuth } from '@/context/AuthContext';
 import { getInitials } from '@/components/layout/AdminNavbar';
 import AdminStatistics from '@/components/admin/AdminStatistics';
 
+type VariantCategoryType = 'clothing' | 'shoes' | 'storage' | 'watch' | 'custom' | 'none';
+
+function detectDefaultVariantType(categorySlug: string): VariantCategoryType {
+  const cat = (categorySlug || '').toLowerCase();
+  if (
+    cat.includes('phone') ||
+    cat.includes('tel') ||
+    cat.includes('smartphone') ||
+    cat.includes('tablette') ||
+    cat.includes('tablet') ||
+    cat.includes('pc') ||
+    cat.includes('laptop') ||
+    cat.includes('stockage') ||
+    cat.includes('storage')
+  ) {
+    return 'storage';
+  }
+  if (
+    cat.includes('cloth') ||
+    cat.includes('vetement') ||
+    cat.includes('mode') ||
+    cat.includes('fashion') ||
+    cat.includes('tshirt') ||
+    cat.includes('pantalon') ||
+    cat.includes('robe') ||
+    cat.includes('pull') ||
+    cat.includes('hoodie')
+  ) {
+    return 'clothing';
+  }
+  if (
+    cat.includes('shoe') ||
+    cat.includes('chaussure') ||
+    cat.includes('sneaker') ||
+    cat.includes('basket') ||
+    cat.includes('sandale') ||
+    cat.includes('botte')
+  ) {
+    return 'shoes';
+  }
+  if (cat.includes('watch') || cat.includes('montre')) {
+    return 'watch';
+  }
+  return 'none';
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { lang, t } = useLanguage();
@@ -160,6 +206,7 @@ export default function AdminDashboardPage() {
   const [editDescAr, setEditDescAr] = useState('');
   const [editColors, setEditColors] = useState<ProductColor[]>([]);
   const [editSizes, setEditSizes] = useState<string[]>([]);
+  const [editVariantType, setEditVariantType] = useState<VariantCategoryType>('clothing');
   const [editCustomColorNameFr, setEditCustomColorNameFr] = useState('');
   const [editCustomColorNameAr, setEditCustomColorNameAr] = useState('');
   const [editCustomColorHex, setEditCustomColorHex] = useState('#000000');
@@ -180,8 +227,22 @@ export default function AdminDashboardPage() {
     setEditTaglineAr(p.taglineAr || '');
     setEditDescFr(p.descriptionFr || '');
     setEditDescAr(p.descriptionAr || '');
-    setEditColors(p.colors ? JSON.parse(JSON.stringify(p.colors)) : []);
-    setEditSizes(p.sizes ? [...p.sizes] : []);
+    const pColors = p.colors ? JSON.parse(JSON.stringify(p.colors)) : [];
+    const pSizes = p.sizes ? [...p.sizes] : [];
+    setEditColors(pColors);
+    setEditSizes(pSizes);
+    const detected: VariantCategoryType = pSizes.length > 0
+      ? (pSizes.some((s) => /go|gb|to|tb/i.test(s))
+          ? 'storage'
+          : pSizes.every((s) => /^\d{2}$/.test(s.trim()))
+          ? 'shoes'
+          : pSizes.some((s) => /mm$/i.test(s))
+          ? 'watch'
+          : pSizes.some((s) => ['xs', 's', 'm', 'l', 'xl', 'xxl', '3xl', '2xl'].includes(s.toLowerCase()))
+          ? 'clothing'
+          : 'custom')
+      : detectDefaultVariantType(p.category);
+    setEditVariantType(detected);
     setEditCustomColorNameFr('');
     setEditCustomColorNameAr('');
     setEditCustomSizeInput('');
@@ -367,6 +428,7 @@ export default function AdminDashboardPage() {
   const [newProdImage, setNewProdImage] = useState('');
   const [newProdColors, setNewProdColors] = useState<ProductColor[]>([]);
   const [newProdSizes, setNewProdSizes] = useState<string[]>([]);
+  const [newProdVariantType, setNewProdVariantType] = useState<VariantCategoryType>('none');
   const [customColorNameFr, setCustomColorNameFr] = useState('');
   const [customColorNameAr, setCustomColorNameAr] = useState('');
   const [customColorHex, setCustomColorHex] = useState('#000000');
@@ -3107,7 +3169,11 @@ export default function AdminDashboardPage() {
                           <div className="relative">
                             <select
                               value={newProdCategory}
-                              onChange={(e) => setNewProdCategory(e.target.value as any)}
+                              onChange={(e) => {
+                                const cat = e.target.value;
+                                setNewProdCategory(cat);
+                                setNewProdVariantType(detectDefaultVariantType(cat));
+                              }}
                               className="w-full appearance-none bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-xs text-white outline-none cursor-pointer"
                             >
                               {categories.length > 0 ? (
@@ -3372,27 +3438,68 @@ export default function AdminDashboardPage() {
                           </span>
                         </div>
 
-                        {/* SIZES MANAGER */}
-                        <div className="space-y-2.5">
+                        {/* SIZES / VARIANTS MANAGER */}
+                        <div className="space-y-3">
                           <div className="flex items-center justify-between">
                             <label className="block text-xs font-bold text-[#FFAA2C]">
-                              {lang === 'ar' ? 'المقاسات (ملابس، أحذية، أحجام) :' : 'Tailles (Vêtements, Chaussures, etc.) :'}
+                              {lang === 'ar' ? 'نوع المقاسات والخيارات (حسب نوع المنتج) :' : 'Variantes & Tailles (Selon la catégorie) :'}
                             </label>
                             {newProdSizes.length > 0 && (
                               <button
                                 type="button"
                                 onClick={() => setNewProdSizes([])}
-                                className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                                className="text-[10px] text-red-400 hover:underline cursor-pointer font-bold"
                               >
                                 {lang === 'ar' ? 'مسح الكل' : 'Tout effacer'}
                               </button>
                             )}
                           </div>
 
-                          {/* Quick Preset Buttons */}
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-1.5 text-[10px] text-[#A1A1AA] flex-wrap">
-                              <span className="shrink-0">{lang === 'ar' ? 'ملابس :' : 'Vêtements :'}</span>
+                          {/* Category Variant Type Selector Tabs */}
+                          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 p-1 bg-black/40 rounded-xl border border-white/10 text-xs">
+                            {[
+                              { id: 'clothing' as VariantCategoryType, icon: '👕', labelFr: 'Vêtements', labelAr: 'ملابس' },
+                              { id: 'shoes' as VariantCategoryType, icon: '👟', labelFr: 'Chaussures', labelAr: 'أحذية' },
+                              { id: 'storage' as VariantCategoryType, icon: '📱', labelFr: 'Stockage', labelAr: 'سعة / Go' },
+                              { id: 'watch' as VariantCategoryType, icon: '⌚', labelFr: 'Montres', labelAr: 'ساعات' },
+                              { id: 'custom' as VariantCategoryType, icon: '✏️', labelFr: 'Autre', labelAr: 'مخصص' },
+                              { id: 'none' as VariantCategoryType, icon: '🚫', labelFr: 'Standard', labelAr: 'حجم موحد' },
+                            ].map((tab) => {
+                              const isActive = newProdVariantType === tab.id;
+                              return (
+                                <button
+                                  key={tab.id}
+                                  type="button"
+                                  onClick={() => setNewProdVariantType(tab.id)}
+                                  className={`px-2 py-1.5 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                                    isActive
+                                      ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black shadow-md'
+                                      : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
+                                  }`}
+                                >
+                                  <span>{tab.icon}</span>
+                                  <span>{lang === 'ar' ? tab.labelAr : tab.labelFr}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Dynamic Preset Pills by Variant Type */}
+                          {newProdVariantType === 'clothing' && (
+                            <div className="space-y-1.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/5">
+                              <div className="flex items-center justify-between text-[10px] text-[#A1A1AA]">
+                                <span>{lang === 'ar' ? 'مقاسات الملابس القياسية (T-shirts, chemises, vestes...) :' : 'Tailles standards pour vêtements :'}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const all = ['S', 'M', 'L', 'XL', 'XXL'];
+                                    setNewProdSizes(Array.from(new Set([...newProdSizes, ...all])));
+                                  }}
+                                  className="text-[#FFAA2C] hover:underline font-bold cursor-pointer"
+                                >
+                                  {lang === 'ar' ? '+ إضافة حزمة (S إلى XXL)' : '+ Tout ajouter (S-XXL)'}
+                                </button>
+                              </div>
                               <div className="flex flex-wrap gap-1">
                                 {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'].map((s) => {
                                   const isSelected = newProdSizes.includes(s);
@@ -3407,7 +3514,7 @@ export default function AdminDashboardPage() {
                                           setNewProdSizes([...newProdSizes, s]);
                                         }
                                       }}
-                                      className={`px-2 py-0.5 rounded-lg border text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                                      className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
                                         isSelected
                                           ? 'bg-[#FF6B00] text-black border-[#FF6B00] shadow-sm'
                                           : 'bg-white/5 text-[#F5F5F7] border-white/10 hover:border-white/30'
@@ -3417,24 +3524,27 @@ export default function AdminDashboardPage() {
                                     </button>
                                   );
                                 })}
+                              </div>
+                            </div>
+                          )}
+
+                          {newProdVariantType === 'shoes' && (
+                            <div className="space-y-1.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/5">
+                              <div className="flex items-center justify-between text-[10px] text-[#A1A1AA]">
+                                <span>{lang === 'ar' ? 'مقاسات الأحذية (Pointures) :' : 'Pointures standards pour chaussures :'}</span>
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const clothingAll = ['S', 'M', 'L', 'XL', 'XXL'];
-                                    const merged = Array.from(new Set([...newProdSizes, ...clothingAll]));
-                                    setNewProdSizes(merged);
+                                    const all = ['40', '41', '42', '43', '44'];
+                                    setNewProdSizes(Array.from(new Set([...newProdSizes, ...all])));
                                   }}
-                                  className="px-2 py-0.5 rounded-lg bg-[#FFAA2C]/15 border border-[#FFAA2C]/30 text-[#FFAA2C] text-[10px] font-bold hover:bg-[#FFAA2C]/25 cursor-pointer"
+                                  className="text-[#FFAA2C] hover:underline font-bold cursor-pointer"
                                 >
-                                  {lang === 'ar' ? '+ الكل (S-XXL)' : '+ Tout (S-XXL)'}
+                                  {lang === 'ar' ? '+ إضافة حزمة (40 إلى 44)' : '+ Tout ajouter (40-44)'}
                                 </button>
                               </div>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 text-[10px] text-[#A1A1AA] flex-wrap">
-                              <span className="shrink-0">{lang === 'ar' ? 'أحذية :' : 'Pointures :'}</span>
                               <div className="flex flex-wrap gap-1">
-                                {['38', '39', '40', '41', '42', '43', '44', '45'].map((s) => {
+                                {['36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'].map((s) => {
                                   const isSelected = newProdSizes.includes(s);
                                   return (
                                     <button
@@ -3447,7 +3557,7 @@ export default function AdminDashboardPage() {
                                           setNewProdSizes([...newProdSizes, s]);
                                         }
                                       }}
-                                      className={`px-2 py-0.5 rounded-lg border text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                                      className={`px-2 py-1 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
                                         isSelected
                                           ? 'bg-[#FF6B00] text-black border-[#FF6B00] shadow-sm'
                                           : 'bg-white/5 text-[#F5F5F7] border-white/10 hover:border-white/30'
@@ -3459,60 +3569,180 @@ export default function AdminDashboardPage() {
                                 })}
                               </div>
                             </div>
-                          </div>
+                          )}
 
-                          {/* Custom Size Input */}
-                          <div className="flex gap-2 pt-1">
-                            <input
-                              type="text"
-                              value={customSizeInput}
-                              onChange={(e) => setCustomSizeInput(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  const val = customSizeInput.trim().toUpperCase();
+                          {newProdVariantType === 'storage' && (
+                            <div className="space-y-1.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/5">
+                              <div className="flex items-center justify-between text-[10px] text-[#A1A1AA]">
+                                <span>{lang === 'ar' ? 'سعة التخزين للهواتف، الحواسيب واللوحات :' : 'Capacités de stockage (Smartphones, PC, Tablettes) :'}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const all = ['128 Go', '256 Go', '512 Go'];
+                                    setNewProdSizes(Array.from(new Set([...newProdSizes, ...all])));
+                                  }}
+                                  className="text-[#FFAA2C] hover:underline font-bold cursor-pointer"
+                                >
+                                  {lang === 'ar' ? '+ حزمة شائعة (128-512 Go)' : '+ Pack standard (128-512 Go)'}
+                                </button>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {['64 Go', '128 Go', '256 Go', '512 Go', '1 To', '2 To'].map((s) => {
+                                  const isSelected = newProdSizes.includes(s);
+                                  return (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      onClick={() => {
+                                        if (isSelected) {
+                                          setNewProdSizes(newProdSizes.filter((x) => x !== s));
+                                        } else {
+                                          setNewProdSizes([...newProdSizes, s]);
+                                        }
+                                      }}
+                                      className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
+                                        isSelected
+                                          ? 'bg-[#FF6B00] text-black border-[#FF6B00] shadow-sm'
+                                          : 'bg-white/5 text-[#F5F5F7] border-white/10 hover:border-white/30'
+                                      }`}
+                                    >
+                                      {s}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {newProdVariantType === 'watch' && (
+                            <div className="space-y-1.5 bg-white/[0.02] p-2.5 rounded-xl border border-white/5">
+                              <div className="flex items-center justify-between text-[10px] text-[#A1A1AA]">
+                                <span>{lang === 'ar' ? 'مقاسات هيكل الساعة الذكية (Boîtier) :' : 'Taille du boîtier pour montres connectées :'}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const all = ['40mm', '44mm'];
+                                    setNewProdSizes(Array.from(new Set([...newProdSizes, ...all])));
+                                  }}
+                                  className="text-[#FFAA2C] hover:underline font-bold cursor-pointer"
+                                >
+                                  {lang === 'ar' ? '+ حزمة قياسية (40mm, 44mm)' : '+ Pack standard (40mm, 44mm)'}
+                                </button>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {['38mm', '40mm', '41mm', '42mm', '44mm', '45mm', '49mm'].map((s) => {
+                                  const isSelected = newProdSizes.includes(s);
+                                  return (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      onClick={() => {
+                                        if (isSelected) {
+                                          setNewProdSizes(newProdSizes.filter((x) => x !== s));
+                                        } else {
+                                          setNewProdSizes([...newProdSizes, s]);
+                                        }
+                                      }}
+                                      className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
+                                        isSelected
+                                          ? 'bg-[#FF6B00] text-black border-[#FF6B00] shadow-sm'
+                                          : 'bg-white/5 text-[#F5F5F7] border-white/10 hover:border-white/30'
+                                      }`}
+                                    >
+                                      {s}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {newProdVariantType === 'none' && (
+                            <div className="p-3 bg-white/5 border border-dashed border-white/15 rounded-xl text-center space-y-1.5">
+                              <p className="text-xs font-semibold text-[#A1A1AA]">
+                                {lang === 'ar'
+                                  ? '✓ هذا المنتج بحجم موحد / قياسي (مثل: سماعات، شاحن، كابل، عطر). لن يُطلب من الزبون اختيار مقاس في المتجر.'
+                                  : '✓ Produit standard / Taille unique (ex: écouteurs, chargeur, câble, parfum). Aucun sélecteur de taille ne sera requis sur la boutique.'}
+                              </p>
+                              {newProdSizes.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setNewProdSizes([])}
+                                  className="text-[11px] text-red-400 hover:text-red-300 underline font-bold cursor-pointer"
+                                >
+                                  {lang === 'ar' ? 'مسح المقاسات السابقة المحفوظة' : 'Supprimer les tailles précédemment cochées'}
+                                </button>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Custom Size Input (Always available if not 'none', or to add custom variant) */}
+                          {newProdVariantType !== 'none' && (
+                            <div className="flex gap-2 pt-1">
+                              <input
+                                type="text"
+                                value={customSizeInput}
+                                onChange={(e) => setCustomSizeInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const val = customSizeInput.trim();
+                                    if (val && !newProdSizes.includes(val)) {
+                                      setNewProdSizes([...newProdSizes, val]);
+                                      setCustomSizeInput('');
+                                    }
+                                  }
+                                }}
+                                placeholder={
+                                  newProdVariantType === 'storage'
+                                    ? (lang === 'ar' ? 'سعة أخرى (مثال: 128Go / 8Go RAM)...' : 'Autre capacité (ex: 128Go / 8Go RAM)...')
+                                    : newProdVariantType === 'shoes'
+                                    ? (lang === 'ar' ? 'مقاس آخر (مثال: 47)...' : 'Autre pointure (ex: 47)...')
+                                    : newProdVariantType === 'clothing'
+                                    ? (lang === 'ar' ? 'مقاس آخر (مثال: 4XL)...' : 'Autre taille (ex: 4XL)...')
+                                    : (lang === 'ar' ? 'خيار مخصص (مثال: 50ml, 10000mAh)...' : 'Variante sur-mesure (ex: 50ml, 10000mAh)...')
+                                }
+                                className="flex-1 bg-[#14141B] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-1.5 text-xs text-white outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const val = customSizeInput.trim();
                                   if (val && !newProdSizes.includes(val)) {
                                     setNewProdSizes([...newProdSizes, val]);
                                     setCustomSizeInput('');
                                   }
-                                }
-                              }}
-                              placeholder={lang === 'ar' ? 'أو اكتب مقاس مخصص (مثال: 4XL, 128GB)...' : 'Taille personnalisée (ex: 4XL, 128Go)...'}
-                              className="flex-1 bg-[#14141B] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-1.5 text-xs text-white outline-none"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const val = customSizeInput.trim().toUpperCase();
-                                if (val && !newProdSizes.includes(val)) {
-                                    setNewProdSizes([...newProdSizes, val]);
-                                  setCustomSizeInput('');
-                                }
-                              }}
-                              className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shrink-0"
-                            >
-                              {lang === 'ar' ? '+ إضافة' : '+ Ajouter'}
-                            </button>
-                          </div>
+                                }}
+                                className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shrink-0"
+                              >
+                                {lang === 'ar' ? '+ إضافة' : '+ Ajouter'}
+                              </button>
+                            </div>
+                          )}
 
                           {/* Active Selected Sizes display */}
                           {newProdSizes.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                              {newProdSizes.map((s) => (
-                                <span
-                                  key={s}
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FF6B00]/15 border border-[#FF6B00]/40 text-[#FFAA2C] font-mono font-bold text-xs"
-                                >
-                                  <span>{s}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => setNewProdSizes(newProdSizes.filter((x) => x !== s))}
-                                    className="text-[#A1A1AA] hover:text-white cursor-pointer"
+                            <div className="space-y-1 pt-1">
+                              <span className="text-[10px] text-[#A1A1AA] font-mono">
+                                {lang === 'ar' ? 'الخيارات المحددة المعروضة للزبون :' : 'Variantes actives pour ce produit :'}
+                              </span>
+                              <div className="flex flex-wrap gap-1.5">
+                                {newProdSizes.map((s) => (
+                                  <span
+                                    key={s}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FF6B00]/15 border border-[#FF6B00]/40 text-[#FFAA2C] font-mono font-bold text-xs"
                                   >
-                                    ×
-                                  </button>
-                                </span>
-                              ))}
+                                    <span>{s}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setNewProdSizes(newProdSizes.filter((x) => x !== s))}
+                                      className="text-[#A1A1AA] hover:text-white cursor-pointer"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -3534,18 +3764,30 @@ export default function AdminDashboardPage() {
                             )}
                           </div>
 
-                          {/* Quick Preset Colors */}
+                          {/* Quick Preset Colors (Context-aware for Tech vs Fashion) */}
                           <div className="flex flex-wrap gap-1.5">
-                            {[
-                              { nameFr: 'Noir', nameAr: 'أسود', hex: '#000000' },
-                              { nameFr: 'Blanc', nameAr: 'أبيض', hex: '#FFFFFF' },
-                              { nameFr: 'Gris', nameAr: 'رمادي', hex: '#64748B' },
-                              { nameFr: 'Bleu Marine', nameAr: 'أزرق داكن', hex: '#1E3A8A' },
-                              { nameFr: 'Rouge', nameAr: 'أحمر', hex: '#DC2626' },
-                              { nameFr: 'Vert', nameAr: 'أخضر', hex: '#16A34A' },
-                              { nameFr: 'Doré', nameAr: 'ذهبي', hex: '#D97706' },
-                              { nameFr: 'Marron', nameAr: 'بني', hex: '#78350F' },
-                            ].map((c) => {
+                            {(newProdVariantType === 'storage' || newProdVariantType === 'watch'
+                              ? [
+                                  { nameFr: 'Noir sidéral', nameAr: 'أسود فلكي', hex: '#1F2022' },
+                                  { nameFr: 'Titane naturel', nameAr: 'تيتانيوم طبيعي', hex: '#9E978E' },
+                                  { nameFr: 'Blanc titane', nameAr: 'أبيض تيتانيوم', hex: '#F2F1ED' },
+                                  { nameFr: 'Bleu nuit', nameAr: 'أزرق ليلي', hex: '#1D2A44' },
+                                  { nameFr: 'Or', nameAr: 'ذهبي', hex: '#E5D3B3' },
+                                  { nameFr: 'Argent', nameAr: 'فضي', hex: '#E2E4E1' },
+                                ]
+                              : [
+                                  { nameFr: 'Noir', nameAr: 'أسود', hex: '#000000' },
+                                  { nameFr: 'Blanc', nameAr: 'أبيض', hex: '#FFFFFF' },
+                                  { nameFr: 'Gris', nameAr: 'رمادي', hex: '#64748B' },
+                                  { nameFr: 'Bleu Marine', nameAr: 'أزرق داكن', hex: '#1E3A8A' },
+                                  { nameFr: 'Rouge', nameAr: 'أحمر', hex: '#DC2626' },
+                                  { nameFr: 'Vert', nameAr: 'أخضر', hex: '#16A34A' },
+                                  { nameFr: 'Kaki', nameAr: 'كاكي', hex: '#4D5D43' },
+                                  { nameFr: 'Beige', nameAr: 'بيج', hex: '#D4B996' },
+                                  { nameFr: 'Doré', nameAr: 'ذهبي', hex: '#D97706' },
+                                  { nameFr: 'Marron', nameAr: 'بني', hex: '#78350F' },
+                                ]
+                            ).map((c) => {
                               const isSelected = newProdColors.some((x) => x.nameFr === c.nameFr || x.hex === c.hex);
                               return (
                                 <button
@@ -3875,7 +4117,11 @@ export default function AdminDashboardPage() {
                     <div className="relative">
                       <select
                         value={editCategory}
-                        onChange={(e) => setEditCategory(e.target.value)}
+                        onChange={(e) => {
+                          const cat = e.target.value;
+                          setEditCategory(cat);
+                          setEditVariantType(detectDefaultVariantType(cat));
+                        }}
                         className="w-full appearance-none bg-slate-50 dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-xs text-[#0F172A] dark:text-white outline-none cursor-pointer"
                       >
                         {categories.map((c) => (
@@ -3962,81 +4208,291 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
 
-                  {/* SIZES */}
-                  <div className="space-y-2">
+                  {/* SIZES / VARIANTS */}
+                  <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold text-[#475569] dark:text-[#FFAA2C]">
-                        {lang === 'ar' ? 'المقاسات :' : 'Tailles :'}
+                        {lang === 'ar' ? 'نوع المقاسات والخيارات (حسب الصنف) :' : 'Type de variantes (Selon la catégorie) :'}
                       </label>
                       {editSizes.length > 0 && (
                         <button
                           type="button"
                           onClick={() => setEditSizes([])}
-                          className="text-[10px] text-red-500 hover:underline cursor-pointer"
+                          className="text-[10px] text-red-500 hover:underline cursor-pointer font-bold"
                         >
                           {lang === 'ar' ? 'مسح الكل' : 'Effacer'}
                         </button>
                       )}
                     </div>
 
-                    <div className="flex flex-wrap gap-1">
-                      {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'].map((s) => {
-                        const isSelected = editSizes.includes(s);
+                    {/* Category Variant Type Selector Tabs in Edit Modal */}
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 p-1 bg-black/5 dark:bg-black/40 rounded-xl border border-black/10 dark:border-white/10 text-xs">
+                      {[
+                        { id: 'clothing' as VariantCategoryType, icon: '👕', labelFr: 'Vêtements', labelAr: 'ملابس' },
+                        { id: 'shoes' as VariantCategoryType, icon: '👟', labelFr: 'Chaussures', labelAr: 'أحذية' },
+                        { id: 'storage' as VariantCategoryType, icon: '📱', labelFr: 'Stockage', labelAr: 'سعة / Go' },
+                        { id: 'watch' as VariantCategoryType, icon: '⌚', labelFr: 'Montres', labelAr: 'ساعات' },
+                        { id: 'custom' as VariantCategoryType, icon: '✏️', labelFr: 'Autre', labelAr: 'مخصص' },
+                        { id: 'none' as VariantCategoryType, icon: '🚫', labelFr: 'Standard', labelAr: 'حجم موحد' },
+                      ].map((tab) => {
+                        const isActive = editVariantType === tab.id;
                         return (
                           <button
-                            key={s}
+                            key={tab.id}
                             type="button"
-                            onClick={() => {
-                              if (isSelected) {
-                                setEditSizes(editSizes.filter((x) => x !== s));
-                              } else {
-                                setEditSizes([...editSizes, s]);
-                              }
-                            }}
-                            className={`px-2 py-0.5 rounded-lg border text-[11px] font-mono font-bold transition-all cursor-pointer ${
-                              isSelected
-                                ? 'bg-[#FF6B00] text-black border-[#FF6B00]'
-                                : 'bg-black/5 dark:bg-white/5 text-[#475569] dark:text-[#F5F5F7] border-black/10 dark:border-white/10'
+                            onClick={() => setEditVariantType(tab.id)}
+                            className={`px-1.5 py-1.5 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                              isActive
+                                ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black shadow-md'
+                                : 'text-[#64748B] dark:text-[#A1A1AA] hover:text-[#0F172A] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
                             }`}
                           >
-                            {s}
+                            <span>{tab.icon}</span>
+                            <span>{lang === 'ar' ? tab.labelAr : tab.labelFr}</span>
                           </button>
                         );
                       })}
                     </div>
 
-                    <div className="flex gap-2 pt-0.5">
-                      <input
-                        type="text"
-                        value={editCustomSizeInput}
-                        onChange={(e) => setEditCustomSizeInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            const val = editCustomSizeInput.trim().toUpperCase();
+                    {/* Clothing Presets */}
+                    {editVariantType === 'clothing' && (
+                      <div className="space-y-1.5 bg-black/[0.02] dark:bg-white/[0.02] p-2 rounded-xl border border-black/5 dark:border-white/5">
+                        <div className="flex items-center justify-between text-[10px] text-[#64748B] dark:text-[#A1A1AA]">
+                          <span>{lang === 'ar' ? 'مقاسات الملابس :' : 'Tailles standards (Vêtements) :'}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const all = ['S', 'M', 'L', 'XL', 'XXL'];
+                              setEditSizes(Array.from(new Set([...editSizes, ...all])));
+                            }}
+                            className="text-[#FF6B00] dark:text-[#FFAA2C] hover:underline font-bold cursor-pointer"
+                          >
+                            {lang === 'ar' ? '+ إضافة حزمة (S-XXL)' : '+ Tout (S-XXL)'}
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'].map((s) => {
+                            const isSelected = editSizes.includes(s);
+                            return (
+                              <button
+                                key={s}
+                                type="button"
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setEditSizes(editSizes.filter((x) => x !== s));
+                                  } else {
+                                    setEditSizes([...editSizes, s]);
+                                  }
+                                }}
+                                className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-[#FF6B00] text-black border-[#FF6B00] shadow-sm'
+                                    : 'bg-black/5 dark:bg-white/5 text-[#475569] dark:text-[#F5F5F7] border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30'
+                                }`}
+                              >
+                                {s}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Shoes Presets */}
+                    {editVariantType === 'shoes' && (
+                      <div className="space-y-1.5 bg-black/[0.02] dark:bg-white/[0.02] p-2 rounded-xl border border-black/5 dark:border-white/5">
+                        <div className="flex items-center justify-between text-[10px] text-[#64748B] dark:text-[#A1A1AA]">
+                          <span>{lang === 'ar' ? 'مقاسات الأحذية :' : 'Pointures (Chaussures) :'}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const all = ['40', '41', '42', '43', '44'];
+                              setEditSizes(Array.from(new Set([...editSizes, ...all])));
+                            }}
+                            className="text-[#FF6B00] dark:text-[#FFAA2C] hover:underline font-bold cursor-pointer"
+                          >
+                            {lang === 'ar' ? '+ إضافة حزمة (40-44)' : '+ Tout (40-44)'}
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {['36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'].map((s) => {
+                            const isSelected = editSizes.includes(s);
+                            return (
+                              <button
+                                key={s}
+                                type="button"
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setEditSizes(editSizes.filter((x) => x !== s));
+                                  } else {
+                                    setEditSizes([...editSizes, s]);
+                                  }
+                                }}
+                                className={`px-2 py-1 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-[#FF6B00] text-black border-[#FF6B00] shadow-sm'
+                                    : 'bg-black/5 dark:bg-white/5 text-[#475569] dark:text-[#F5F5F7] border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30'
+                                }`}
+                              >
+                                {s}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Storage Presets */}
+                    {editVariantType === 'storage' && (
+                      <div className="space-y-1.5 bg-black/[0.02] dark:bg-white/[0.02] p-2 rounded-xl border border-black/5 dark:border-white/5">
+                        <div className="flex items-center justify-between text-[10px] text-[#64748B] dark:text-[#A1A1AA]">
+                          <span>{lang === 'ar' ? 'سعات التخزين :' : 'Capacités (Smartphones, PC) :'}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const all = ['128 Go', '256 Go', '512 Go'];
+                              setEditSizes(Array.from(new Set([...editSizes, ...all])));
+                            }}
+                            className="text-[#FF6B00] dark:text-[#FFAA2C] hover:underline font-bold cursor-pointer"
+                          >
+                            {lang === 'ar' ? '+ حزمة شائعة (128-512 Go)' : '+ Pack standard (128-512 Go)'}
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {['64 Go', '128 Go', '256 Go', '512 Go', '1 To', '2 To'].map((s) => {
+                            const isSelected = editSizes.includes(s);
+                            return (
+                              <button
+                                key={s}
+                                type="button"
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setEditSizes(editSizes.filter((x) => x !== s));
+                                  } else {
+                                    setEditSizes([...editSizes, s]);
+                                  }
+                                }}
+                                className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-[#FF6B00] text-black border-[#FF6B00] shadow-sm'
+                                    : 'bg-black/5 dark:bg-white/5 text-[#475569] dark:text-[#F5F5F7] border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30'
+                                }`}
+                              >
+                                {s}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Watch Presets */}
+                    {editVariantType === 'watch' && (
+                      <div className="space-y-1.5 bg-black/[0.02] dark:bg-white/[0.02] p-2 rounded-xl border border-black/5 dark:border-white/5">
+                        <div className="flex items-center justify-between text-[10px] text-[#64748B] dark:text-[#A1A1AA]">
+                          <span>{lang === 'ar' ? 'مقاسات هيكل الساعة :' : 'Taille du boîtier (Montres) :'}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const all = ['40mm', '44mm'];
+                              setEditSizes(Array.from(new Set([...editSizes, ...all])));
+                            }}
+                            className="text-[#FF6B00] dark:text-[#FFAA2C] hover:underline font-bold cursor-pointer"
+                          >
+                            {lang === 'ar' ? '+ حزمة (40mm, 44mm)' : '+ Pack (40mm, 44mm)'}
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {['38mm', '40mm', '41mm', '42mm', '44mm', '45mm', '49mm'].map((s) => {
+                            const isSelected = editSizes.includes(s);
+                            return (
+                              <button
+                                key={s}
+                                type="button"
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setEditSizes(editSizes.filter((x) => x !== s));
+                                  } else {
+                                    setEditSizes([...editSizes, s]);
+                                  }
+                                }}
+                                className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-[#FF6B00] text-black border-[#FF6B00] shadow-sm'
+                                    : 'bg-black/5 dark:bg-white/5 text-[#475569] dark:text-[#F5F5F7] border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30'
+                                }`}
+                              >
+                                {s}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* None Banner */}
+                    {editVariantType === 'none' && (
+                      <div className="p-3 bg-black/5 dark:bg-white/5 border border-dashed border-black/10 dark:border-white/15 rounded-xl text-center space-y-1">
+                        <p className="text-xs font-semibold text-[#64748B] dark:text-[#A1A1AA]">
+                          {lang === 'ar'
+                            ? '✓ هذا المنتج بحجم موحد / قياسي. لن يُطلب من الزبون اختيار مقاس في المتجر.'
+                            : '✓ Produit standard / Taille unique. Aucun sélecteur de taille ne sera requis sur la boutique.'}
+                        </p>
+                        {editSizes.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setEditSizes([])}
+                            className="text-[11px] text-red-500 underline font-bold cursor-pointer"
+                          >
+                            {lang === 'ar' ? 'مسح المقاسات المحفوظة' : 'Supprimer les tailles sauvegardées'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Custom Input */}
+                    {editVariantType !== 'none' && (
+                      <div className="flex gap-2 pt-0.5">
+                        <input
+                          type="text"
+                          value={editCustomSizeInput}
+                          onChange={(e) => setEditCustomSizeInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const val = editCustomSizeInput.trim();
+                              if (val && !editSizes.includes(val)) {
+                                setEditSizes([...editSizes, val]);
+                                setEditCustomSizeInput('');
+                              }
+                            }
+                          }}
+                          placeholder={
+                            editVariantType === 'storage'
+                              ? 'Autre capacité (ex: 128Go / 8Go RAM)...'
+                              : editVariantType === 'shoes'
+                              ? 'Autre pointure (ex: 47)...'
+                              : editVariantType === 'clothing'
+                              ? 'Autre taille (ex: 4XL)...'
+                              : 'Autre variante (ex: 50ml, 10000mAh)...'
+                          }
+                          className="flex-1 bg-slate-50 dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-xl px-2.5 py-1 text-xs text-[#0F172A] dark:text-white outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const val = editCustomSizeInput.trim();
                             if (val && !editSizes.includes(val)) {
                               setEditSizes([...editSizes, val]);
                               setEditCustomSizeInput('');
                             }
-                          }
-                        }}
-                        placeholder="Taille personnalisée..."
-                        className="flex-1 bg-slate-50 dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-xl px-2.5 py-1 text-xs text-[#0F172A] dark:text-white outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const val = editCustomSizeInput.trim().toUpperCase();
-                          if (val && !editSizes.includes(val)) {
-                            setEditSizes([...editSizes, val]);
-                            setEditCustomSizeInput('');
-                          }
-                        }}
-                        className="px-3 py-1 bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-[#0F172A] dark:text-white font-bold rounded-xl text-xs cursor-pointer"
-                      >
-                        +
-                      </button>
-                    </div>
+                          }}
+                          className="px-3 py-1 bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-[#0F172A] dark:text-white font-bold rounded-xl text-xs cursor-pointer"
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
 
                     {editSizes.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 pt-0.5">
@@ -4077,16 +4533,28 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <div className="flex flex-wrap gap-1">
-                      {[
-                        { nameFr: 'Noir', nameAr: 'أسود', hex: '#000000' },
-                        { nameFr: 'Blanc', nameAr: 'أبيض', hex: '#FFFFFF' },
-                        { nameFr: 'Gris', nameAr: 'رمادي', hex: '#64748B' },
-                        { nameFr: 'Bleu Marine', nameAr: 'أزرق داكن', hex: '#1E3A8A' },
-                        { nameFr: 'Rouge', nameAr: 'أحمر', hex: '#DC2626' },
-                        { nameFr: 'Vert', nameAr: 'أخضر', hex: '#16A34A' },
-                        { nameFr: 'Doré', nameAr: 'ذهبي', hex: '#D97706' },
-                        { nameFr: 'Marron', nameAr: 'بني', hex: '#78350F' },
-                      ].map((c) => {
+                      {(editVariantType === 'storage' || editVariantType === 'watch'
+                        ? [
+                            { nameFr: 'Noir sidéral', nameAr: 'أسود فلكي', hex: '#1F2022' },
+                            { nameFr: 'Titane naturel', nameAr: 'تيتانيوم طبيعي', hex: '#9E978E' },
+                            { nameFr: 'Blanc titane', nameAr: 'أبيض تيتانيوم', hex: '#F2F1ED' },
+                            { nameFr: 'Bleu nuit', nameAr: 'أزرق ليلي', hex: '#1D2A44' },
+                            { nameFr: 'Or', nameAr: 'ذهبي', hex: '#E5D3B3' },
+                            { nameFr: 'Argent', nameAr: 'فضي', hex: '#E2E4E1' },
+                          ]
+                        : [
+                            { nameFr: 'Noir', nameAr: 'أسود', hex: '#000000' },
+                            { nameFr: 'Blanc', nameAr: 'أبيض', hex: '#FFFFFF' },
+                            { nameFr: 'Gris', nameAr: 'رمادي', hex: '#64748B' },
+                            { nameFr: 'Bleu Marine', nameAr: 'أزرق داكن', hex: '#1E3A8A' },
+                            { nameFr: 'Rouge', nameAr: 'أحمر', hex: '#DC2626' },
+                            { nameFr: 'Vert', nameAr: 'أخضر', hex: '#16A34A' },
+                            { nameFr: 'Kaki', nameAr: 'كاكي', hex: '#4D5D43' },
+                            { nameFr: 'Beige', nameAr: 'بيج', hex: '#D4B996' },
+                            { nameFr: 'Doré', nameAr: 'ذهبي', hex: '#D97706' },
+                            { nameFr: 'Marron', nameAr: 'بني', hex: '#78350F' },
+                          ]
+                      ).map((c) => {
                         const isSelected = editColors.some((x) => x.nameFr === c.nameFr || x.hex === c.hex);
                         return (
                           <button

@@ -148,6 +148,44 @@ export default function ProductDetailPage() {
   const homeDeliveryFee = getDeliveryFeeForWilaya(selectedWilaya.code, 'home');
   const deskDeliveryFee = getDeliveryFeeForWilaya(selectedWilaya.code, 'desk');
 
+  const variantType = useMemo<'storage' | 'shoes' | 'clothing' | 'watch' | 'general'>(() => {
+    if (!product.sizes || product.sizes.length === 0) return 'general';
+    const cat = (product.category || '').toLowerCase();
+    const hasStorage = product.sizes.some((s) => /go|gb|to|tb/i.test(s));
+    if (cat.includes('phone') || cat.includes('tel') || cat.includes('tablette') || cat.includes('pc') || cat.includes('laptop') || hasStorage) {
+      return 'storage';
+    }
+    const hasShoes = product.sizes.every((s) => /^\d{2}$/.test(s.trim()));
+    if (cat.includes('shoe') || cat.includes('chaussure') || cat.includes('basket') || hasShoes) {
+      return 'shoes';
+    }
+    const hasWatch = product.sizes.some((s) => /mm$/i.test(s));
+    if (cat.includes('watch') || cat.includes('montre') || hasWatch) {
+      return 'watch';
+    }
+    const hasClothing = product.sizes.some((s) => ['xs', 's', 'm', 'l', 'xl', 'xxl', '3xl', '2xl'].includes(s.toLowerCase()));
+    if (cat.includes('cloth') || cat.includes('vetement') || cat.includes('mode') || hasClothing) {
+      return 'clothing';
+    }
+    return 'general';
+  }, [product.sizes, product.category]);
+
+  const variantLabel = useMemo(() => {
+    if (variantType === 'storage') {
+      return lang === 'ar' ? 'سعة التخزين :' : 'Capacité / Stockage :';
+    }
+    if (variantType === 'shoes') {
+      return lang === 'ar' ? 'مقاس الحذاء (Pointure) :' : 'Pointure :';
+    }
+    if (variantType === 'clothing') {
+      return lang === 'ar' ? 'مقاس الملابس (Taille) :' : 'Taille :';
+    }
+    if (variantType === 'watch') {
+      return lang === 'ar' ? 'مقاس الهيكل / السوار :' : 'Taille du boîtier :';
+    }
+    return lang === 'ar' ? 'المقاس / الخيار :' : 'Option / Taille :';
+  }, [variantType, lang]);
+
   return (
     <div className="py-8 sm:py-12 pb-28 sm:pb-32 bg-[var(--obsidian)] text-[var(--white-titanium)] min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -434,15 +472,19 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Size Selector */}
+              {/* Size / Storage / Variant Selector */}
               {product.sizes && product.sizes.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-semibold text-[#F5F5F7]">
-                      {lang === 'ar' ? 'المقاس / الحجم :' : 'Taille / Pointure :'} <span className="text-[#FFAA2C] font-mono font-bold uppercase">{selectedSize}</span>
+                      {variantLabel} <span className="text-[#FFAA2C] font-mono font-bold uppercase">{selectedSize}</span>
                     </label>
                     <span className="text-[10px] text-[#A1A1AA] uppercase tracking-wider font-mono">
-                      {lang === 'ar' ? 'اختر مقاسك' : 'Sélectionnez'}
+                      {variantType === 'storage'
+                        ? (lang === 'ar' ? 'اختر السعة' : 'Sélectionnez')
+                        : variantType === 'shoes'
+                        ? (lang === 'ar' ? 'اختر مقاسك' : 'Sélectionnez')
+                        : (lang === 'ar' ? 'اختر المقاس' : 'Sélectionnez')}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
