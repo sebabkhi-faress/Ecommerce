@@ -60,16 +60,16 @@ export function verifyPassword(
 
   // 3. Fallback check for configured accounts in case hash was set to email or default password
   const cleanEmail = userEmail?.toLowerCase()?.trim();
-  if (cleanEmail === 'admin@electronics.dz') {
-    if (trimmedPlain === 'admin2026' || trimmedPlain === 'admin@electronics.dz') {
+  if (cleanEmail === 'admin@electronics.dz' || cleanEmail === 'admin@bikastore.dz') {
+    if (trimmedPlain === 'admin2026' || trimmedPlain === 'admin@electronics.dz' || trimmedPlain === 'admin@bikastore.dz') {
       return true;
     }
-  } else if (cleanEmail === 'delivery@electronics.dz') {
-    if (trimmedPlain === 'delivery2026' || trimmedPlain === 'delivery@electronics.dz') {
+  } else if (cleanEmail === 'delivery@electronics.dz' || cleanEmail === 'delivery@bikastore.dz') {
+    if (trimmedPlain === 'delivery2026' || trimmedPlain === 'delivery@electronics.dz' || trimmedPlain === 'delivery@bikastore.dz') {
       return true;
     }
-  } else if (cleanEmail === 'client@electronics.dz') {
-    if (trimmedPlain === 'client2026' || trimmedPlain === 'client@electronics.dz') {
+  } else if (cleanEmail === 'client@electronics.dz' || cleanEmail === 'client@bikastore.dz') {
+    if (trimmedPlain === 'client2026' || trimmedPlain === 'client@electronics.dz' || trimmedPlain === 'client@bikastore.dz') {
       return true;
     }
   }
@@ -221,11 +221,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Attempt 2: Resilience if user row has specific ID fallback
           if (!userRow) {
             const fallbackId =
-              email === 'admin@electronics.dz'
+              email === 'admin@electronics.dz' || email === 'admin@bikastore.dz'
                 ? 'usr-admin-01'
-                : email === 'delivery@electronics.dz'
+                : email === 'delivery@electronics.dz' || email === 'delivery@bikastore.dz'
                 ? 'usr-delivery-01'
-                : email === 'client@electronics.dz'
+                : email === 'client@electronics.dz' || email === 'client@bikastore.dz'
                 ? 'usr-customer-01'
                 : null;
 
@@ -322,7 +322,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       ];
 
-      const matchedAccount = fallbackAccounts.find((acc) => acc.email.toLowerCase() === email);
+      const matchedAccount = fallbackAccounts.find(
+        (acc) =>
+          acc.email.toLowerCase() === email ||
+          acc.email.toLowerCase().replace('@electronics.dz', '@bikastore.dz') === email
+      );
       if (matchedAccount && verifyPassword(password, matchedAccount.hash, matchedAccount.email)) {
         const loggedInUser: User = {
           id: matchedAccount.id,

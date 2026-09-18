@@ -1937,7 +1937,7 @@ export default function AdminDashboardPage() {
                       <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
                     </div>
                     <p className="text-xs text-[#A1A1AA] font-mono mt-1">
-                      {user?.email || 'admin@electronics.dz'}
+                      {user?.email || 'admin@bikastore.dz'}
                     </p>
                     <p className="text-[11px] text-[#A1A1AA] mt-1 flex items-center gap-1.5">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
@@ -3801,7 +3801,7 @@ export default function AdminDashboardPage() {
                   </span>
                 </div>
                 <p className="text-xs text-[#A1A1AA] font-mono mt-1 truncate">
-                  {user?.email || 'admin@electronics.dz'}
+                  {user?.email || 'admin@bikastore.dz'}
                 </p>
               </div>
             </div>

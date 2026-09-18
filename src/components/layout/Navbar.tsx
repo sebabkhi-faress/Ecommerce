@@ -94,7 +94,7 @@ export default function Navbar() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-base sm:text-2xl font-black tracking-tighter text-[#F5F5F7] group-hover:text-white transition-colors flex items-center">
-                    ELECTRONICS<span className="text-[#FF6B00] animate-pulse">.</span>
+                    Bika Store<span className="text-[#FF6B00] animate-pulse">.</span>
                   </span>
                   <span className="text-[8px] sm:text-[9px] font-mono uppercase tracking-widest text-[#FFAA2C]/80 -mt-0.5 sm:-mt-1 font-semibold">
                     {lang === 'ar' ? 'الجزائر 2026' : 'ALGERIA 2026'}

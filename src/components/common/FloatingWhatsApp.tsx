@@ -16,8 +16,8 @@ export default function FloatingWhatsApp() {
 
   const defaultMessage =
     lang === 'ar'
-      ? 'السلام عليكم، أود الاستفسار أو الطلب من متجر Electronics DZ.'
-      : 'Salam ! Je souhaite avoir des informations ou passer une commande sur Electronics DZ.';
+      ? 'السلام عليكم، أود الاستفسار أو الطلب من متجر Bika Store.'
+      : 'Salam ! Je souhaite avoir des informations ou passer une commande sur Bika Store.';
 
   const whatsappUrl = `https://wa.me/213550123456?text=${encodeURIComponent(defaultMessage)}`;
 
@@ -56,7 +56,7 @@ export default function FloatingWhatsApp() {
             <div className="bg-[#22222B] p-2.5 rounded-xl border border-white/5 text-[#F5F5F7]">
               {lang === 'ar'
                 ? 'مرحباً بك! فريق خدمة العملاء متاح للرد على استفساراتك ومتابعة شحنتك 7 أيام في الأسبوع.'
-                : 'Bienvenue chez Electronics ! Besoin d’un conseil avant de commander en paiement à la livraison ?'}
+                : 'Bienvenue chez Bika Store ! Besoin d’un conseil avant de commander en paiement à la livraison ?'}
             </div>
           </div>
 

@@ -183,7 +183,7 @@ export default function ProductDetailPage() {
                 <div className="shrink-0">
                   <div className="px-3 py-1.5 rounded-2xl bg-black/90 border border-white/20 text-center shadow-lg">
                     <span className="text-xs font-black tracking-widest text-[#FFAA2C] block">
-                      ELECTRONICS
+                      BIKA STORE
                     </span>
                     <span className="text-[9px] font-mono text-white/70 block uppercase">
                       DZ STORE

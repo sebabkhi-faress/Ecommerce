@@ -122,7 +122,7 @@ export default function AdminNavbar({ onToggleSidebar, isDbConnected = true }: A
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm sm:text-base font-black tracking-tight text-[#F5F5F7]">
-                ELECTRONICS<span className="text-[#FF6B00]">.</span>
+                Bika Store<span className="text-[#FF6B00]">.</span>
               </span>
               <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-[#FF6B00]/20 to-[#FFAA2C]/20 border border-[#FF6B00]/30 text-[#FFAA2C] font-mono font-bold text-[10px] uppercase tracking-wider">
                 ADMIN

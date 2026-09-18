@@ -28,7 +28,7 @@ export default function Footer() {
                 <Zap className="w-4 h-4 text-black fill-black" />
               </div>
               <span className="text-xl font-black tracking-tighter text-[#F5F5F7]">
-                ELECTRONICS<span className="text-[#FF6B00]">.</span>
+                Bika Store<span className="text-[#FF6B00]">.</span>
               </span>
             </Link>
 

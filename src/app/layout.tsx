@@ -25,11 +25,12 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'ELECTRONICS. — Boutique High-Tech Flagship 2026 | Algérie COD',
+  title: 'Bika Store — Boutique High-Tech Flagship 2026 | Algérie COD',
   description:
-    'Plateforme e-commerce tech nouvelle génération en Algérie. Écouteurs sans fil transparents, casques Hi-Res, chargeurs GaN 120W et accessoires MagSafe. Livraison express sur 68 Wilayas avec paiement à la livraison (الدفع عند الاستلام).',
+    'Bika Store : Plateforme e-commerce tech nouvelle génération en Algérie. Écouteurs sans fil transparents, casques Hi-Res, chargeurs GaN 120W et accessoires MagSafe. Livraison express sur 68 Wilayas avec paiement à la livraison (الدفع عند الاستلام).',
   keywords: [
-    'Electronics Algérie',
+    'Bika Store',
+    'Bika Store Algérie',
     'High-tech Algérie',
     'سماعات لاسلكية الجزائر',
     'شواحن سريعة GaN',
@@ -38,7 +39,15 @@ export const metadata: Metadata = {
     'Casques ANC',
     'MagSafe Power Bank',
   ],
-  authors: [{ name: 'Electronics DZ' }],
+  authors: [{ name: 'Bika Store' }],
+  openGraph: {
+    title: 'Bika Store — Boutique High-Tech Flagship 2026 | Algérie COD',
+    description:
+      'Bika Store : Plateforme e-commerce tech nouvelle génération en Algérie. Écouteurs sans fil transparents, casques Hi-Res, chargeurs GaN 120W et accessoires MagSafe.',
+    siteName: 'Bika Store',
+    locale: 'fr_DZ',
+    type: 'website',
+  },
   icons: {
     icon: '/favicon.ico',
   },

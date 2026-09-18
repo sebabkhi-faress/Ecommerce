@@ -193,7 +193,7 @@ function LoginForm() {
                     autoCorrect="off"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@electronics.dz"
+                    placeholder="admin@bikastore.dz"
                     className="w-full bg-[var(--smoke)] border border-[var(--border-subtle)] focus:border-[#FF6B00] rounded-xl px-4 py-3 text-[var(--white-titanium)] font-mono outline-none transition-all disabled:opacity-60 placeholder:text-[var(--silver-muted)]/60"
                   />
                 </div>

@@ -70,7 +70,7 @@ const translations: Record<Language, Record<string, string>> = {
     'products.original_product': '100% Produit Certifié',
 
     // Trust Pillars
-    'trust.title': 'POURQUOI COMMANDER CHEZ ELECTRONICS ?',
+    'trust.title': 'POURQUOI COMMANDER CHEZ BIKA STORE ?',
     'trust.subtitle': 'Une expérience d’achat sans compromis, sécurisée et rapide.',
     'trust.p1_title': 'Livraison Rapide 68 Wilayas',
     'trust.p1_desc': 'Expédition soignée en 24h à Alger, Oran, Constantine et 48h dans toute l’Algérie.',
@@ -145,7 +145,7 @@ const translations: Record<Language, Record<string, string>> = {
     'whatsapp.badge': 'Besoin d’aide ? Contactez-nous',
     'whatsapp.agent': 'Support Client Algérie',
     'whatsapp.status': 'En ligne — Réponse rapide',
-    'whatsapp.message': 'Salam ! Je souhaite avoir des informations ou commander sur Electronics.',
+    'whatsapp.message': 'Salam ! Je souhaite avoir des informations ou commander sur Bika Store.',
 
     // Announcement & Eyebrows
     'announcement.badge_cod': 'COD ALGÉRIE 2026',
@@ -206,7 +206,7 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.quick_links': 'Navigation Rapide',
     'footer.support': 'Aide & Logistique',
     'footer.payment_methods': 'Modes de règlement acceptés :',
-    'footer.copyright': '© 2026 Electronics Algérie. Tous droits réservés. Designed for modern life.',
+    'footer.copyright': '© 2026 Bika Store Algérie. Tous droits réservés. Designed for modern life.',
 
     // Extra UI titles & labels
     'hero.flagship_badge': 'FLAGSHIP 2026',
@@ -255,7 +255,7 @@ const translations: Record<Language, Record<string, string>> = {
     'trust.p2_tag': '100% COD',
     'trust.p3_tag': '1 AN SAV',
     'trust.p4_tag': '7J/7 DZ',
-    'admin.login_title': 'PORTAIL ADMIN ELECTRONICS',
+    'admin.login_title': 'PORTAIL ADMIN BIKA STORE',
     'admin.login_subtitle': 'Gestion logistique des 68 Wilayas & Commandes COD',
     'admin.default_creds': 'Identifiants par défaut :',
     'admin.email_label': 'Email Administrateur',
@@ -377,7 +377,7 @@ const translations: Record<Language, Record<string, string>> = {
     'products.original_product': '100% منتج أصلي ومضمون',
 
     // Trust Pillars
-    'trust.title': 'لماذا تختار متجر ELECTRONICS ؟',
+    'trust.title': 'لماذا تختار متجر Bika Store ؟',
     'trust.subtitle': 'تجربة شراء استثنائية، سريعة وآمنة 100% في الجزائر.',
     'trust.p1_title': 'توصيل فائق السرعة لـ 68 ولاية',
     'trust.p1_desc': 'شحن احترافي خلال 24 ساعة للجزائر والمدن الكبرى، و 48 ساعة لكافة الولايات.',
@@ -452,14 +452,14 @@ const translations: Record<Language, Record<string, string>> = {
     'whatsapp.badge': 'هل لديك استفسار ؟ نحن في الخدمة',
     'whatsapp.agent': 'خدمة الزبائن الجزائر',
     'whatsapp.status': 'متواجدون حالياً — رد فوري',
-    'whatsapp.message': 'السلام عليكم ! أود الاستفسار أو الطلب عبر متجركم Electronics.',
+    'whatsapp.message': 'السلام عليكم ! أود الاستفسار أو الطلب عبر متجركم Bika Store.',
 
     // Footer
     'footer.description': 'المتجر الإلكتروني الأول في الجزائر للأجهزة والملحقات التقنية الحديثة. سماعات احترافية، شواحن GaN فائقة السرعة وبطاريات ماغ سيف الذكية.',
     'footer.quick_links': 'روابط سريعة',
     'footer.support': 'المساعدة والتوصيل',
     'footer.payment_methods': 'طرق الدفع المعتمدة :',
-    'footer.copyright': '© 2026 Electronics الجزائر. جميع الحقوق محفوظة. صُمم للمستقبل.',
+    'footer.copyright': '© 2026 Bika Store الجزائر. جميع الحقوق محفوظة. صُمم للمستقبل.',
 
     // Extra UI titles & labels
     'hero.flagship_badge': 'رائد 2026',
@@ -508,7 +508,7 @@ const translations: Record<Language, Record<string, string>> = {
     'trust.p2_tag': 'دفع عند الاستلام',
     'trust.p3_tag': 'ضمان سنة كاملة',
     'trust.p4_tag': 'خدمة 7/7',
-    'admin.login_title': 'بوابة إدارة ELECTRONICS',
+    'admin.login_title': 'بوابة إدارة Bika Store',
     'admin.login_subtitle': 'إدارة لوجستية لـ 68 ولاية وطلبات الدفع عند الاستلام',
     'admin.default_creds': 'بيانات الدخول التجريبية :',
     'admin.email_label': 'البريد الإلكتروني للإدارة',
