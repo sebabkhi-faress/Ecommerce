@@ -218,49 +218,10 @@ export function mapRowToProduct(row: any): Product {
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
-function getInitialProducts(): Product[] {
-  if (typeof window !== 'undefined') {
-    try {
-      const cached = localStorage.getItem('electronics_cached_products');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-  }
-  return PRODUCTS;
-}
-
-function getInitialCategories(): Category[] {
-  if (typeof window !== 'undefined') {
-    try {
-      const cached = localStorage.getItem('electronics_cached_categories');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-  }
-  return DEFAULT_CATEGORIES;
-}
-
-function getInitialPromotions(): Promotion[] {
-  if (typeof window !== 'undefined') {
-    try {
-      const cached = localStorage.getItem('electronics_cached_promotions');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-  }
-  return DEFAULT_PROMOTIONS;
-}
-
 export function ProductProvider({ children }: { children: React.ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(getInitialProducts);
-  const [categories, setCategories] = useState<Category[]>(getInitialCategories);
-  const [promotions, setPromotions] = useState<Promotion[]>(getInitialPromotions);
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+  const [promotions, setPromotions] = useState<Promotion[]>(DEFAULT_PROMOTIONS);
   const [isLoading, setIsLoading] = useState(false);
   const [isDbConnected, setIsDbConnected] = useState(false);
 

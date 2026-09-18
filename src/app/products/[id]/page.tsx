@@ -61,8 +61,13 @@ export default function ProductDetailPage() {
   }, [cleanIdOrSlug, getProductBySlug, getProductById, products]);
 
   // 2. Direct Supabase Query Fallback for fresh products or direct URL visits
+  const [mounted, setMounted] = useState(false);
   const [dbProduct, setDbProduct] = useState<Product | null>(null);
   const [hasCheckedDb, setHasCheckedDb] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (contextProduct) {
@@ -106,8 +111,8 @@ export default function ProductDetailPage() {
   }, [cleanIdOrSlug, contextProduct]);
 
   const product = contextProduct || dbProduct;
-  // If product not yet found, consider page loading until database query has actually completed
-  const isPageLoading = !product && !hasCheckedDb;
+  // Clean loader while client mounts and until product is verified — ZERO hydration mismatch, ZERO flashing pre-page
+  const isPageLoading = !mounted || (!product && !hasCheckedDb);
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
