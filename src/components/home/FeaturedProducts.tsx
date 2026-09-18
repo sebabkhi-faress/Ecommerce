@@ -14,7 +14,7 @@ interface FeaturedProductsProps {
 
 export default function FeaturedProducts({ selectedCategory = 'all', onSelectCategory }: FeaturedProductsProps) {
   const { lang, t } = useLanguage();
-  const { products } = useProducts();
+  const { products, categories } = useProducts();
   const [internalCategory, setInternalCategory] = useState('all');
 
   const currentCategory = onSelectCategory ? selectedCategory : internalCategory;
@@ -28,11 +28,10 @@ export default function FeaturedProducts({ selectedCategory = 'all', onSelectCat
 
   const categoriesList = [
     { id: 'all', label: t('products.all') },
-    { id: 'earbuds', label: t('products.earbuds') },
-    { id: 'headphones', label: t('products.headphones') },
-    { id: 'speakers', label: t('products.speakers') },
-    { id: 'chargers', label: t('products.chargers') },
-    { id: 'powerbanks', label: t('products.powerbanks') },
+    ...categories.map((c) => ({
+      id: c.slug,
+      label: lang === 'ar' ? c.nameAr : c.nameFr,
+    })),
   ];
 
   const filteredProducts =

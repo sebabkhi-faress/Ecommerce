@@ -4,8 +4,81 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { Product, PRODUCTS } from '@/data/products';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
+export interface Category {
+  id: string;
+  slug: string;
+  nameFr: string;
+  nameAr: string;
+  descriptionFr?: string;
+  descriptionAr?: string;
+  icon?: string;
+  createdAt?: string;
+}
+
+export const DEFAULT_CATEGORIES: Category[] = [
+  {
+    id: 'cat-earbuds',
+    slug: 'earbuds',
+    nameFr: 'Écouteurs sans fil',
+    nameAr: 'سماعات أذن لاسلكية',
+    descriptionFr: 'Écouteurs True Wireless avec réduction de bruit active et design transparent',
+    descriptionAr: 'سماعات بلوتوث لاسلكية بتقنية إلغاء الضوضاء وتصميم عصري شفاف',
+    icon: 'Headphones',
+  },
+  {
+    id: 'cat-headphones',
+    slug: 'headphones',
+    nameFr: 'Casques Audio Hi-Fi',
+    nameAr: 'سماعات رأس صوتية',
+    descriptionFr: 'Casques circum-auriculaires ANC haute fidélité pour audiophiles et studio',
+    descriptionAr: 'سماعات رأس محيطية احترافية بجودة صوت فائقة ومريحة للمكتب والألعاب',
+    icon: 'Headphones',
+  },
+  {
+    id: 'cat-speakers',
+    slug: 'speakers',
+    nameFr: 'Enceintes & Soundbars',
+    nameAr: 'مكبرات صوت وساوند بار',
+    descriptionFr: 'Enceintes Bluetooth nomades étanches et barres de son pour setups TV',
+    descriptionAr: 'مكبرات صوت مقاومة للماء وأشرطة صوت ساوند بار للمكاتب والشاشات',
+    icon: 'Speaker',
+  },
+  {
+    id: 'cat-chargers',
+    slug: 'chargers',
+    nameFr: 'Chargeurs GaN & Câbles',
+    nameAr: 'شواحن سريعة GaN وكابلات',
+    descriptionFr: 'Blocs de charge rapide GaN jusqu’à 140W et câbles renforcés haute vitesse',
+    descriptionAr: 'شواحن بتقنية النيتريد فائقة السرعة وكابلات مضفرة مدرعة',
+    icon: 'Zap',
+  },
+  {
+    id: 'cat-powerbanks',
+    slug: 'powerbanks',
+    nameFr: 'Batteries MagSafe',
+    nameAr: 'بنوك طاقة وميج سيف',
+    descriptionFr: 'Batteries magnétiques ultra-fines MagSafe et stations sans fil induction',
+    descriptionAr: 'بطاريات شحن لاسلكية مغناطيسية متوافقة مع الآيفون وأجهزة الأندرويد',
+    icon: 'BatteryCharging',
+  },
+];
+
+export function mapRowToCategory(row: any): Category {
+  return {
+    id: row.id,
+    slug: row.slug || row.id,
+    nameFr: row.name_fr || row.nameFr || '',
+    nameAr: row.name_ar || row.nameAr || '',
+    descriptionFr: row.description_fr || row.descriptionFr || '',
+    descriptionAr: row.description_ar || row.descriptionAr || '',
+    icon: row.icon || 'Layers',
+    createdAt: row.created_at,
+  };
+}
+
 interface ProductContextType {
   products: Product[];
+  categories: Category[];
   isLoading: boolean;
   isDbConnected: boolean;
   getProductBySlug: (slug: string) => Product | undefined;
@@ -13,6 +86,16 @@ interface ProductContextType {
   addProduct: (productData: Partial<Product> & { nameFr: string; nameAr: string; price: number; category: string }) => Promise<{ success: boolean; error?: string }>;
   deleteProduct: (id: string) => Promise<{ success: boolean; error?: string }>;
   refreshProducts: () => Promise<void>;
+  addCategory: (categoryData: {
+    slug: string;
+    nameFr: string;
+    nameAr: string;
+    descriptionFr?: string;
+    descriptionAr?: string;
+    icon?: string;
+  }) => Promise<{ success: boolean; error?: string }>;
+  deleteCategory: (id: string) => Promise<{ success: boolean; error?: string }>;
+  refreshCategories: () => Promise<void>;
 }
 
 // Map Supabase snake_case row to TypeScript Product
@@ -54,8 +137,33 @@ const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
+  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [isLoading, setIsLoading] = useState(false);
   const [isDbConnected, setIsDbConnected] = useState(false);
+
+  // Fetch all categories from Supabase
+  const fetchCategories = useCallback(async () => {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .order('created_at', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          const mapped = data.map(mapRowToCategory);
+          setCategories(mapped);
+          try {
+            localStorage.setItem('electronics_cached_categories', JSON.stringify(mapped));
+          } catch (e) {
+            // Ignore
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase categories fetch failed, using fallback', err);
+      }
+    }
+  }, []);
 
   // Fetch all products from Supabase
   const fetchProducts = useCallback(async () => {
@@ -103,6 +211,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
 
     fetchProducts();
+    fetchCategories();
 
     // Subscribe to Realtime product changes
     if (isSupabaseConfigured && supabase) {
@@ -118,11 +227,23 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         )
         .subscribe();
 
+      const catChannel = client
+        .channel('public:categories')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'categories' },
+          () => {
+            fetchCategories();
+          }
+        )
+        .subscribe();
+
       return () => {
         client.removeChannel(channel);
+        client.removeChannel(catChannel);
       };
     }
-  }, [fetchProducts]);
+  }, [fetchProducts, fetchCategories]);
 
   const getProductBySlug = useCallback(
     (slug: string): Product | undefined => {
@@ -238,10 +359,79 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     return { success: true };
   };
 
+  const addCategory = async (categoryData: {
+    slug: string;
+    nameFr: string;
+    nameAr: string;
+    descriptionFr?: string;
+    descriptionAr?: string;
+    icon?: string;
+  }): Promise<{ success: boolean; error?: string }> => {
+    const cleanSlug = categoryData.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    const newCategory: Category = {
+      id: `cat-${cleanSlug}`,
+      slug: cleanSlug,
+      nameFr: categoryData.nameFr.trim(),
+      nameAr: categoryData.nameAr.trim(),
+      descriptionFr: categoryData.descriptionFr?.trim() || '',
+      descriptionAr: categoryData.descriptionAr?.trim() || '',
+      icon: categoryData.icon || 'Layers',
+      createdAt: new Date().toISOString(),
+    };
+
+    setCategories((prev) => [...prev.filter((c) => c.slug !== cleanSlug), newCategory]);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('categories').upsert({
+          id: newCategory.id,
+          slug: newCategory.slug,
+          name_fr: newCategory.nameFr,
+          name_ar: newCategory.nameAr,
+          description_fr: newCategory.descriptionFr,
+          description_ar: newCategory.descriptionAr,
+          icon: newCategory.icon,
+        });
+
+        if (error) {
+          console.error('Error inserting category into Supabase:', error.message);
+          return { success: false, error: error.message };
+        }
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Failed to insert category' };
+      }
+    }
+
+    return { success: true };
+  };
+
+  const deleteCategory = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    setCategories((prev) => prev.filter((c) => c.id !== id && c.slug !== id));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase
+          .from('categories')
+          .delete()
+          .or(`id.eq.${id},slug.eq.${id}`);
+
+        if (error) {
+          console.error('Error deleting category from Supabase:', error.message);
+          return { success: false, error: error.message };
+        }
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Delete category failed' };
+      }
+    }
+
+    return { success: true };
+  };
+
   return (
     <ProductContext.Provider
       value={{
         products,
+        categories,
         isLoading,
         isDbConnected,
         getProductBySlug,
@@ -249,6 +439,9 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         addProduct,
         deleteProduct,
         refreshProducts: fetchProducts,
+        addCategory,
+        deleteCategory,
+        refreshCategories: fetchCategories,
       }}
     >
       {children}
@@ -262,4 +455,9 @@ export function useProducts() {
     throw new Error('useProducts must be used within a ProductProvider');
   }
   return context;
+}
+
+export function useCategories() {
+  const { categories, addCategory, deleteCategory, refreshCategories } = useProducts();
+  return { categories, addCategory, deleteCategory, refreshCategories };
 }

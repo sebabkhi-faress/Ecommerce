@@ -3,8 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
-import { CATEGORIES } from '@/data/products';
-import { Headphones, Radio, Volume2, Zap, BatteryCharging, ArrowUpRight } from 'lucide-react';
+import { useProducts } from '@/context/ProductContext';
+import { Headphones, Radio, Volume2, Zap, BatteryCharging, ArrowUpRight, Layers } from 'lucide-react';
 
 const iconMap = {
   Headphones,
@@ -12,6 +12,7 @@ const iconMap = {
   Volume2,
   Zap,
   BatteryCharging,
+  Layers,
 };
 
 interface CategoryGridProps {
@@ -21,6 +22,7 @@ interface CategoryGridProps {
 
 export default function CategoryGrid({ onSelectCategory, activeCategory }: CategoryGridProps) {
   const { lang, t } = useLanguage();
+  const { categories, products } = useProducts();
 
   return (
     <section id="categories" className="py-16">
@@ -38,14 +40,15 @@ export default function CategoryGrid({ onSelectCategory, activeCategory }: Categ
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {CATEGORIES.map((cat) => {
-            const Icon = iconMap[cat.icon as keyof typeof iconMap] || Zap;
-            const isSelected = activeCategory === cat.id;
+          {categories.map((cat) => {
+            const Icon = iconMap[cat.icon as keyof typeof iconMap] || Layers;
+            const isSelected = activeCategory === cat.slug;
+            const count = products.filter((p) => p.category === cat.slug).length;
 
             return (
               <div
-                key={cat.id}
-                onClick={() => onSelectCategory && onSelectCategory(cat.id)}
+                key={cat.id || cat.slug}
+                onClick={() => onSelectCategory && onSelectCategory(cat.slug)}
                 className={`group cursor-pointer bg-[#18181F] border ${
                   isSelected ? 'border-[#FF6B00] shadow-lg shadow-[#FF6B00]/20' : 'border-white/10'
                 } hover:border-[#FF6B00]/50 rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between`}
@@ -67,7 +70,7 @@ export default function CategoryGrid({ onSelectCategory, activeCategory }: Categ
                 </div>
 
                 <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-[#A1A1AA]">
-                  <span>{cat.count} {lang === 'ar' ? 'أجهزة' : 'produits'}</span>
+                  <span>{count} {lang === 'ar' ? 'أجهزة' : 'produits'}</span>
                   <span className="text-[#FF6B00] font-bold group-hover:underline">
                     {lang === 'ar' ? 'عرض ←' : 'Explorer →'}
                   </span>

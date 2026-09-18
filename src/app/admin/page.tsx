@@ -32,6 +32,13 @@ import {
   ExternalLink,
   ShieldCheck,
   ChevronDown,
+  Ban,
+  Tag,
+  ShieldAlert,
+  UserX,
+  FolderPlus,
+  PhoneOff,
+  Check,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured, uploadProductImage } from '@/lib/supabase';
 import { useProducts } from '@/context/ProductContext';
@@ -40,23 +47,62 @@ import { useAuth } from '@/context/AuthContext';
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { lang, t } = useLanguage();
-  const { orders, updateOrderStatus, metrics, isSupabaseConnected, refreshOrders } = useOrders();
-  const { products, addProduct, deleteProduct, refreshProducts, isDbConnected: isProductsDbConnected } = useProducts();
+  const {
+    orders,
+    updateOrderStatus,
+    metrics,
+    isSupabaseConnected,
+    refreshOrders,
+    bannedPhones,
+    banPhone,
+    unbanPhone,
+    isPhoneBanned,
+    refreshBannedPhones,
+  } = useOrders();
+  const {
+    products,
+    categories,
+    addProduct,
+    deleteProduct,
+    addCategory,
+    deleteCategory,
+    refreshProducts,
+    refreshCategories,
+    isDbConnected: isProductsDbConnected,
+  } = useProducts();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [adminTab, setAdminTab] = useState<'orders' | 'products'>('orders');
+  const [adminTab, setAdminTab] = useState<'orders' | 'products' | 'categories' | 'banned'>('orders');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [wilayaFilter, setWilayaFilter] = useState<string>('all');
+
+  // Category management modal states
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [newCatSlug, setNewCatSlug] = useState('');
+  const [newCatNameFr, setNewCatNameFr] = useState('');
+  const [newCatNameAr, setNewCatNameAr] = useState('');
+  const [newCatDescFr, setNewCatDescFr] = useState('');
+  const [newCatDescAr, setNewCatDescAr] = useState('');
+  const [newCatIcon, setNewCatIcon] = useState('Layers');
+  const [newCatError, setNewCatError] = useState<string | null>(null);
+  const [newCatSuccess, setNewCatSuccess] = useState(false);
+
+  // Phone ban management states
+  const [banPhoneInput, setBanPhoneInput] = useState('');
+  const [banReasonInput, setBanReasonInput] = useState('Refus de colis à la livraison (Retour répété)');
+  const [banNotesInput, setBanNotesInput] = useState('');
+  const [banSearchQuery, setBanSearchQuery] = useState('');
+  const [banError, setBanError] = useState<string | null>(null);
+  const [banSuccess, setBanSuccess] = useState<string | null>(null);
+  const [quickBanOrder, setQuickBanOrder] = useState<any | null>(null);
 
   // Quick Add Product Drawer state
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [newProdNameFr, setNewProdNameFr] = useState('');
   const [newProdNameAr, setNewProdNameAr] = useState('');
-  const [newProdCategory, setNewProdCategory] = useState<
-    'earbuds' | 'headphones' | 'speakers' | 'chargers' | 'powerbanks'
-  >('earbuds');
+  const [newProdCategory, setNewProdCategory] = useState('earbuds');
   const [newProdPrice, setNewProdPrice] = useState('');
   const [newProdImage, setNewProdImage] = useState(
     'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=600&auto=format&fit=crop'
@@ -107,6 +153,108 @@ export default function AdminDashboardPage() {
       setUploadError(result.error || 'Erreur lors de l’enregistrement');
     }
   };
+
+  // Category Actions
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNewCatError(null);
+    if (!newCatSlug.trim() || !newCatNameFr.trim() || !newCatNameAr.trim()) {
+      setNewCatError('Veuillez renseigner le slug et les noms FR/AR');
+      return;
+    }
+
+    const res = await addCategory({
+      slug: newCatSlug,
+      nameFr: newCatNameFr,
+      nameAr: newCatNameAr,
+      descriptionFr: newCatDescFr,
+      descriptionAr: newCatDescAr,
+      icon: newCatIcon,
+    });
+
+    if (res.success) {
+      setNewCatSuccess(true);
+      setTimeout(() => {
+        setNewCatSuccess(false);
+        setIsAddCategoryOpen(false);
+        setNewCatSlug('');
+        setNewCatNameFr('');
+        setNewCatNameAr('');
+        setNewCatDescFr('');
+        setNewCatDescAr('');
+      }, 1000);
+    } else {
+      setNewCatError(res.error || 'Erreur lors de la création');
+    }
+  };
+
+  const handleDeleteCategory = async (id: string, name: string) => {
+    const isConfirmed = window.confirm(
+      lang === 'ar'
+        ? `هل أنت متأكد من حذف القسم "${name}"؟`
+        : `Êtes-vous sûr de vouloir supprimer la catégorie "${name}" ?`
+    );
+    if (!isConfirmed) return;
+    await deleteCategory(id);
+  };
+
+  // Phone Ban Actions
+  const handleManualBanPhone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBanError(null);
+    setBanSuccess(null);
+    if (!banPhoneInput.trim()) {
+      setBanError('Veuillez saisir un numéro de téléphone');
+      return;
+    }
+
+    const res = await banPhone(banPhoneInput, banReasonInput, banNotesInput);
+    if (res.success) {
+      setBanSuccess(
+        lang === 'ar'
+          ? `تم حظر الرقم ${banPhoneInput} بنجاح ومنعه من الطلب!`
+          : `Numéro ${banPhoneInput} bloqué avec succès !`
+      );
+      setBanPhoneInput('');
+      setBanNotesInput('');
+      setTimeout(() => setBanSuccess(null), 3500);
+    } else {
+      setBanError(res.error || 'Erreur lors du blocage');
+    }
+  };
+
+  const handleUnbanPhone = async (phoneToUnban: string) => {
+    const isConfirmed = window.confirm(
+      lang === 'ar'
+        ? `هل تريد رفع الحظر عن الرقم ${phoneToUnban} والسماح له بالطلب مجدداً؟`
+        : `Débloquer le numéro ${phoneToUnban} et lui réautoriser les commandes ?`
+    );
+    if (!isConfirmed) return;
+    await unbanPhone(phoneToUnban);
+  };
+
+  const handleQuickBanOrder = async (order: Order) => {
+    const reason = `Refus / Annulation commande ${order.trackingCode}`;
+    const isConfirmed = window.confirm(
+      lang === 'ar'
+        ? `هل تريد حظر رقم الزبون ${order.phone} (${order.fullName}) ومنعه من الطلب مجدداً؟`
+        : `Voulez-vous bloquer le numéro ${order.phone} (${order.fullName}) et interdire ses futures commandes ?`
+    );
+    if (!isConfirmed) return;
+    await banPhone(order.phone, reason, `Client: ${order.fullName}, Wilaya: ${order.wilayaCode}`);
+  };
+
+  // Filtered Banned Phones
+  const filteredBannedPhones = useMemo(() => {
+    if (!banSearchQuery.trim()) return bannedPhones;
+    const q = banSearchQuery.toLowerCase().trim();
+    return bannedPhones.filter(
+      (b) =>
+        b.phone.includes(q) ||
+        b.reason.toLowerCase().includes(q) ||
+        (b.notes && b.notes.toLowerCase().includes(q))
+    );
+  }, [bannedPhones, banSearchQuery]);
 
   // Filter orders based on queries
   const filteredOrders = useMemo(() => {
@@ -312,34 +460,58 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Tab Navigation: Orders vs Products */}
-        <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+        {/* Tab Navigation: Orders vs Products vs Categories vs Banned */}
+        <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 pb-4 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setAdminTab('orders')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               adminTab === 'orders'
                 ? 'bg-[#FF6B00] text-black shadow-lg shadow-[#FF6B00]/30'
                 : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
             }`}
           >
             <Package className="w-4 h-4" />
-            <span>{lang === 'ar' ? `الطلبيات المستلمة (${orders.length})` : `Commandes (${orders.length})`}</span>
+            <span>{lang === 'ar' ? `الطلبيات (${orders.length})` : `Commandes (${orders.length})`}</span>
           </button>
 
           <button
             onClick={() => setAdminTab('products')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               adminTab === 'products'
                 ? 'bg-[#FFAA2C] text-black shadow-lg shadow-[#FFAA2C]/30'
                 : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>{lang === 'ar' ? `إدارة المنتجات (${products.length})` : `Catalogue Produits (${products.length})`}</span>
+            <span>{lang === 'ar' ? `المنتجات (${products.length})` : `Catalogue (${products.length})`}</span>
+          </button>
+
+          <button
+            onClick={() => setAdminTab('categories')}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              adminTab === 'categories'
+                ? 'bg-[#3B82F6] text-white shadow-lg shadow-blue-500/30'
+                : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
+            }`}
+          >
+            <Tag className="w-4 h-4" />
+            <span>{lang === 'ar' ? `الأقسام (${categories.length})` : `Catégories (${categories.length})`}</span>
+          </button>
+
+          <button
+            onClick={() => setAdminTab('banned')}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              adminTab === 'banned'
+                ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
+                : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
+            }`}
+          >
+            <PhoneOff className="w-4 h-4" />
+            <span>{lang === 'ar' ? `حظر الأرقام (${bannedPhones.length})` : `Numéros Bloqués (${bannedPhones.length})`}</span>
           </button>
         </div>
 
-        {adminTab === 'orders' ? (
+        {adminTab === 'orders' && (
           <>
             {/* Filter & Search Bar for Orders */}
             <div className="bg-[#18181F] border border-white/10 rounded-2xl p-4 flex flex-col md:flex-row items-center gap-4">
@@ -450,6 +622,12 @@ export default function AdminDashboardPage() {
                               <Phone className="w-3 h-3 text-[#FFAA2C]" />
                               <span>{order.phone}</span>
                             </a>
+                            {isPhoneBanned(order.phone) && (
+                              <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30 text-[9px] font-bold">
+                                <Ban className="w-2.5 h-2.5" />
+                                <span>{lang === 'ar' ? 'محظور' : 'Banni'}</span>
+                              </div>
+                            )}
                           </td>
                           <td className="p-4">
                             <div className="font-semibold text-[#FFAA2C]">
@@ -487,24 +665,53 @@ export default function AdminDashboardPage() {
                             {getStatusBadge(order.status)}
                           </td>
                           <td className="p-4 text-right">
-                            <div className="relative inline-block">
-                              <select
-                                value={order.status}
-                                onChange={(e) =>
-                                  updateOrderStatus(order.id, e.target.value as OrderStatus)
-                                }
-                                className="appearance-none bg-[#14141B] border border-white/15 rounded-lg px-2.5 py-1.5 ltr:pr-7 rtl:pl-7 text-xs font-mono text-white outline-none focus:border-[#FF6B00] cursor-pointer"
-                              >
-                                <option value="pending" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_pending')}</option>
-                                <option value="confirmed" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_confirmed')}</option>
-                                <option value="in_delivery" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_in_delivery')}</option>
-                                <option value="delivered" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_delivered')}</option>
-                                <option value="cancelled" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_cancelled')}</option>
-                                <option value="retour" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_retour')}</option>
-                              </select>
-                              <div className="pointer-events-none absolute inset-y-0 ltr:right-2 rtl:left-2 flex items-center text-[#A1A1AA]">
-                                <ChevronDown className="w-3 h-3" />
+                            <div className="flex items-center justify-end gap-2">
+                              <div className="relative inline-block">
+                                <select
+                                  value={order.status}
+                                  onChange={(e) =>
+                                    updateOrderStatus(order.id, e.target.value as OrderStatus)
+                                  }
+                                  className="appearance-none bg-[#14141B] border border-white/15 rounded-lg px-2.5 py-1.5 ltr:pr-7 rtl:pl-7 text-xs font-mono text-white outline-none focus:border-[#FF6B00] cursor-pointer"
+                                >
+                                  <option value="pending" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_pending')}</option>
+                                  <option value="confirmed" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_confirmed')}</option>
+                                  <option value="in_delivery" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_in_delivery')}</option>
+                                  <option value="delivered" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_delivered')}</option>
+                                  <option value="cancelled" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_cancelled')}</option>
+                                  <option value="retour" className="bg-[#18181F] text-[#F5F5F7]">{t('admin.status_retour')}</option>
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 ltr:right-2 rtl:left-2 flex items-center text-[#A1A1AA]">
+                                  <ChevronDown className="w-3 h-3" />
+                                </div>
                               </div>
+
+                              {/* 1-Click Ban/Unban Button */}
+                              {isPhoneBanned(order.phone) ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleUnbanPhone(order.phone)}
+                                  title={lang === 'ar' ? 'رفع الحظر عن هذا الرقم' : 'Débloquer ce numéro'}
+                                  className="p-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Ban className="w-3.5 h-3.5" />
+                                  <span className="text-[10px] font-bold hidden xl:inline">
+                                    {lang === 'ar' ? 'فك الحظر' : 'Débloquer'}
+                                  </span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickBanOrder(order)}
+                                  title={lang === 'ar' ? 'حظر هذا الرقم ومنعه من الطلب' : 'Bannir ce numéro de téléphone'}
+                                  className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 hover:border-red-500/50 transition-colors flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Ban className="w-3.5 h-3.5" />
+                                  <span className="text-[10px] font-bold hidden xl:inline">
+                                    {lang === 'ar' ? 'حظر' : 'Bannir'}
+                                  </span>
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -515,7 +722,9 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           </>
-        ) : (
+        )}
+
+        {adminTab === 'products' && (
           /* Products Catalog Management Table */
           <div className="bg-[#18181F] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
             <div className="p-5 border-b border-white/10 flex items-center justify-between">
@@ -629,7 +838,390 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         )}
+
+        {/* Categories Tab View */}
+        {adminTab === 'categories' && (
+          <div className="space-y-4">
+            <div className="bg-[#18181F] border border-white/10 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm sm:text-base font-bold uppercase tracking-wider text-[#F5F5F7] flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-blue-400" />
+                  <span>{lang === 'ar' ? 'إدارة أقسام المتجر (Categories)' : 'Gestion des Catégories de Produits'}</span>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 font-mono font-bold">
+                    {categories.length}
+                  </span>
+                </h3>
+                <p className="text-xs text-[#A1A1AA] mt-1">
+                  {lang === 'ar'
+                    ? 'الأقسام المتزامنة لحظياً مع جدول categories في Supabase لترتيب وتصنيف المنتجات'
+                    : 'Synchronisées en direct avec la table categories de Supabase pour organiser le catalogue'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsAddCategoryOpen(true)}
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase rounded-xl flex items-center gap-2 shadow-lg shadow-blue-600/30 transition-all cursor-pointer shrink-0"
+              >
+                <FolderPlus className="w-4 h-4" />
+                <span>{lang === 'ar' ? 'إضافة قسم جديد' : 'Nouvelle Catégorie'}</span>
+              </button>
+            </div>
+
+            {/* Categories Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categories.map((cat) => {
+                const prodCount = products.filter((p) => p.category === cat.slug).length;
+                return (
+                  <div
+                    key={cat.id || cat.slug}
+                    className="bg-[#18181F] border border-white/10 rounded-2xl p-5 hover:border-blue-500/40 transition-all flex flex-col justify-between group shadow-lg"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono text-[11px] font-bold">
+                          /{cat.slug}
+                        </span>
+                        <div className="flex items-center gap-1.5 text-xs text-[#A1A1AA]">
+                          <Layers className="w-3.5 h-3.5 text-[#FFAA2C]" />
+                          <span className="font-mono font-bold text-white">{prodCount}</span>
+                          <span>{lang === 'ar' ? 'منتج' : 'prod.'}</span>
+                        </div>
+                      </div>
+
+                      <h4 className="text-base font-bold text-[#F5F5F7] mb-0.5">
+                        {cat.nameFr}
+                      </h4>
+                      <p className="text-sm font-bold text-[#FFAA2C] mb-2" dir="rtl">
+                        {cat.nameAr}
+                      </p>
+
+                      {cat.descriptionFr && (
+                        <p className="text-xs text-[#A1A1AA] line-clamp-2 mb-3">
+                          {cat.descriptionFr}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-white/5 flex items-center justify-between mt-3">
+                      <span className="text-[10px] text-[#A1A1AA] font-mono">
+                        {cat.createdAt ? new Date(cat.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-DZ' : 'fr-FR') : 'Par défaut'}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCategory(cat.id, cat.nameFr)}
+                        className="p-1.5 px-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+                        title={lang === 'ar' ? 'حذف هذا القسم' : 'Supprimer cette catégorie'}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>{lang === 'ar' ? 'حذف' : 'Supprimer'}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Banned Phones Tab View */}
+        {adminTab === 'banned' && (
+          <div className="space-y-6">
+            {/* Top Card: Manual Ban Creation */}
+            <div className="bg-[#18181F] border border-red-500/20 rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden">
+              <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6 pb-4 border-b border-white/10">
+                <div>
+                  <h3 className="text-base font-black text-[#F5F5F7] uppercase tracking-wider flex items-center gap-2">
+                    <ShieldAlert className="w-5 h-5 text-red-500" />
+                    <span>{lang === 'ar' ? 'حظر رقم هاتف ومنعه من الطلب' : 'Bloquer un Numéro de Téléphone'}</span>
+                  </h3>
+                  <p className="text-xs text-[#A1A1AA] mt-1">
+                    {lang === 'ar'
+                      ? 'أي رقم مسجل في هذه القائمة سيتم منعه فوراً في صفحة الدفع (Checkout) من إتمام أي طلبية.'
+                      : 'Tout numéro ajouté ici sera instantanément rejeté lors de la validation du formulaire de commande.'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-xs font-mono font-bold">
+                    {bannedPhones.length} {lang === 'ar' ? 'رقم محظور' : 'numéros bloqués'}
+                  </span>
+                </div>
+              </div>
+
+              {banSuccess && (
+                <div className="mb-5 p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 shrink-0 text-emerald-400" />
+                  <span>{banSuccess}</span>
+                </div>
+              )}
+
+              {banError && (
+                <div className="mb-5 p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-bold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                  <span>{banError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleManualBanPhone} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end text-xs">
+                <div>
+                  <label className="block text-[#A1A1AA] mb-1 font-semibold">
+                    {lang === 'ar' ? 'رقم الهاتف المراد حظره *' : 'Numéro à bloquer *'}
+                  </label>
+                  <div className="relative">
+                    <PhoneOff className="w-4 h-4 text-red-400 absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      required
+                      value={banPhoneInput}
+                      onChange={(e) => setBanPhoneInput(e.target.value)}
+                      placeholder="0550123456 ou +213..."
+                      className="w-full bg-[#14141B] border border-white/15 focus:border-red-500 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white font-mono outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[#A1A1AA] mb-1 font-semibold">
+                    {lang === 'ar' ? 'سبب الحظر *' : 'Motif du blocage *'}
+                  </label>
+                  <select
+                    value={banReasonInput}
+                    onChange={(e) => setBanReasonInput(e.target.value)}
+                    className="w-full bg-[#14141B] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2.5 text-xs text-white outline-none cursor-pointer"
+                  >
+                    <option value="Refus de colis à la livraison (Retour répété)">Refus de colis à la livraison (Retour répété)</option>
+                    <option value="Numéro injoignable après commande (Faux client)">Numéro injoignable après commande (Faux client)</option>
+                    <option value="Commandes multiples non confirmées (Spam)">Commandes multiples non confirmées (Spam)</option>
+                    <option value="Fraude ou tentative de tromperie">Fraude ou tentative de tromperie</option>
+                    <option value="Autre motif">Autre motif</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[#A1A1AA] mb-1 font-semibold">
+                    {lang === 'ar' ? 'ملاحظات إضافية (اختياري)' : 'Notes internes (optionnel)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={banNotesInput}
+                    onChange={(e) => setBanNotesInput(e.target.value)}
+                    placeholder="Ex: Client d'Alger, 2 retours successifs"
+                    className="w-full bg-[#14141B] border border-white/15 focus:border-red-500 rounded-xl px-3 py-2.5 text-xs text-white outline-none"
+                  />
+                </div>
+
+                <div>
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-red-600/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Ban className="w-4 h-4" />
+                    <span>{lang === 'ar' ? 'حظر هذا الرقم الآن' : 'Bloquer le Numéro'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Banned Phones List & Search Table */}
+            <div className="bg-[#18181F] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+              <div className="p-5 border-b border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#F5F5F7]">
+                    {lang === 'ar' ? 'قائمة الأرقام المحظورة' : 'Liste Noire des Numéros Bloqués'} ({filteredBannedPhones.length})
+                  </h3>
+                  <p className="text-xs text-[#A1A1AA] mt-0.5">
+                    {lang === 'ar'
+                      ? 'يمكنك فك الحظر عن أي رقم في أي وقت بضغطة واحدة'
+                      : 'Vous pouvez débloquer un numéro à tout moment en un clic'}
+                  </p>
+                </div>
+
+                <div className="relative w-full sm:w-72">
+                  <Search className="w-4 h-4 text-[#A1A1AA] absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    value={banSearchQuery}
+                    onChange={(e) => setBanSearchQuery(e.target.value)}
+                    placeholder={lang === 'ar' ? 'بحث عن رقم أو سبب...' : 'Rechercher un numéro, motif...'}
+                    className="w-full bg-[#14141B] border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-[#A1A1AA]/60 outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-[#14141B] text-[#A1A1AA] font-mono text-[11px] uppercase">
+                      <th className="p-4">{lang === 'ar' ? 'رقم الهاتف' : 'Téléphone'}</th>
+                      <th className="p-4">{lang === 'ar' ? 'سبب الحظر' : 'Motif'}</th>
+                      <th className="p-4">{lang === 'ar' ? 'ملاحظات' : 'Notes'}</th>
+                      <th className="p-4">{lang === 'ar' ? 'تاريخ الحظر' : 'Date d’ajout'}</th>
+                      <th className="p-4 text-right">{lang === 'ar' ? 'إجراءات' : 'Actions'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredBannedPhones.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="p-8 text-center text-[#A1A1AA]">
+                          <ShieldCheck className="w-10 h-10 text-emerald-400 mx-auto mb-2 opacity-80" />
+                          <p className="font-semibold">
+                            {lang === 'ar' ? 'لا توجد أرقام محظورة مطابقة' : 'Aucun numéro bloqué'}
+                          </p>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredBannedPhones.map((item) => (
+                        <tr key={item.phone} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="p-4 font-mono font-bold text-red-400 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <PhoneOff className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                              <span>{item.phone}</span>
+                            </div>
+                          </td>
+                          <td className="p-4 text-white font-medium">
+                            <span className="px-2 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-300 text-[11px]">
+                              {item.reason}
+                            </span>
+                          </td>
+                          <td className="p-4 text-[#A1A1AA] max-w-xs truncate">
+                            {item.notes || '—'}
+                          </td>
+                          <td className="p-4 font-mono text-[#A1A1AA] whitespace-nowrap">
+                            {new Date(item.createdAt).toLocaleString(lang === 'ar' ? 'ar-DZ' : 'fr-FR', {
+                              dateStyle: 'short',
+                              timeStyle: 'short',
+                            })}
+                          </td>
+                          <td className="p-4 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => handleUnbanPhone(item.phone)}
+                              className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-colors cursor-pointer text-xs font-bold inline-flex items-center gap-1.5"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>{lang === 'ar' ? 'رفع الحظر' : 'Débloquer'}</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Add Category Modal Dialog */}
+      {isAddCategoryOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div
+            onClick={() => setIsAddCategoryOpen(false)}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+          />
+
+          <div className="min-h-full flex items-center justify-center p-4">
+            <div className="relative bg-[#14141B] border border-white/15 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl">
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/10">
+                <h3 className="text-base font-black text-[#F5F5F7] uppercase tracking-wider flex items-center gap-2">
+                  <FolderPlus className="w-5 h-5 text-blue-400" />
+                  <span>{lang === 'ar' ? 'إضافة قسم جديد' : 'Nouvelle Catégorie'}</span>
+                </h3>
+                <button
+                  onClick={() => setIsAddCategoryOpen(false)}
+                  className="p-1 rounded-lg text-[#A1A1AA] hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {newCatSuccess ? (
+                <div className="p-8 text-center space-y-2">
+                  <CheckCircle className="w-12 h-12 text-[#25D366] mx-auto animate-bounce" />
+                  <p className="text-sm font-bold text-white">
+                    {lang === 'ar' ? 'تمت إضافة القسم بنجاح!' : 'Catégorie ajoutée avec succès !'}
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleAddCategory} className="space-y-4 text-xs">
+                  {newCatError && (
+                    <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-bold">
+                      {newCatError}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-[#A1A1AA] mb-1 font-semibold">
+                      {lang === 'ar' ? 'معرّف القسم بالإنجليزية (Slug) *' : 'Identifiant unique (Slug) *'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newCatSlug}
+                      onChange={(e) => setNewCatSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                      placeholder="smartwatches, gaming, audio..."
+                      className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[#A1A1AA] mb-1 font-semibold">
+                      {lang === 'ar' ? 'اسم القسم بالفرنسية *' : 'Nom en Français *'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newCatNameFr}
+                      onChange={(e) => setNewCatNameFr(e.target.value)}
+                      placeholder="Ex: Montres Connectées"
+                      className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[#A1A1AA] mb-1 font-semibold">
+                      {lang === 'ar' ? 'اسم القسم بالعربية *' : 'Nom en Arabe *'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      dir="rtl"
+                      value={newCatNameAr}
+                      onChange={(e) => setNewCatNameAr(e.target.value)}
+                      placeholder="مثال: ساعات ذكية"
+                      className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[#A1A1AA] mb-1 font-semibold">
+                      {lang === 'ar' ? 'وصف القسم بالفرنسية (اختياري)' : 'Description (FR)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={newCatDescFr}
+                      onChange={(e) => setNewCatDescFr(e.target.value)}
+                      placeholder="Brève description..."
+                      className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-blue-600/30 transition-all cursor-pointer mt-4"
+                  >
+                    {lang === 'ar' ? 'حفظ القسم في Supabase' : 'Enregistrer la catégorie'}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick-Add Product Drawer Modal */}
       {isAddProductOpen && (
@@ -703,11 +1295,21 @@ export default function AdminDashboardPage() {
                           onChange={(e) => setNewProdCategory(e.target.value as any)}
                           className="w-full appearance-none bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-base sm:text-xs text-white outline-none cursor-pointer"
                         >
-                          <option value="earbuds" className="bg-[#18181F] text-[#F5F5F7]">{t('products.earbuds')}</option>
-                          <option value="headphones" className="bg-[#18181F] text-[#F5F5F7]">{t('products.headphones')}</option>
-                          <option value="speakers" className="bg-[#18181F] text-[#F5F5F7]">{t('products.speakers')}</option>
-                          <option value="chargers" className="bg-[#18181F] text-[#F5F5F7]">{t('products.chargers')}</option>
-                          <option value="powerbanks" className="bg-[#18181F] text-[#F5F5F7]">{t('products.powerbanks')}</option>
+                          {categories.length > 0 ? (
+                            categories.map((c) => (
+                              <option key={c.id || c.slug} value={c.slug} className="bg-[#18181F] text-[#F5F5F7]">
+                                {lang === 'ar' ? c.nameAr : c.nameFr} ({c.slug})
+                              </option>
+                            ))
+                          ) : (
+                            <>
+                              <option value="earbuds" className="bg-[#18181F] text-[#F5F5F7]">{t('products.earbuds')}</option>
+                              <option value="headphones" className="bg-[#18181F] text-[#F5F5F7]">{t('products.headphones')}</option>
+                              <option value="speakers" className="bg-[#18181F] text-[#F5F5F7]">{t('products.speakers')}</option>
+                              <option value="chargers" className="bg-[#18181F] text-[#F5F5F7]">{t('products.chargers')}</option>
+                              <option value="powerbanks" className="bg-[#18181F] text-[#F5F5F7]">{t('products.powerbanks')}</option>
+                            </>
+                          )}
                         </select>
                         <div className="pointer-events-none absolute inset-y-0 ltr:right-2.5 rtl:left-2.5 flex items-center text-[#A1A1AA]">
                           <ChevronDown className="w-3.5 h-3.5" />

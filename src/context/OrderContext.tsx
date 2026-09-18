@@ -34,14 +34,42 @@ export interface Order {
   createdAt: string;
 }
 
+export interface BannedPhone {
+  phone: string;
+  reason: string;
+  bannedBy?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export function normalizeAlgerianPhone(phone: string): string {
+  if (!phone) return '';
+  let digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('00213')) {
+    digits = '0' + digits.substring(5);
+  } else if (digits.startsWith('213') && digits.length > 9) {
+    digits = '0' + digits.substring(3);
+  }
+  if (digits.length === 9 && (digits.startsWith('5') || digits.startsWith('6') || digits.startsWith('7'))) {
+    digits = '0' + digits;
+  }
+  return digits;
+}
+
 interface OrderContextType {
   orders: Order[];
+  bannedPhones: BannedPhone[];
   isSupabaseConnected: boolean;
   createOrder: (orderData: Omit<Order, 'id' | 'trackingCode' | 'createdAt' | 'status'>) => Order;
   updateOrderStatus: (orderId: string, status: OrderStatus, reason?: string) => void;
   getOrderById: (orderId: string) => Order | undefined;
   getOrderByTrackingCode: (code: string) => Order | undefined;
   refreshOrders: () => Promise<void>;
+  banPhone: (phone: string, reason?: string, notes?: string) => Promise<{ success: boolean; error?: string }>;
+  unbanPhone: (phone: string) => Promise<{ success: boolean; error?: string }>;
+  isPhoneBanned: (phone: string) => boolean;
+  checkPhoneBannedAsync: (phone: string) => Promise<{ isBanned: boolean; reason?: string }>;
+  refreshBannedPhones: () => Promise<void>;
   metrics: {
     totalRevenue: number;
     ordersCount: number;
@@ -75,11 +103,57 @@ function mapRowToOrder(row: any): Order {
   };
 }
 
+// Helper to map Supabase snake_case rows to BannedPhone interface
+function mapRowToBannedPhone(row: any): BannedPhone {
+  return {
+    phone: row.phone,
+    reason: row.reason || 'Fraude ou refus de colis',
+    bannedBy: row.banned_by || 'Admin',
+    notes: row.notes || undefined,
+    createdAt: row.created_at,
+  };
+}
+
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export function OrderProvider({ children }: { children: React.ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [bannedPhones, setBannedPhones] = useState<BannedPhone[]>([]);
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
+
+  // Fetch banned phones from Supabase
+  const fetchBannedPhones = useCallback(async () => {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('banned_phones')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          const mapped = data.map(mapRowToBannedPhone);
+          setBannedPhones(mapped);
+          try {
+            localStorage.setItem('electronics_banned_phones', JSON.stringify(mapped));
+          } catch (e) {
+            // Ignore storage errors
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn('Supabase fetch banned phones failed:', err);
+      }
+    }
+
+    try {
+      const saved = localStorage.getItem('electronics_banned_phones');
+      if (saved) {
+        setBannedPhones(JSON.parse(saved));
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }, []);
 
   // Fetch orders from Supabase (strictly dynamic database data)
   const fetchOrders = useCallback(async () => {
@@ -121,11 +195,12 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchOrders();
+    fetchBannedPhones();
 
-    // Subscribe to Realtime orders if Supabase is available
+    // Subscribe to Realtime orders & banned_phones if Supabase is available
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
-      const channel = client
+      const orderChannel = client
         .channel('public:orders')
         .on(
           'postgres_changes',
@@ -136,11 +211,23 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         )
         .subscribe();
 
+      const banChannel = client
+        .channel('public:banned_phones')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'banned_phones' },
+          () => {
+            fetchBannedPhones();
+          }
+        )
+        .subscribe();
+
       return () => {
-        client.removeChannel(channel);
+        client.removeChannel(orderChannel);
+        client.removeChannel(banChannel);
       };
     }
-  }, [fetchOrders]);
+  }, [fetchOrders, fetchBannedPhones]);
 
   const saveLocalOrders = (newOrders: Order[]) => {
     setOrders(newOrders);
@@ -151,7 +238,142 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const isPhoneBanned = useCallback(
+    (rawPhone: string): boolean => {
+      if (!rawPhone) return false;
+      const clean = normalizeAlgerianPhone(rawPhone);
+      return bannedPhones.some((b) => {
+        const bClean = normalizeAlgerianPhone(b.phone);
+        return bClean === clean || (clean.length >= 9 && bClean.endsWith(clean.slice(-9)));
+      });
+    },
+    [bannedPhones]
+  );
+
+  const checkPhoneBannedAsync = useCallback(
+    async (rawPhone: string): Promise<{ isBanned: boolean; reason?: string }> => {
+      if (!rawPhone) return { isBanned: false };
+      const clean = normalizeAlgerianPhone(rawPhone);
+
+      // 1. Local state check
+      const localMatch = bannedPhones.find((b) => {
+        const bClean = normalizeAlgerianPhone(b.phone);
+        return bClean === clean || (clean.length >= 9 && bClean.endsWith(clean.slice(-9)));
+      });
+
+      if (localMatch) {
+        return { isBanned: true, reason: localMatch.reason };
+      }
+
+      // 2. Direct Supabase query
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data } = await supabase
+            .from('banned_phones')
+            .select('*')
+            .or(`phone.eq.${clean},phone.eq.${rawPhone.trim()}`)
+            .maybeSingle();
+
+          if (data) {
+            return { isBanned: true, reason: data.reason };
+          }
+        } catch (err) {
+          // Ignore
+        }
+      }
+
+      return { isBanned: false };
+    },
+    [bannedPhones]
+  );
+
+  const banPhone = async (
+    rawPhone: string,
+    reason?: string,
+    notes?: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    const clean = normalizeAlgerianPhone(rawPhone);
+    if (!clean || clean.length < 9) {
+      return {
+        success: false,
+        error: 'Numéro de téléphone invalide / رقم الهاتف غير صالح',
+      };
+    }
+
+    const newBan: BannedPhone = {
+      phone: clean,
+      reason: reason?.trim() || 'Fraude, refus répété ou fausse commande',
+      bannedBy: 'Admin DZ',
+      notes: notes?.trim() || undefined,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [newBan, ...bannedPhones.filter((b) => normalizeAlgerianPhone(b.phone) !== clean)];
+    setBannedPhones(updated);
+    try {
+      localStorage.setItem('electronics_banned_phones', JSON.stringify(updated));
+    } catch (e) {
+      // Ignore
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('banned_phones').upsert({
+          phone: newBan.phone,
+          reason: newBan.reason,
+          banned_by: newBan.bannedBy,
+          notes: newBan.notes || null,
+        });
+
+        if (error) {
+          console.error('Supabase ban phone error:', error.message);
+          return { success: false, error: error.message };
+        }
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Ban failed' };
+      }
+    }
+
+    return { success: true };
+  };
+
+  const unbanPhone = async (rawPhone: string): Promise<{ success: boolean; error?: string }> => {
+    const clean = normalizeAlgerianPhone(rawPhone);
+    const updated = bannedPhones.filter(
+      (b) => normalizeAlgerianPhone(b.phone) !== clean && b.phone !== rawPhone.trim()
+    );
+    setBannedPhones(updated);
+    try {
+      localStorage.setItem('electronics_banned_phones', JSON.stringify(updated));
+    } catch (e) {
+      // Ignore
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase
+          .from('banned_phones')
+          .delete()
+          .or(`phone.eq.${clean},phone.eq.${rawPhone.trim()}`);
+
+        if (error) {
+          console.error('Supabase unban phone error:', error.message);
+          return { success: false, error: error.message };
+        }
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Unban failed' };
+      }
+    }
+
+    return { success: true };
+  };
+
   const createOrder = (orderData: Omit<Order, 'id' | 'trackingCode' | 'createdAt' | 'status'>): Order => {
+    const cleanPhone = normalizeAlgerianPhone(orderData.phone);
+    if (isPhoneBanned(cleanPhone)) {
+      throw new Error('BANNED_PHONE');
+    }
+
     const randomSuffix = Math.floor(10000 + Math.random() * 90000);
     const trackingCode = `DZ-${randomSuffix}-COD`;
     const newOrder: Order = {
@@ -256,12 +478,18 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     <OrderContext.Provider
       value={{
         orders,
+        bannedPhones,
         isSupabaseConnected,
         createOrder,
         updateOrderStatus,
         getOrderById,
         getOrderByTrackingCode,
         refreshOrders: fetchOrders,
+        banPhone,
+        unbanPhone,
+        isPhoneBanned,
+        checkPhoneBannedAsync,
+        refreshBannedPhones: fetchBannedPhones,
         metrics: {
           totalRevenue,
           ordersCount: orders.length,

@@ -414,3 +414,100 @@ ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     phone = EXCLUDED.phone,
     role = EXCLUDED.role;
+
+-- ==============================================================================
+-- 9. CATEGORIES TABLE
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.categories (
+    id TEXT PRIMARY KEY,
+    slug TEXT NOT NULL UNIQUE,
+    name_fr TEXT NOT NULL,
+    name_ar TEXT NOT NULL,
+    description_fr TEXT,
+    description_ar TEXT,
+    icon TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.categories DISABLE ROW LEVEL SECURITY;
+
+-- Initial Seed Categories
+INSERT INTO public.categories (id, slug, name_fr, name_ar, description_fr, description_ar, icon)
+VALUES
+(
+    'cat-earbuds',
+    'earbuds',
+    'Écouteurs sans fil',
+    'سماعات أذن لاسلكية',
+    'Écouteurs True Wireless avec réduction de bruit active et design transparent',
+    'سماعات بلوتوث لاسلكية بتقنية إلغاء الضوضاء وتصميم عصري شفاف',
+    'Headphones'
+),
+(
+    'cat-headphones',
+    'headphones',
+    'Casques Audio Hi-Fi',
+    'سماعات رأس صوتية',
+    'Casques circum-auriculaires ANC haute fidélité pour audiophiles et studio',
+    'سماعات رأس محيطية احترافية بجودة صوت فائقة ومريحة للمكتب والألعاب',
+    'Headphones'
+),
+(
+    'cat-speakers',
+    'speakers',
+    'Enceintes & Soundbars',
+    'مكبرات صوت وساوند بار',
+    'Enceintes Bluetooth nomades étanches et barres de son pour setups TV',
+    'مكبرات صوت مقاومة للماء وأشرطة صوت ساوند بار للمكاتب والشاشات',
+    'Speaker'
+),
+(
+    'cat-chargers',
+    'chargers',
+    'Chargeurs GaN & Câbles',
+    'شواحن سريعة GaN وكابلات',
+    'Blocs de charge rapide GaN jusqu’à 140W et câbles renforcés haute vitesse',
+    'شواحن بتقنية النيتريد فائقة السرعة وكابلات مضفرة مدرعة',
+    'Zap'
+),
+(
+    'cat-powerbanks',
+    'powerbanks',
+    'Batteries MagSafe',
+    'بنوك طاقة وميج سيف',
+    'Batteries magnétiques ultra-fines MagSafe et stations sans fil induction',
+    'بطاريات شحن لاسلكية مغناطيسية متوافقة مع الآيفون وأجهزة الأندرويد',
+    'BatteryCharging'
+)
+ON CONFLICT (id) DO UPDATE SET
+    name_fr = EXCLUDED.name_fr,
+    name_ar = EXCLUDED.name_ar,
+    slug = EXCLUDED.slug,
+    description_fr = EXCLUDED.description_fr,
+    description_ar = EXCLUDED.description_ar,
+    icon = EXCLUDED.icon;
+
+-- ==============================================================================
+-- 10. BANNED PHONES TABLE (Fraud Prevention & Anti-Abuse / حظر أرقام الهاتف)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.banned_phones (
+    phone TEXT PRIMARY KEY,
+    reason TEXT NOT NULL DEFAULT 'Refus répété ou commande factice',
+    banned_by TEXT DEFAULT 'Admin DZ',
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.banned_phones DISABLE ROW LEVEL SECURITY;
+
+-- Initial Seed Blacklist / Sample
+INSERT INTO public.banned_phones (phone, reason, banned_by, notes)
+VALUES
+(
+    '0500000000',
+    'Numéro de test bloqué / رقم تجريبي محظور',
+    'Système',
+    'Exemple de numéro bloqué pour vérification'
+)
+ON CONFLICT (phone) DO NOTHING;
+

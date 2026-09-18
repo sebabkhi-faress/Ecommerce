@@ -35,7 +35,7 @@ interface CodFormProps {
 export default function CodForm({ items, onSuccess, isModal = false }: CodFormProps) {
   const router = useRouter();
   const { lang, t } = useLanguage();
-  const { createOrder } = useOrders();
+  const { createOrder, checkPhoneBannedAsync, isPhoneBanned } = useOrders();
   const { clearCart } = useCart();
 
   const [fullName, setFullName] = useState('');
@@ -46,6 +46,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
   const [notes, setNotes] = useState('');
 
   const [phoneError, setPhoneError] = useState('');
+  const [bannedError, setBannedError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedWilaya = useMemo(
@@ -73,7 +74,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
     return regex.test(cleaned);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validatePhone(phone)) {
@@ -81,12 +82,38 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
       return;
     }
     setPhoneError('');
+    setBannedError(null);
 
     if (!fullName.trim() || !commune.trim()) {
       return;
     }
 
     setIsSubmitting(true);
+
+    // 1. Check if phone is blacklisted/banned
+    try {
+      const banCheck = await checkPhoneBannedAsync(phone.trim());
+      if (banCheck.isBanned) {
+        setIsSubmitting(false);
+        const reasonText = banCheck.reason ? ` (${banCheck.reason})` : '';
+        setBannedError(
+          lang === 'ar'
+            ? `⚠️ هذا الرقم محظور من الطلب نظراً لتكرار إلغاء الطلبيات أو رفض الاستلام${reasonText}. يرجى التواصل مع إدارة المتجر.`
+            : `⚠️ Ce numéro de téléphone est suspendu pour commandes${reasonText}. Veuillez contacter notre service client.`
+        );
+        return;
+      }
+    } catch (e) {
+      if (isPhoneBanned(phone.trim())) {
+        setIsSubmitting(false);
+        setBannedError(
+          lang === 'ar'
+            ? '⚠️ هذا الرقم محظور من إتمام الطلبيات.'
+            : '⚠️ Ce numéro de téléphone est suspendu pour commandes.'
+        );
+        return;
+      }
+    }
 
     try {
       const orderItems = items.map((item) => ({
@@ -213,6 +240,7 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
               onChange={(e) => {
                 setPhone(e.target.value);
                 if (phoneError) setPhoneError('');
+                if (bannedError) setBannedError(null);
               }}
               placeholder={t('checkout.phone_placeholder')}
               className={`w-full bg-[#18181F] border ${
@@ -376,6 +404,14 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
           </span>
         </div>
       </div>
+
+      {/* Banned / Blacklisted Phone Error Notice */}
+      {bannedError && (
+        <div className="p-4 rounded-2xl bg-red-500/15 border border-red-500/40 text-red-300 text-xs sm:text-sm font-medium leading-relaxed flex items-start gap-3 animate-fadeIn shadow-lg shadow-red-900/20">
+          <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+          <div className="flex-1">{bannedError}</div>
+        </div>
+      )}
 
       {/* High Contrast Massive Glowing CTA Button */}
       <button

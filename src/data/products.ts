@@ -9,7 +9,7 @@ export interface Product {
   slug: string;
   nameFr: string;
   nameAr: string;
-  category: 'earbuds' | 'headphones' | 'speakers' | 'chargers' | 'powerbanks';
+  category: string;
   price: number;
   originalPrice?: number;
   rating: number;
