@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { formatDZD } from '@/data/products';
+import { Product, formatDZD } from '@/data/products';
 import { WILAYAS, getWilayaByCode } from '@/data/wilayas';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
-import { useProducts } from '@/context/ProductContext';
+import { useProducts, mapRowToProduct } from '@/context/ProductContext';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import CodForm from '@/components/checkout/CodForm';
 import {
   Star,
@@ -34,12 +35,63 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const { lang, t } = useLanguage();
   const { addToCart, openDirectCheckout } = useCart();
-  const { getProductBySlug, getProductById, isLoading } = useProducts();
+  const { products, getProductBySlug, getProductById, isLoading } = useProducts();
 
-  const idOrSlug = params.id as string;
-  const product = useMemo(() => {
-    return getProductBySlug(idOrSlug) || getProductById(idOrSlug);
-  }, [idOrSlug, getProductBySlug, getProductById]);
+  const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const cleanIdOrSlug = rawId ? decodeURIComponent(rawId).trim() : '';
+
+  // 1. Try finding in context products
+  const contextProduct = useMemo(() => {
+    if (!cleanIdOrSlug) return undefined;
+    return (
+      getProductBySlug(cleanIdOrSlug) ||
+      getProductById(cleanIdOrSlug) ||
+      products.find(
+        (p) =>
+          p.id.toLowerCase() === cleanIdOrSlug.toLowerCase() ||
+          p.slug.toLowerCase() === cleanIdOrSlug.toLowerCase() ||
+          p.nameFr.toLowerCase() === cleanIdOrSlug.toLowerCase() ||
+          p.nameAr === cleanIdOrSlug
+      )
+    );
+  }, [cleanIdOrSlug, getProductBySlug, getProductById, products]);
+
+  // 2. Direct Supabase Query Fallback for fresh products or direct URL visits
+  const [dbProduct, setDbProduct] = useState<Product | null>(null);
+  const [isSearchingDb, setIsSearchingDb] = useState(false);
+
+  useEffect(() => {
+    if (contextProduct || !cleanIdOrSlug) return;
+    if (!isSupabaseConfigured || !supabase) return;
+
+    let cancelled = false;
+    async function fetchFromDb() {
+      setIsSearchingDb(true);
+      try {
+        const { data, error } = await supabase!
+          .from('products')
+          .select('*')
+          .or(`id.eq.${cleanIdOrSlug},slug.eq.${cleanIdOrSlug}`)
+          .maybeSingle();
+
+        if (!cancelled && !error && data) {
+          setDbProduct(mapRowToProduct(data));
+        }
+      } catch (e) {
+        console.warn('Direct DB fetch error', e);
+      } finally {
+        if (!cancelled) setIsSearchingDb(false);
+      }
+    }
+
+    fetchFromDb();
+    return () => {
+      cancelled = true;
+    };
+  }, [cleanIdOrSlug, contextProduct]);
+
+  const product = contextProduct || dbProduct;
+  const isPageLoading = (isLoading || isSearchingDb) && !product;
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
@@ -52,19 +104,19 @@ export default function ProductDetailPage() {
     [calcWilayaCode]
   );
 
-  if (isLoading && !product) {
+  if (isPageLoading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4 bg-[var(--obsidian)] text-[var(--white-titanium)]">
         <Loader2 className="w-8 h-8 text-[#FF6B00] animate-spin mb-4" />
-        <p className="text-sm text-[#A1A1AA] font-mono">{lang === 'ar' ? 'جارٍ تحميل المنتج...' : 'Chargement du produit...'}</p>
+        <p className="text-sm text-[#A1A1AA] font-mono">{lang === 'ar' ? 'جارٍ تحميل تفاصيل المنتج...' : 'Chargement du produit...'}</p>
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-        <h2 className="text-xl font-bold text-white mb-2">{t('pdp.not_found_title')}</h2>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4 bg-[var(--obsidian)] text-[var(--white-titanium)]">
+        <h2 className="text-xl font-bold mb-2">{t('pdp.not_found_title')}</h2>
         <p className="text-sm text-[#A1A1AA] mb-6">{t('pdp.not_found_desc')}</p>
         <Link
           href="/"
@@ -79,7 +131,7 @@ export default function ProductDetailPage() {
   const selectedColor = product.colors[selectedColorIndex];
 
   return (
-    <div className="py-8 sm:py-12 bg-[#0D0D11] min-h-screen">
+    <div className="py-8 sm:py-12 pb-28 sm:pb-32 bg-[var(--obsidian)] text-[var(--white-titanium)] min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb / Back Link */}
         <div className="mb-6 flex items-center gap-2 text-xs text-[#A1A1AA]">
@@ -449,12 +501,12 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
-      {/* Sticky Bottom Order Bar for Mobile - Exact Screenshot Layout */}
-      <div className="fixed bottom-0 inset-x-0 z-50 p-3 bg-[#14141B]/95 backdrop-blur-xl border-t border-white/15 sm:hidden flex items-center gap-3 shadow-2xl">
-        {/* Quick Call / WhatsApp button */}
+      {/* Sticky Bottom Order Bar (Mobile) - Always visible */}
+      <div className="fixed bottom-0 inset-x-0 z-50 p-2.5 bg-white/95 dark:bg-[#14141B]/95 backdrop-blur-xl border-t border-black/10 dark:border-white/15 sm:hidden flex items-center gap-2.5 shadow-2xl">
+        {/* Quick Call */}
         <a
           href="tel:0550123456"
-          className="w-12 h-12 rounded-2xl bg-[#25D366] hover:bg-[#1EBE5D] text-black flex items-center justify-center shadow-lg shadow-[#25D366]/30 shrink-0 transition-transform active:scale-95"
+          className="w-11 h-11 rounded-2xl bg-[#25D366] hover:bg-[#1EBE5D] text-black flex items-center justify-center shadow-lg shadow-[#25D366]/30 shrink-0 transition-transform active:scale-95"
           title={lang === 'ar' ? 'اتصل بنا هاتفياً' : 'Appel direct'}
           aria-label="Appeler"
         >
@@ -467,15 +519,84 @@ export default function ProductDetailPage() {
             const formElement = document.getElementById('fast-cod-form');
             if (formElement) {
               formElement.scrollIntoView({ behavior: 'smooth' });
+              const nameInput = formElement.querySelector('input');
+              if (nameInput) nameInput.focus();
             } else {
               openDirectCheckout(product, quantity, selectedColor?.nameFr);
             }
           }}
-          className="flex-1 py-3.5 px-4 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-[#FF6B00]/40 flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+          className="flex-1 py-3 px-3 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-[#FF6B00]/40 flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
         >
-          <Zap className="w-4 h-4 fill-black" />
-          <span>{lang === 'ar' ? 'اشتري الآن (الدفع عند الاستلام)' : 'Acheter maintenant (COD)'}</span>
+          <Zap className="w-4 h-4 fill-black shrink-0" />
+          <span className="truncate">{lang === 'ar' ? 'اشتري الآن (الدفع عند الاستلام)' : 'Commander (COD)'}</span>
+          <span className="font-mono text-[11px] font-black bg-black/15 px-1.5 py-0.5 rounded-md shrink-0">
+            {formatDZD(product.price * quantity, lang)}
+          </span>
         </button>
+      </div>
+
+      {/* Sticky Bottom Order Bar (Desktop & Tablet) - Always visible */}
+      <div className="hidden sm:flex fixed bottom-0 inset-x-0 z-50 py-3 px-6 lg:px-12 bg-white/95 dark:bg-[#14141B]/95 backdrop-blur-xl border-t border-black/10 dark:border-white/15 shadow-2xl items-center justify-between">
+        {/* Left: Product Thumbnail & Title & Live Price */}
+        <div className="flex items-center gap-3 min-w-0">
+          <img
+            src={product.images[activeImageIndex] || product.images[0]}
+            alt={product.nameFr}
+            className="w-12 h-12 object-cover rounded-xl border border-black/10 dark:border-white/15 bg-black/20 shrink-0"
+          />
+          <div className="min-w-0">
+            <h4 className="text-sm font-extrabold text-[#0F172A] dark:text-[#F5F5F7] truncate max-w-xs lg:max-w-md">
+              {lang === 'ar' ? product.nameAr : product.nameFr}
+            </h4>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="font-mono font-black text-[#FF6B00]">
+                {formatDZD(product.price * quantity, lang)}
+              </span>
+              <span className="text-[#25D366] text-[11px] font-semibold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>{t('products.in_stock')}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Call button + Add to cart + Giant CTA button */}
+        <div className="flex items-center gap-3 shrink-0">
+          <a
+            href="tel:0550123456"
+            className="h-11 px-3.5 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/40 text-[#25D366] font-bold text-xs flex items-center gap-2 transition-all"
+            title="Appel direct"
+          >
+            <Phone className="w-4 h-4 fill-[#25D366]" />
+            <span className="hidden md:inline font-mono">0550 12 34 56</span>
+          </a>
+
+          <button
+            onClick={() => addToCart(product, quantity, selectedColor?.nameFr)}
+            className="h-11 px-4 rounded-xl bg-slate-100 dark:bg-[#22222B] hover:bg-slate-200 dark:hover:bg-white/10 border border-black/10 dark:border-white/15 text-xs font-bold text-slate-700 dark:text-[#F5F5F7] flex items-center gap-2 transition-all cursor-pointer"
+            title={t('products.add_to_cart')}
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span className="hidden lg:inline">{t('products.add_to_cart')}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              const formElement = document.getElementById('fast-cod-form');
+              if (formElement) {
+                formElement.scrollIntoView({ behavior: 'smooth' });
+                const nameInput = formElement.querySelector('input');
+                if (nameInput) nameInput.focus();
+              } else {
+                openDirectCheckout(product, quantity, selectedColor?.nameFr);
+              }
+            }}
+            className="h-11 py-2.5 px-6 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <Zap className="w-4 h-4 fill-black" />
+            <span>{lang === 'ar' ? 'اشتري الآن (الدفع عند الاستلام)' : 'Commander (Paiement à la livraison)'}</span>
+          </button>
+        </div>
       </div>
     </div>
   );

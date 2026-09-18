@@ -16,7 +16,7 @@ interface ProductContextType {
 }
 
 // Map Supabase snake_case row to TypeScript Product
-function mapRowToProduct(row: any): Product {
+export function mapRowToProduct(row: any): Product {
   return {
     id: row.id,
     slug: row.slug || row.id,

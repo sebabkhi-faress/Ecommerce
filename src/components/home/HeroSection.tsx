@@ -35,13 +35,16 @@ export default function HeroSection() {
         {/* MOBILE-FIRST PRODUCT & PRICE ATTENTION SHOWCASE (Matching screenshot for instant conversion) */}
         <div className="lg:hidden space-y-4 mb-8">
           {/* Top Hook Card (Offer Hook + 5 Stars + Price + Brand Badge) */}
-          <div className="bg-[#14141B] border border-white/15 rounded-3xl p-4 shadow-2xl space-y-3">
+          <Link
+            href={`/products/${heroProduct.slug || heroProduct.id}`}
+            className="block bg-[#14141B] border border-white/15 rounded-3xl p-4 shadow-2xl space-y-3 group hover:border-[#FF6B00]/40 transition-all cursor-pointer"
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1 flex-1">
                 <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FF6B00]/20 text-[#FFAA2C] border border-[#FF6B00]/30 text-[10px] font-mono font-bold uppercase tracking-wider">
                   {lang === 'ar' ? 'العرض الحصري الأكثر طلباً في الجزائر 🔥' : 'OFFRE PHARE EN ALGÉRIE 🔥'}
                 </span>
-                <h1 className="text-xl font-black text-[#F5F5F7] leading-tight">
+                <h1 className="text-xl font-black text-[#F5F5F7] group-hover:text-[#FFAA2C] transition-colors leading-tight">
                   {lang === 'ar' ? heroProduct.nameAr : heroProduct.nameFr} ⚡
                 </h1>
               </div>
@@ -83,14 +86,17 @@ export default function HeroSection() {
                 )}
               </div>
             </div>
-          </div>
+          </Link>
 
           {/* Large Hero Image Stage (Full Viewport Focus) */}
-          <div className="relative aspect-[4/5] max-h-[460px] w-full rounded-3xl overflow-hidden bg-gradient-to-b from-[#18181F] to-[#0D0D11] border border-white/15 p-3 flex items-center justify-center shadow-2xl">
+          <Link
+            href={`/products/${heroProduct.slug || heroProduct.id}`}
+            className="relative aspect-[4/5] max-h-[460px] w-full rounded-3xl overflow-hidden bg-gradient-to-b from-[#18181F] to-[#0D0D11] border border-white/15 p-3 flex items-center justify-center shadow-2xl block group cursor-pointer"
+          >
             <img
               src={heroProduct.images[0]}
               alt={heroProduct.nameFr}
-              className="w-full h-full object-cover rounded-2xl"
+              className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
             />
             {/* Guarantee Tag */}
             <div className="absolute bottom-3 inset-x-3 flex items-center justify-between pointer-events-none">
@@ -101,7 +107,7 @@ export default function HeroSection() {
                 {lang === 'ar' ? '68 ولاية الدفع عند الاستلام' : '68 Wilayas COD'}
               </span>
             </div>
-          </div>
+          </Link>
 
           {/* Action Row matching Screenshot Bottom CTA */}
           <div className="flex items-center gap-2.5 pt-1">
@@ -212,26 +218,32 @@ export default function HeroSection() {
               </div>
 
               {/* Product Stage Image */}
-              <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-[#22222B] to-[#0D0D11] p-4 flex items-center justify-center my-4">
+              <Link
+                href={`/products/${heroProduct.slug || heroProduct.id}`}
+                className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-[#22222B] to-[#0D0D11] p-4 flex items-center justify-center my-4 block cursor-pointer group/img"
+              >
                 <div className="absolute inset-0 bg-radial-gradient from-[#FF6B00]/25 via-transparent to-transparent" />
                 <img
                   src={heroProduct.images[0]}
                   alt={heroProduct.nameFr}
-                  className="w-full h-full object-cover rounded-xl shadow-2xl group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover rounded-xl shadow-2xl group-hover:scale-105 group-hover/img:scale-105 transition-transform duration-500"
                 />
-              </div>
+              </Link>
 
               {/* Card Meta & Direct Buy Button */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base font-extrabold text-[#F5F5F7]">
+                  <Link
+                    href={`/products/${heroProduct.slug || heroProduct.id}`}
+                    className="block hover:text-[#FF6B00] transition-colors"
+                  >
+                    <h3 className="text-base font-extrabold text-[#F5F5F7] hover:text-[#FF6B00] transition-colors">
                       {lang === 'ar' ? heroProduct.nameAr : heroProduct.nameFr}
                     </h3>
                     <p className="text-xs text-[#A1A1AA] mt-0.5">
                       {lang === 'ar' ? heroProduct.taglineAr : heroProduct.taglineFr}
                     </p>
-                  </div>
+                  </Link>
                 </div>
 
                 <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs">

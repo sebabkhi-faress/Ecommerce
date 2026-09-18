@@ -77,17 +77,29 @@ export default function CartDrawer() {
                   key={`${item.product.id}-${item.selectedColor}`}
                   className="flex gap-4 p-3.5 bg-[#18181F] border border-white/10 rounded-2xl relative group hover:border-[#FF6B00]/40 transition-colors"
                 >
-                  <img
-                    src={item.product.images[0]}
-                    alt={item.product.nameFr}
-                    className="w-20 h-20 object-cover rounded-xl bg-black/40 border border-white/10 shrink-0"
-                  />
+                  <Link
+                    href={`/products/${item.product.slug || item.product.id}`}
+                    onClick={() => setIsCartOpen(false)}
+                    className="shrink-0"
+                  >
+                    <img
+                      src={item.product.images[0]}
+                      alt={item.product.nameFr}
+                      className="w-20 h-20 object-cover rounded-xl bg-black/40 border border-white/10 hover:border-[#FF6B00]/60 transition-colors"
+                    />
+                  </Link>
 
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
-                      <h4 className="text-xs font-semibold text-[#F5F5F7] truncate">
-                        {lang === 'ar' ? item.product.nameAr : item.product.nameFr}
-                      </h4>
+                      <Link
+                        href={`/products/${item.product.slug || item.product.id}`}
+                        onClick={() => setIsCartOpen(false)}
+                        className="hover:text-[#FFAA2C] transition-colors block"
+                      >
+                        <h4 className="text-xs font-semibold text-[#F5F5F7] hover:text-[#FFAA2C] transition-colors truncate">
+                          {lang === 'ar' ? item.product.nameAr : item.product.nameFr}
+                        </h4>
+                      </Link>
                       {item.selectedColor && (
                         <p className="text-[11px] text-[#FFAA2C] mt-0.5">
                           {item.selectedColor}

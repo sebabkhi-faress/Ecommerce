@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Product, formatDZD } from '@/data/products';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
@@ -12,11 +13,16 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const router = useRouter();
   const { lang, t } = useLanguage();
   const { addToCart, openDirectCheckout } = useCart();
+  const productUrl = `/products/${product.slug || product.id}`;
 
   return (
-    <div className="group relative bg-[#18181F] border border-white/10 hover:border-[#FF6B00]/50 rounded-3xl p-4 sm:p-5 transition-all duration-300 hover:shadow-2xl hover:shadow-[#FF6B00]/10 flex flex-col justify-between overflow-hidden">
+    <div
+      onClick={() => router.push(productUrl)}
+      className="group relative bg-[#18181F] border border-white/10 hover:border-[#FF6B00]/50 rounded-3xl p-4 sm:p-5 transition-all duration-300 hover:shadow-2xl hover:shadow-[#FF6B00]/10 flex flex-col justify-between overflow-hidden cursor-pointer"
+    >
       {/* Top Badges */}
       <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between pointer-events-none">
         {product.isFlashDeal ? (
@@ -40,7 +46,8 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       {/* Product Image Stage */}
       <Link
-        href={`/products/${product.slug}`}
+        href={productUrl}
+        onClick={(e) => e.stopPropagation()}
         className="relative block w-full aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-[#22222B]/60 to-[#121217] my-3"
       >
         <div className="absolute inset-0 bg-radial-gradient from-[#FF6B00]/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -54,7 +61,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-opacity flex items-center justify-center">
           <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#18181F]/90 border border-white/20 text-xs font-semibold text-white shadow-xl">
             <Eye className="w-3.5 h-3.5 text-[#FFAA2C]" />
-            <span>{lang === 'ar' ? 'التفاصيل' : 'Aperçu'}</span>
+            <span>{lang === 'ar' ? 'معاينة المنتج والتفاصيل' : 'Voir le produit'}</span>
           </span>
         </div>
       </Link>
@@ -71,7 +78,11 @@ export default function ProductCard({ product }: ProductCardProps) {
           </span>
         </div>
 
-        <Link href={`/products/${product.slug}`} className="block">
+        <Link
+          href={productUrl}
+          onClick={(e) => e.stopPropagation()}
+          className="block"
+        >
           <h3 className="text-sm sm:text-base font-bold text-[#F5F5F7] group-hover:text-[#FF6B00] transition-colors line-clamp-1">
             {lang === 'ar' ? product.nameAr : product.nameFr}
           </h3>
@@ -96,16 +107,22 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Action Buttons: 1-Click Fast Buy + Add to Cart */}
       <div className="grid grid-cols-5 gap-2 mt-4 pt-3 border-t border-white/5">
         <button
-          onClick={() => openDirectCheckout(product)}
-          className="col-span-4 py-2.5 px-3 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-[#FF6B00]/25 hover:shadow-[#FF6B00]/45 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+          onClick={(e) => {
+            e.stopPropagation();
+            openDirectCheckout(product);
+          }}
+          className="col-span-4 py-2.5 px-3 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-[#FF6B00]/25 hover:shadow-[#FF6B00]/45 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
         >
           <Zap className="w-3.5 h-3.5 fill-black" />
           <span>{t('products.buy_now')}</span>
         </button>
 
         <button
-          onClick={() => addToCart(product)}
-          className="col-span-1 flex items-center justify-center rounded-xl bg-[#22222B] hover:bg-white/10 border border-white/10 text-[#F5F5F7] hover:text-[#FFAA2C] transition-all"
+          onClick={(e) => {
+            e.stopPropagation();
+            addToCart(product);
+          }}
+          className="col-span-1 flex items-center justify-center rounded-xl bg-[#22222B] hover:bg-white/10 border border-white/10 text-[#F5F5F7] hover:text-[#FFAA2C] transition-all cursor-pointer"
           title={t('products.add_to_cart')}
         >
           <ShoppingBag className="w-4 h-4" />
