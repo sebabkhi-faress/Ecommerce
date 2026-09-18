@@ -270,6 +270,10 @@ html:not(.dark) .bg-\[\#0D0D11\] {
   background-color: #F8F9FA !important;
 }
 
+html:not(.dark) .bg-\[\#0D0D11\]\/95 {
+  background-color: rgba(248, 249, 250, 0.96) !important;
+}
+
 html:not(.dark) .bg-\[\#0D0D11\]\/85 {
   background-color: rgba(248, 249, 250, 0.88) !important;
 }
@@ -280,6 +284,10 @@ html:not(.dark) .bg-\[\#0D0D11\]\/70 {
 
 html:not(.dark) .bg-\[\#0D0D11\]\/80 {
   background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+html:not(.dark) .bg-\[\#0E0E14\] {
+  background-color: #FFFFFF !important;
 }
 
 html:not(.dark) .bg-\[\#18181F\] {

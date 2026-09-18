@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import ThemeToggle from '@/components/common/ThemeToggle';
 import {
   Zap,
   Menu,
@@ -149,6 +150,9 @@ export default function AdminNavbar({ onToggleSidebar, isDbConnected = true }: A
             <ExternalLink className="w-3.5 h-3.5 text-[#FFAA2C]" />
             <span>{lang === 'ar' ? 'المتجر' : 'Boutique'}</span>
           </Link>
+
+          {/* Theme Toggle (Dark ⇄ Light) */}
+          <ThemeToggle size="md" />
 
           {/* Language Toggle */}
           <button

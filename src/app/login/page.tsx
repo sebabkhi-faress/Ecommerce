@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@/context/ThemeContext';
+import ThemeToggle from '@/components/common/ThemeToggle';
 import {
   Lock,
   Mail,
@@ -28,7 +28,6 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectParam = searchParams.get('redirect');
   const { lang, toggleLanguage } = useLanguage();
-  const { theme, toggleTheme } = useTheme();
   const { login } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -123,24 +122,8 @@ function LoginForm() {
           </Link>
 
           <div className="flex items-center gap-2">
-            {/* Theme Toggle Button */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="p-1.5 rounded-xl bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-[#A1A1AA] hover:text-slate-900 dark:hover:text-white border border-black/10 dark:border-white/10 transition-colors cursor-pointer"
-              title={
-                theme === 'dark'
-                  ? 'Passer en mode clair / تفعيل الوضع الفاتح'
-                  : 'Passer en mode sombre / تفعيل الوضع الليلي'
-              }
-              aria-label="Toggle dark/light mode"
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-3.5 h-3.5 text-[#FFAA2C]" />
-              ) : (
-                <Moon className="w-3.5 h-3.5 text-slate-700" />
-              )}
-            </button>
+            {/* Unified Theme Toggle Control */}
+            <ThemeToggle size="sm" />
 
             {/* Language Switcher */}
             <button

@@ -10,6 +10,7 @@ import { useProducts } from '@/context/ProductContext';
 import { useAuth } from '@/context/AuthContext';
 import { Product } from '@/data/products';
 import AdminNavbar from './AdminNavbar';
+import ThemeToggle from '@/components/common/ThemeToggle';
 import {
   Search,
   ShoppingBag,
@@ -206,19 +207,8 @@ export default function Navbar() {
                 <span className="font-mono text-[11px] font-extrabold">{lang === 'ar' ? 'FR' : 'عر'}</span>
               </button>
 
-              {/* Theme Toggle Button (Light ⇄ Dark) */}
-              <button
-                onClick={toggleTheme}
-                className="relative flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#18181F] hover:bg-[#22222B] border border-white/10 hover:border-[#FFAA2C]/50 transition-all text-[#F5F5F7] group shadow-inner shrink-0"
-                title={theme === 'light' ? (lang === 'ar' ? 'الوضع الداكن' : 'Mode sombre') : (lang === 'ar' ? 'الوضع الفاتح' : 'Mode clair')}
-                aria-label="Toggle theme"
-              >
-                {theme === 'light' ? (
-                  <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#64748B] group-hover:text-[#0F172A] transition-colors" />
-                ) : (
-                  <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#FFAA2C] group-hover:rotate-45 transition-transform" />
-                )}
-              </button>
+              {/* Unified Theme Toggle Control */}
+              <ThemeToggle size="md" />
 
               {/* User Account / Role Pill & Dropdown */}
               {isAuthenticated && user ? (
