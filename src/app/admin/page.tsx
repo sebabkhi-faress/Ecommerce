@@ -48,10 +48,17 @@ import {
   MapPin,
   RotateCcw,
   Sparkles,
+  LayoutDashboard,
+  ShoppingBag,
+  Users,
+  User,
+  Settings,
+  Shield,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured, uploadProductImage } from '@/lib/supabase';
 import { useProducts, usePromotions, Promotion } from '@/context/ProductContext';
 import { useAuth } from '@/context/AuthContext';
+import { getInitials } from '@/components/layout/AdminNavbar';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -96,7 +103,9 @@ export default function AdminDashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [adminTab, setAdminTab] = useState<'orders' | 'products' | 'categories' | 'promotions' | 'delivery_fees' | 'banned'>('orders');
+  const [adminTab, setAdminTab] = useState<'overview' | 'orders' | 'products' | 'categories' | 'promotions' | 'delivery_fees' | 'users' | 'banned'>('overview');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [productSubTab, setProductSubTab] = useState<'catalog' | 'categories'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [wilayaFilter, setWilayaFilter] = useState<string>('all');
@@ -177,6 +186,21 @@ export default function AdminDashboardPage() {
       setIsAuthenticated(true);
     }
   }, [router, authRole]);
+
+  useEffect(() => {
+    const handleToggleSidebar = () => setIsMobileSidebarOpen((prev) => !prev);
+    const handleOpenTab = (e: any) => {
+      if (e.detail?.tab) {
+        setAdminTab(e.detail.tab);
+      }
+    };
+    window.addEventListener('toggle-admin-sidebar', handleToggleSidebar);
+    window.addEventListener('open-admin-tab', handleOpenTab);
+    return () => {
+      window.removeEventListener('toggle-admin-sidebar', handleToggleSidebar);
+      window.removeEventListener('open-admin-tab', handleOpenTab);
+    };
+  }, []);
 
   const handleLogout = () => {
     authLogout('/login');
@@ -594,224 +618,447 @@ export default function AdminDashboardPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="py-8 bg-[#0D0D11] min-h-screen text-[#F5F5F7]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Top Bar with Admin Info & Logout */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
-              <span className="text-xs font-mono font-bold text-[#FFAA2C] uppercase tracking-wider">
-                {t('admin.live_badge')}
-              </span>
-              <span className="text-white/20">•</span>
-              <span
-                className={`inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-0.5 rounded-full border ${
-                  isSupabaseConnected
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                }`}
-              >
-                <Database className="w-3 h-3" />
-                <span>
-                  {isSupabaseConnected
-                    ? (lang === 'ar' ? 'قاعدة البيانات متصلة' : 'Base de données Connectée')
-                    : (lang === 'ar' ? 'وضع التخزين المحلي' : 'Stockage Local')}
-                </span>
-              </span>
-              <span className="text-white/20">•</span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-0.5 rounded-full border bg-orange-500/10 text-[#FFAA2C] border-[#FF6B00]/30">
-                <ShieldCheck className="w-3 h-3 text-[#FF6B00]" />
-                <span>
-                  {lang === 'ar' ? 'جلسة نشطة 7 أسابيع (49 يوماً)' : 'Session 7 semaines active'}
-                </span>
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-1">
-              {t('admin.title')}
-            </h1>
+    <div className="min-h-[calc(100vh-57px)] bg-[#0A0A0E] text-[#F5F5F7] flex flex-col lg:flex-row relative">
+      {/* Mobile Drawer Overlay */}
+      {isMobileSidebarOpen && (
+        <div
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden animate-in fade-in cursor-pointer"
+        />
+      )}
+
+      {/* ==================== ADMIN SIDEBAR ==================== */}
+      <aside
+        className={`fixed lg:sticky top-[57px] left-0 h-[calc(100vh-57px)] z-40 w-64 xl:w-72 bg-[#0E0E14] border-r border-white/10 p-4 flex flex-col justify-between transition-transform duration-300 lg:translate-x-0 shrink-0 ${
+          isMobileSidebarOpen ? 'translate-x-0 shadow-2xl shadow-black' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        <div className="space-y-6">
+          {/* Sidebar Top Header */}
+          <div className="flex items-center justify-between px-2 pt-1">
+            <span className="text-[10px] font-mono font-bold tracking-widest text-[#A1A1AA] uppercase">
+              {lang === 'ar' ? 'التنقل في لوحة التحكم' : 'ADMIN NAVIGATION'}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="lg:hidden p-1 text-[#A1A1AA] hover:text-white rounded-lg hover:bg-white/10 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap">
+          {/* 6 Required Sidebar Navigation Sections */}
+          <nav className="space-y-1.5">
+            {/* 1. Overview */}
             <button
-              onClick={async () => {
-                setIsRefreshing(true);
-                await Promise.all([refreshOrders(), refreshProducts()]);
-                setTimeout(() => setIsRefreshing(false), 500);
+              type="button"
+              onClick={() => {
+                setAdminTab('overview');
+                setIsMobileSidebarOpen(false);
               }}
-              className="p-2.5 rounded-xl bg-[#18181F] hover:bg-white/10 text-[#A1A1AA] hover:text-white border border-white/10 transition-colors"
-              title={lang === 'ar' ? 'تحديث البيانات' : 'Rafraîchir les données'}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl font-bold text-xs transition-all cursor-pointer group ${
+                adminTab === 'overview'
+                  ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black shadow-lg shadow-[#FF6B00]/25'
+                  : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.06]'
+              }`}
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#FF6B00]' : ''}`} />
+              <div className="flex items-center gap-3">
+                <LayoutDashboard className={`w-4 h-4 transition-transform group-hover:scale-110 ${adminTab === 'overview' ? 'text-black' : 'text-[#FFAA2C]'}`} />
+                <span>{lang === 'ar' ? 'نظرة عامة' : 'Overview'}</span>
+              </div>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${adminTab === 'overview' ? 'bg-black/20 text-black font-extrabold' : 'bg-white/5 text-[#A1A1AA]'}`}>
+                Live
+              </span>
             </button>
 
+            {/* 2. Products */}
             <button
-              onClick={() => setIsAddProductOpen(true)}
-              className="px-4 py-2.5 bg-[#FF6B00] hover:bg-[#E05E00] text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-[#FF6B00]/30 flex items-center gap-1.5 transition-all cursor-pointer"
+              type="button"
+              onClick={() => {
+                setAdminTab('products');
+                setIsMobileSidebarOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl font-bold text-xs transition-all cursor-pointer group ${
+                adminTab === 'products' || adminTab === 'categories'
+                  ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black shadow-lg shadow-[#FF6B00]/25'
+                  : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.06]'
+              }`}
             >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              <span>{t('admin.add_product')}</span>
+              <div className="flex items-center gap-3">
+                <Package className={`w-4 h-4 transition-transform group-hover:scale-110 ${adminTab === 'products' || adminTab === 'categories' ? 'text-black' : 'text-[#FFAA2C]'}`} />
+                <span>{lang === 'ar' ? 'المنتجات' : 'Products'}</span>
+              </div>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${adminTab === 'products' || adminTab === 'categories' ? 'bg-black/20 text-black font-extrabold' : 'bg-white/5 text-[#A1A1AA]'}`}>
+                {products.length}
+              </span>
             </button>
 
-            <Link
-              href="/"
-              className="px-4 py-2.5 bg-[#18181F] hover:bg-[#22222B] text-xs font-semibold rounded-xl border border-white/10 text-[#A1A1AA] hover:text-white transition-colors"
-            >
-              {t('admin.store')}
-            </Link>
-
+            {/* 3. Orders */}
             <button
+              type="button"
+              onClick={() => {
+                setAdminTab('orders');
+                setIsMobileSidebarOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl font-bold text-xs transition-all cursor-pointer group ${
+                adminTab === 'orders'
+                  ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black shadow-lg shadow-[#FF6B00]/25'
+                  : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.06]'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <ShoppingBag className={`w-4 h-4 transition-transform group-hover:scale-110 ${adminTab === 'orders' ? 'text-black' : 'text-[#FFAA2C]'}`} />
+                <span>{lang === 'ar' ? 'الطلبيات' : 'Orders'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {metrics.pendingCount > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                )}
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${adminTab === 'orders' ? 'bg-black/20 text-black font-extrabold' : 'bg-white/5 text-[#A1A1AA]'}`}>
+                  {orders.length}
+                </span>
+              </div>
+            </button>
+
+            {/* 4. Delivery */}
+            <button
+              type="button"
+              onClick={() => {
+                setAdminTab('delivery_fees');
+                setIsMobileSidebarOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl font-bold text-xs transition-all cursor-pointer group ${
+                adminTab === 'delivery_fees'
+                  ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black shadow-lg shadow-[#FF6B00]/25'
+                  : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.06]'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Truck className={`w-4 h-4 transition-transform group-hover:scale-110 ${adminTab === 'delivery_fees' ? 'text-black' : 'text-[#FFAA2C]'}`} />
+                <span>{lang === 'ar' ? 'أسعار التوصيل' : 'Delivery'}</span>
+              </div>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${adminTab === 'delivery_fees' ? 'bg-black/20 text-black font-extrabold' : 'bg-white/5 text-[#A1A1AA]'}`}>
+                68
+              </span>
+            </button>
+
+            {/* 5. Promotions */}
+            <button
+              type="button"
+              onClick={() => {
+                setAdminTab('promotions');
+                setIsMobileSidebarOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl font-bold text-xs transition-all cursor-pointer group ${
+                adminTab === 'promotions'
+                  ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black shadow-lg shadow-[#FF6B00]/25'
+                  : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.06]'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Flame className={`w-4 h-4 transition-transform group-hover:scale-110 ${adminTab === 'promotions' ? 'text-black' : 'text-[#FFAA2C]'}`} />
+                <span>{lang === 'ar' ? 'العروض والترويج' : 'Promotions'}</span>
+              </div>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${adminTab === 'promotions' ? 'bg-black/20 text-black font-extrabold' : 'bg-white/5 text-[#A1A1AA]'}`}>
+                {promotions.length}
+              </span>
+            </button>
+
+            {/* 6. Users */}
+            <button
+              type="button"
+              onClick={() => {
+                setAdminTab('users');
+                setIsMobileSidebarOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl font-bold text-xs transition-all cursor-pointer group ${
+                adminTab === 'users' || adminTab === 'banned'
+                  ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black shadow-lg shadow-[#FF6B00]/25'
+                  : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.06]'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Users className={`w-4 h-4 transition-transform group-hover:scale-110 ${adminTab === 'users' || adminTab === 'banned' ? 'text-black' : 'text-[#FFAA2C]'}`} />
+                <span>{lang === 'ar' ? 'المستخدمون والأمان' : 'Users'}</span>
+              </div>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${adminTab === 'users' || adminTab === 'banned' ? 'bg-black/20 text-black font-extrabold' : 'bg-white/5 text-[#A1A1AA]'}`}>
+                {bannedPhones.length > 0 ? `${bannedPhones.length} bans` : 'Admin'}
+              </span>
+            </button>
+          </nav>
+        </div>
+
+        {/* Compact Admin Card at Sidebar bottom */}
+        <div className="pt-4 border-t border-white/10">
+          <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF6B00] via-[#FFAA2C] to-[#E05E00] text-black font-black text-xs font-mono flex items-center justify-center shrink-0 shadow-sm shadow-[#FF6B00]/30">
+              {getInitials(user?.name, user?.email)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-[#F5F5F7] truncate">
+                {user?.name?.trim() || user?.email?.split('@')[0] || 'Admin'}
+              </p>
+              <p className="text-[10px] text-[#A1A1AA] truncate font-mono">
+                {lang === 'ar' ? 'مسؤول النظام' : 'Administrator'}
+              </p>
+            </div>
+            <button
+              type="button"
               onClick={handleLogout}
-              className="p-2.5 rounded-xl bg-[#18181F] hover:bg-red-500/20 text-[#A1A1AA] hover:text-red-400 border border-white/10 transition-colors"
-              title={t('admin.logout')}
+              className="p-1.5 rounded-lg text-[#A1A1AA] hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+              title={lang === 'ar' ? 'تسجيل الخروج' : 'Déconnexion'}
             >
               <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
+      </aside>
 
-        {/* Real-Time Metrics Cards in DZD */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Metric 1: Total Revenue */}
-          <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-[#FF6B00]/40 transition-colors">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{t('admin.total_revenue')}</span>
-              <div className="w-9 h-9 rounded-xl bg-[#FF6B00]/15 text-[#FF6B00] flex items-center justify-center">
-                <DollarSign className="w-5 h-5" />
+      {/* ==================== MAIN CONTENT ==================== */}
+      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 space-y-8 overflow-y-auto">
+        {/* ==================== OVERVIEW SECTION ==================== */}
+        {adminTab === 'overview' && (
+          <div className="space-y-8 animate-in fade-in duration-200">
+            {/* Overview Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
+              <div>
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
+                  <span className="text-xs font-mono font-bold text-[#FFAA2C] uppercase tracking-wider">
+                    {t('admin.live_badge')}
+                  </span>
+                  <span className="text-white/20">•</span>
+                  <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                    {isSupabaseConnected ? (lang === 'ar' ? 'متصل بالسحابة' : 'Base de données Connectée') : 'Local'}
+                  </span>
+                  <span className="text-white/20">•</span>
+                  <span className="text-[11px] font-mono text-[#FFAA2C] bg-orange-500/10 border border-[#FF6B00]/30 px-2.5 py-0.5 rounded-full">
+                    {lang === 'ar' ? 'جلسة نشطة 7 أسابيع' : 'Session 7 semaines active'}
+                  </span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+                  {lang === 'ar' ? 'لوحة التحكم - نظرة عامة' : 'Tableau de Bord - Overview'}
+                </h1>
+                <p className="text-xs text-[#A1A1AA] mt-0.5">
+                  {lang === 'ar' ? 'متابعة شاملة لجميع مؤشرات الأداء والطلبيات والمنتجات' : 'Suivi global des commandes, des revenus en direct et de l\'inventaire'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsRefreshing(true);
+                    await Promise.all([refreshOrders(), refreshProducts()]);
+                    setTimeout(() => setIsRefreshing(false), 500);
+                  }}
+                  className="p-2.5 rounded-xl bg-[#18181F] hover:bg-white/10 text-[#A1A1AA] hover:text-white border border-white/10 transition-colors cursor-pointer"
+                  title={lang === 'ar' ? 'تحديث البيانات' : 'Rafraîchir les données'}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#FF6B00]' : ''}`} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsAddProductOpen(true)}
+                  className="px-4 py-2.5 bg-[#FF6B00] hover:bg-[#E05E00] text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-[#FF6B00]/30 flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 stroke-[3]" />
+                  <span>{t('admin.add_product')}</span>
+                </button>
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-mono font-black text-[#FF6B00]">
-              {formatDZD(metrics.totalRevenue, lang)}
-            </p>
-            <p className="text-[11px] text-[#25D366] flex items-center gap-1 mt-2 font-medium">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>{t('admin.revenue_desc')}</span>
-            </p>
-          </div>
 
-          {/* Metric 2: Total Orders */}
-          <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-[#FFAA2C]/40 transition-colors">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{t('admin.total_orders')}</span>
-              <div className="w-9 h-9 rounded-xl bg-[#FFAA2C]/15 text-[#FFAA2C] flex items-center justify-center">
-                <Package className="w-5 h-5" />
+            {/* Real-Time Metrics Cards in DZD */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {/* Metric 1: Total Revenue */}
+              <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-[#FF6B00]/40 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{t('admin.total_revenue')}</span>
+                  <div className="w-9 h-9 rounded-xl bg-[#FF6B00]/15 text-[#FF6B00] flex items-center justify-center">
+                    <DollarSign className="w-5 h-5" />
+                  </div>
+                </div>
+                <p className="text-2xl sm:text-3xl font-mono font-black text-[#FF6B00]">
+                  {formatDZD(metrics.totalRevenue, lang)}
+                </p>
+                <p className="text-[11px] text-[#25D366] flex items-center gap-1 mt-2 font-medium">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>{t('admin.revenue_desc')}</span>
+                </p>
+              </div>
+
+              {/* Metric 2: Total Orders */}
+              <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-[#FFAA2C]/40 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{t('admin.total_orders')}</span>
+                  <div className="w-9 h-9 rounded-xl bg-[#FFAA2C]/15 text-[#FFAA2C] flex items-center justify-center">
+                    <Package className="w-5 h-5" />
+                  </div>
+                </div>
+                <p className="text-2xl sm:text-3xl font-mono font-black text-[#F5F5F7]">
+                  {metrics.ordersCount}
+                </p>
+                <p className="text-[11px] text-[#A1A1AA] mt-2">
+                  {t('admin.orders_desc')}
+                </p>
+              </div>
+
+              {/* Metric 3: Pending Orders */}
+              <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-amber-500/40 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{t('admin.pending_orders')}</span>
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                </div>
+                <p className="text-2xl sm:text-3xl font-mono font-black text-amber-400">
+                  {metrics.pendingCount}
+                </p>
+                <p className="text-[11px] text-amber-400/80 mt-2">
+                  {t('admin.pending_desc')}
+                </p>
+              </div>
+
+              {/* Metric 4: Total Products in DB */}
+              <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-emerald-500/40 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{lang === 'ar' ? 'المنتجات في المتجر' : 'Catalogue Produits'}</span>
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                    <Layers className="w-5 h-5" />
+                  </div>
+                </div>
+                <p className="text-2xl sm:text-3xl font-mono font-black text-emerald-400">
+                  {products.length}
+                </p>
+                <p className="text-[11px] text-emerald-400/80 mt-2">
+                  {lang === 'ar' ? 'منتجات متزامنة ومحدثة' : 'Synchronisés en direct'}
+                </p>
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-mono font-black text-[#F5F5F7]">
-              {metrics.ordersCount}
-            </p>
-            <p className="text-[11px] text-[#A1A1AA] mt-2">
-              {t('admin.orders_desc')}
-            </p>
-          </div>
 
-          {/* Metric 3: Pending Orders */}
-          <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-amber-500/40 transition-colors">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{t('admin.pending_orders')}</span>
-              <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
-                <Clock className="w-5 h-5" />
-              </div>
+            {/* Quick Navigation Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button
+                type="button"
+                onClick={() => setAdminTab('delivery_fees')}
+                className="p-5 rounded-2xl bg-[#14141B] border border-white/10 hover:border-emerald-500/40 text-left transition-all group cursor-pointer"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <Truck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-[#F5F5F7] group-hover:text-emerald-400 transition-colors">
+                      {lang === 'ar' ? 'أسعار التوصيل' : 'Tarifs de Livraison'}
+                    </h4>
+                    <span className="text-[10px] font-mono text-[#A1A1AA]">68 Wilayas Actives</span>
+                  </div>
+                </div>
+                <p className="text-xs text-[#A1A1AA]">
+                  {lang === 'ar' ? 'تعديل أسعار التوصيل للمنزل أو المكتب لكل ولاية في الجزائر' : 'Gérez les frais à domicile et stop desk pour chaque wilaya'}
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAdminTab('promotions')}
+                className="p-5 rounded-2xl bg-[#14141B] border border-white/10 hover:border-[#FF6B00]/40 text-left transition-all group cursor-pointer"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-[#FF6B00]/15 text-[#FF6B00] flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <Flame className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-[#F5F5F7] group-hover:text-[#FFAA2C] transition-colors">
+                      {lang === 'ar' ? 'العروض الترويجية' : 'Promotions & Réductions'}
+                    </h4>
+                    <span className="text-[10px] font-mono text-[#A1A1AA]">{promotions.length} {lang === 'ar' ? 'عروض نشطة' : 'offres actives'}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-[#A1A1AA]">
+                  {lang === 'ar' ? 'تطبيق خصومات مؤقتة على تصنيفات أو منتجات معينة مع لافتة إعلانية' : 'Créez des remises par catégorie ou produit avec minuterie'}
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAdminTab('users')}
+                className="p-5 rounded-2xl bg-[#14141B] border border-white/10 hover:border-red-500/40 text-left transition-all group cursor-pointer"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-[#F5F5F7] group-hover:text-red-400 transition-colors">
+                      {lang === 'ar' ? 'المستخدمون والحظر' : 'Gestion Utilisateurs'}
+                    </h4>
+                    <span className="text-[10px] font-mono text-[#A1A1AA]">{bannedPhones.length} {lang === 'ar' ? 'أرقام محظورة' : 'numéros blacklistés'}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-[#A1A1AA]">
+                  {lang === 'ar' ? 'بيانات الحساب وتفاصيل الجلسة وإدارة قائمة الأرقام الممنوعة' : 'Profil admin, sécurité de session et liste noire anti-fraude'}
+                </p>
+              </button>
             </div>
-            <p className="text-2xl sm:text-3xl font-mono font-black text-amber-400">
-              {metrics.pendingCount}
-            </p>
-            <p className="text-[11px] text-amber-400/80 mt-2">
-              {t('admin.pending_desc')}
-            </p>
-          </div>
 
-          {/* Metric 4: Total Products in DB */}
-          <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:border-emerald-500/40 transition-colors">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-mono font-bold text-[#A1A1AA] uppercase">{lang === 'ar' ? 'المنتجات في المتجر' : 'Catalogue Produits'}</span>
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
-                <Layers className="w-5 h-5" />
+            {/* Recent Orders Snapshot Table */}
+            <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="w-4 h-4 text-[#FFAA2C]" />
+                  <h3 className="text-sm font-bold text-[#F5F5F7]">
+                    {lang === 'ar' ? 'أحدث الطلبيات المسجلة' : 'Dernières commandes enregistrées'}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAdminTab('orders')}
+                  className="text-xs font-bold text-[#FFAA2C] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <span>{lang === 'ar' ? 'عرض الكل' : 'Voir tout'}</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
               </div>
+
+              {orders.length === 0 ? (
+                <div className="text-center py-10 text-[#A1A1AA] text-xs">
+                  {lang === 'ar' ? 'لا توجد طلبيات مسجلة حتى الآن' : 'Aucune commande enregistrée pour le moment'}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10 text-[11px] font-mono text-[#A1A1AA] uppercase">
+                        <th className="pb-3 font-semibold">{lang === 'ar' ? 'الرمز' : 'Code'}</th>
+                        <th className="pb-3 font-semibold">{lang === 'ar' ? 'العميل' : 'Client'}</th>
+                        <th className="pb-3 font-semibold">{lang === 'ar' ? 'الولاية' : 'Wilaya'}</th>
+                        <th className="pb-3 font-semibold">{lang === 'ar' ? 'المبلغ' : 'Montant'}</th>
+                        <th className="pb-3 font-semibold">{lang === 'ar' ? 'الحالة' : 'Statut'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {orders.slice(0, 6).map((ord) => (
+                        <tr key={ord.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="py-3 font-mono font-bold text-[#FFAA2C]">{ord.trackingCode}</td>
+                          <td className="py-3 text-[#F5F5F7]">
+                            <p className="font-semibold">{ord.fullName}</p>
+                            <p className="text-[10px] text-[#A1A1AA] font-mono">{ord.phone}</p>
+                          </td>
+                          <td className="py-3 text-[#A1A1AA]">{ord.wilayaCode} - {ord.commune}</td>
+                          <td className="py-3 font-mono font-bold text-[#F5F5F7]">{formatDZD(ord.total, lang)}</td>
+                          <td className="py-3">{getStatusBadge(ord.status)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-            <p className="text-2xl sm:text-3xl font-mono font-black text-emerald-400">
-              {products.length}
-            </p>
-            <p className="text-[11px] text-emerald-400/80 mt-2">
-              {lang === 'ar' ? 'منتجات متزامنة ومحدثة' : 'Synchronisés en direct'}
-            </p>
           </div>
-        </div>
-
-        {/* Tab Navigation: Orders vs Products vs Categories vs Banned */}
-        <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 pb-4 overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setAdminTab('orders')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-              adminTab === 'orders'
-                ? 'bg-[#FF6B00] text-black shadow-lg shadow-[#FF6B00]/30'
-                : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
-            }`}
-          >
-            <Package className="w-4 h-4" />
-            <span>{lang === 'ar' ? `الطلبيات (${orders.length})` : `Commandes (${orders.length})`}</span>
-          </button>
-
-          <button
-            onClick={() => setAdminTab('products')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-              adminTab === 'products'
-                ? 'bg-[#FFAA2C] text-black shadow-lg shadow-[#FFAA2C]/30'
-                : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            <span>{lang === 'ar' ? `المنتجات (${products.length})` : `Catalogue (${products.length})`}</span>
-          </button>
-
-          <button
-            onClick={() => setAdminTab('categories')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-              adminTab === 'categories'
-                ? 'bg-[#3B82F6] text-white shadow-lg shadow-blue-500/30'
-                : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
-            }`}
-          >
-            <Tag className="w-4 h-4" />
-            <span>{lang === 'ar' ? `الأقسام (${categories.length})` : `Catégories (${categories.length})`}</span>
-          </button>
-
-          <button
-            onClick={() => setAdminTab('promotions')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-              adminTab === 'promotions'
-                ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black shadow-lg shadow-[#FF6B00]/30'
-                : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
-            }`}
-          >
-            <Flame className="w-4 h-4 text-inherit" />
-            <span>{lang === 'ar' ? `العروض والترويج (${promotions.length})` : `Promotions (${promotions.length})`}</span>
-          </button>
-
-          <button
-            onClick={() => setAdminTab('delivery_fees')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-              adminTab === 'delivery_fees'
-                ? 'bg-emerald-500 text-black font-black shadow-lg shadow-emerald-500/30'
-                : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
-            }`}
-          >
-            <Truck className="w-4 h-4 text-inherit" />
-            <span>{lang === 'ar' ? 'أسعار التوصيل (68 ولاية)' : 'Tarifs Livraison (68 Wilayas)'}</span>
-          </button>
-
-          <button
-            onClick={() => setAdminTab('banned')}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-              adminTab === 'banned'
-                ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
-                : 'bg-[#18181F] text-[#A1A1AA] hover:text-white border border-white/10'
-            }`}
-          >
-            <PhoneOff className="w-4 h-4" />
-            <span>{lang === 'ar' ? `حظر الأرقام (${bannedPhones.length})` : `Numéros Bloqués (${bannedPhones.length})`}</span>
-          </button>
-        </div>
+        )}
 
         {adminTab === 'orders' && (
           <>
@@ -1227,10 +1474,85 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* Banned Phones Tab View */}
-        {adminTab === 'banned' && (
-          <div className="space-y-6">
-            {/* Top Card: Manual Ban Creation */}
+        {/* ==================== USERS & SECURITY SECTION ==================== */}
+        {(adminTab === 'users' || adminTab === 'banned') && (
+          <div className="space-y-8 animate-in fade-in duration-200">
+            {/* Admin Profile & Account Information Card */}
+            <div className="bg-[#18181F] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-[#FF6B00]/5 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/10">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-[#FF6B00] via-[#FFAA2C] to-[#E05E00] text-black font-black text-xl sm:text-2xl font-mono flex items-center justify-center shadow-xl shadow-[#FF6B00]/30 shrink-0">
+                    {getInitials(user?.name, user?.email)}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-xl sm:text-2xl font-black text-[#F5F5F7]">
+                        {user?.name?.trim() || user?.email?.split('@')[0] || (lang === 'ar' ? 'مسؤول النظام' : 'Administrateur')}
+                      </h2>
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#FF6B00]/20 text-[#FFAA2C] border border-[#FF6B00]/40 text-[11px] font-mono font-bold uppercase tracking-wider">
+                        {lang === 'ar' ? 'مسؤول النظام' : 'Administrator'}
+                      </span>
+                      <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
+                    </div>
+                    <p className="text-xs text-[#A1A1AA] font-mono mt-1">
+                      {user?.email || 'admin@electronics.dz'}
+                    </p>
+                    <p className="text-[11px] text-[#A1A1AA] mt-1 flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{lang === 'ar' ? 'جلسة تسجيل دخول نشطة لمدة 7 أسابيع (49 يوماً)' : 'Session authentifiée valide pendant 7 semaines (49 jours)'}</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="px-4 py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>{lang === 'ar' ? 'تسجيل الخروج من الحساب' : 'Déconnexion du compte'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Account Security & Details Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 text-xs">
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                  <span className="text-[10px] font-mono text-[#A1A1AA] uppercase block mb-1">
+                    {lang === 'ar' ? 'حالة الحساب' : 'Statut du Compte'}
+                  </span>
+                  <span className="font-bold text-[#25D366] flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#25D366]" />
+                    {lang === 'ar' ? 'نشط ومصرح بالكامل' : 'Actif & Autorisé (Admin)'}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                  <span className="text-[10px] font-mono text-[#A1A1AA] uppercase block mb-1">
+                    {lang === 'ar' ? 'نظام الحماية' : 'Sécurité & Chiffrement'}
+                  </span>
+                  <span className="font-bold text-[#F5F5F7] flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-[#FFAA2C]" />
+                    {lang === 'ar' ? 'كلمات مرور مشفرة PBKDF2' : 'Mots de passe hachés'}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                  <span className="text-[10px] font-mono text-[#A1A1AA] uppercase block mb-1">
+                    {lang === 'ar' ? 'قاعدة البيانات' : 'Base de données'}
+                  </span>
+                  <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                    <Database className="w-3.5 h-3.5" />
+                    {isSupabaseConnected ? 'PostgreSQL Supabase RLS' : 'Stockage Local'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Banned Phones Blacklist Management */}
             <div className="bg-[#18181F] border border-red-500/20 rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden">
               <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -1862,7 +2184,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         )}
-      </div>
+      </main>
 
       {/* Add Category Modal Dialog */}
       {isAddCategoryOpen && (

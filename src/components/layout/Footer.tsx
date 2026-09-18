@@ -2,11 +2,17 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { Zap, ShieldCheck, Truck, Headphones, Sparkles, MapPin, Phone } from 'lucide-react';
 
 export default function Footer() {
+  const pathname = usePathname();
   const { lang, t } = useLanguage();
+
+  if (pathname.startsWith('/admin') || pathname.startsWith('/delivery')) {
+    return null;
+  }
 
   return (
     <footer className="relative bg-slate-100 dark:bg-[#09090D] border-t border-black/10 dark:border-white/10 text-slate-600 dark:text-[#A1A1AA] pt-16 pb-24 sm:pb-16 overflow-hidden w-full max-w-full">

@@ -1,11 +1,17 @@
 'use client';
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { ShieldCheck, Truck, Sparkles } from 'lucide-react';
 
 export default function AnnouncementBar() {
+  const pathname = usePathname();
   const { t, lang } = useLanguage();
+
+  if (pathname.startsWith('/admin') || pathname.startsWith('/delivery')) {
+    return null;
+  }
 
   return (
     <div className="relative w-full max-w-full overflow-hidden bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-[#0D0D11] text-xs font-bold py-2 border-b border-[#FF6B00]/40 tracking-wider shadow-sm z-50">

@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useProducts } from '@/context/ProductContext';
 import { useAuth } from '@/context/AuthContext';
 import { Product } from '@/data/products';
+import AdminNavbar from './AdminNavbar';
 import {
   Search,
   ShoppingBag,
@@ -28,6 +30,7 @@ import {
 } from 'lucide-react';
 
 export default function Navbar() {
+  const pathname = usePathname();
   const { lang, toggleLanguage, t } = useLanguage();
   const { totalItems, setIsCartOpen } = useCart();
   const { theme, toggleTheme } = useTheme();
@@ -38,6 +41,14 @@ export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
+
+  // Route-specific handling: Admin Dashboard
+  if (pathname?.startsWith('/admin/login')) {
+    return null;
+  }
+  if (pathname?.startsWith('/admin')) {
+    return <AdminNavbar />;
+  }
 
   useEffect(() => {
     const handleScroll = () => {
