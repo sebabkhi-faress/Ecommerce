@@ -224,28 +224,37 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
 
         {/* Phone Number with DZ validation */}
         <div>
-          <label className="block text-xs font-semibold text-[#F5F5F7] mb-1.5 flex items-center gap-1.5">
-            <Phone className="w-3.5 h-3.5 text-[#FFAA2C]" />
-            <span>{t('checkout.phone')}</span>
-            <span className="text-[#FF6B00]">*</span>
+          <label className="block text-xs font-semibold text-[#F5F5F7] mb-1.5 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Phone className="w-3.5 h-3.5 text-[#FFAA2C]" />
+              <span>{t('checkout.phone')}</span>
+              <span className="text-[#FF6B00]">*</span>
+            </div>
+            <span className="text-[10px] font-mono text-[#A1A1AA]">
+              {phone.length}/10 {lang === 'ar' ? 'أرقام' : 'chiffres'}
+            </span>
           </label>
           <div className="relative">
             <input
               type="tel"
               required
               dir="ltr"
-              inputMode="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
               autoComplete="tel"
+              maxLength={10}
               value={phone}
               onChange={(e) => {
-                setPhone(e.target.value);
+                // Strictly numbers only: strip letters, spaces, symbols, max 10 digits
+                const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                setPhone(cleaned);
                 if (phoneError) setPhoneError('');
                 if (bannedError) setBannedError(null);
               }}
-              placeholder={t('checkout.phone_placeholder')}
+              placeholder="0677898762"
               className={`w-full bg-[#18181F] border ${
                 phoneError ? 'border-red-500' : 'border-white/15 focus:border-[#FF6B00]'
-              } rounded-xl px-4 py-3.5 text-base sm:text-sm text-[#F5F5F7] font-mono placeholder-[#A1A1AA]/50 outline-none transition-colors`}
+              } rounded-xl px-4 py-3.5 text-base sm:text-sm text-[#F5F5F7] font-mono placeholder-[#A1A1AA]/50 outline-none transition-colors tracking-wider`}
             />
             <span className="absolute right-3 top-3.5 text-xs text-[#A1A1AA] font-mono pointer-events-none">
               DZ +213
@@ -257,7 +266,9 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
               {phoneError}
             </p>
           ) : (
-            <p className="text-[11px] text-[#A1A1AA] mt-1">{t('checkout.phone_hint')}</p>
+            <p className="text-[11px] text-[#A1A1AA] mt-1 font-mono">
+              {lang === 'ar' ? '10 أرقام تبدأ بـ 05 أو 06 أو 07 (مثال: 0677898762)' : '10 chiffres : 05, 06 ou 07 (Ex: 0677898762)'}
+            </p>
           )}
         </div>
 

@@ -177,7 +177,7 @@ export default function DeliveryDashboardPage() {
                   {lang === 'ar' ? 'لوحة إدارة التوصيل والطرود المرتجعة' : 'DASHBOARD OPÉRATIONS LIVRAISON & RETOURS'}
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-[#25D366]">
-                  {isSupabaseConnected ? 'En direct Supabase' : 'Mode local'}
+                  {isSupabaseConnected ? (lang === 'ar' ? 'متزامن لحظياً' : 'En direct') : (lang === 'ar' ? 'وضع دون اتصال' : 'Hors ligne')}
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-[#F5F5F7] tracking-tight mt-0.5">

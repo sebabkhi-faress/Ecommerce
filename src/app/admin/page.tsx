@@ -100,8 +100,7 @@ export default function AdminDashboardPage() {
 
   // Quick Add Product Drawer state
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
-  const [newProdNameFr, setNewProdNameFr] = useState('');
-  const [newProdNameAr, setNewProdNameAr] = useState('');
+  const [newProdName, setNewProdName] = useState('');
   const [newProdCategory, setNewProdCategory] = useState('earbuds');
   const [newProdPrice, setNewProdPrice] = useState('');
   const [newProdImage, setNewProdImage] = useState(
@@ -131,9 +130,14 @@ export default function AdminDashboardPage() {
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploadError(null);
+    const trimmedName = newProdName.trim();
+    if (!trimmedName) {
+      setUploadError(lang === 'ar' ? 'يرجى إدخال اسم المنتج' : 'Veuillez renseigner le nom du produit');
+      return;
+    }
     const result = await addProduct({
-      nameFr: newProdNameFr,
-      nameAr: newProdNameAr,
+      nameFr: trimmedName,
+      nameAr: trimmedName,
       price: Number(newProdPrice) || 0,
       category: newProdCategory,
       images: [newProdImage],
@@ -145,8 +149,7 @@ export default function AdminDashboardPage() {
       setTimeout(() => {
         setNewProdSuccess(false);
         setIsAddProductOpen(false);
-        setNewProdNameFr('');
-        setNewProdNameAr('');
+        setNewProdName('');
         setNewProdPrice('');
       }, 1200);
     } else {
@@ -203,17 +206,31 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     setBanError(null);
     setBanSuccess(null);
-    if (!banPhoneInput.trim()) {
-      setBanError('Veuillez saisir un numéro de téléphone');
+    const digitsOnly = banPhoneInput.replace(/\D/g, '');
+    if (!digitsOnly) {
+      setBanError(
+        lang === 'ar'
+          ? 'يرجى إدخال رقم الهاتف'
+          : 'Veuillez saisir un numéro de téléphone'
+      );
       return;
     }
 
-    const res = await banPhone(banPhoneInput, banReasonInput, banNotesInput);
+    if (digitsOnly.length !== 10 || !/^0[567]\d{8}$/.test(digitsOnly)) {
+      setBanError(
+        lang === 'ar'
+          ? 'رقم غير صحيح! يجب أن يتكون من 10 أرقام ويبدأ بـ 05 أو 06 أو 07 (مثال: 0677898762)'
+          : 'Numéro algérien invalide ! Il doit comporter 10 chiffres et commencer par 05, 06 ou 07 (Ex: 0677898762)'
+      );
+      return;
+    }
+
+    const res = await banPhone(digitsOnly, banReasonInput, banNotesInput);
     if (res.success) {
       setBanSuccess(
         lang === 'ar'
-          ? `تم حظر الرقم ${banPhoneInput} بنجاح ومنعه من الطلب!`
-          : `Numéro ${banPhoneInput} bloqué avec succès !`
+          ? `تم حظر الرقم ${digitsOnly} بنجاح ومنعه من الطلب!`
+          : `Numéro ${digitsOnly} bloqué avec succès !`
       );
       setBanPhoneInput('');
       setBanNotesInput('');
@@ -337,8 +354,8 @@ export default function AdminDashboardPage() {
                 <Database className="w-3 h-3" />
                 <span>
                   {isSupabaseConnected
-                    ? (lang === 'ar' ? 'قاعدة بيانات Supabase متصلة' : 'Supabase DB Connecté')
-                    : (lang === 'ar' ? 'وضع التخزين المحلي (Local)' : 'Stockage Local')}
+                    ? (lang === 'ar' ? 'قاعدة البيانات متصلة' : 'Base de données Connectée')
+                    : (lang === 'ar' ? 'وضع التخزين المحلي' : 'Stockage Local')}
                 </span>
               </span>
               <span className="text-white/20">•</span>
@@ -455,7 +472,7 @@ export default function AdminDashboardPage() {
               {products.length}
             </p>
             <p className="text-[11px] text-emerald-400/80 mt-2">
-              {lang === 'ar' ? 'منتجات متزامنة مع Supabase' : 'Synchronisés avec Supabase'}
+              {lang === 'ar' ? 'منتجات متزامنة ومحدثة' : 'Synchronisés en direct'}
             </p>
           </div>
         </div>
@@ -733,7 +750,7 @@ export default function AdminDashboardPage() {
                   {lang === 'ar' ? 'كتالوج المنتجات الحية' : 'Catalogue Produits en Direct'} ({products.length})
                 </h3>
                 <p className="text-xs text-[#A1A1AA] mt-0.5">
-                  {lang === 'ar' ? 'متزامن لحظياً مع جدول products في Supabase' : 'Synchronisé en temps réel avec la table products de Supabase'}
+                  {lang === 'ar' ? 'متزامن لحظياً مع قاعدة البيانات' : 'Synchronisé en direct avec la base de données'}
                 </p>
               </div>
 
@@ -853,8 +870,8 @@ export default function AdminDashboardPage() {
                 </h3>
                 <p className="text-xs text-[#A1A1AA] mt-1">
                   {lang === 'ar'
-                    ? 'الأقسام المتزامنة لحظياً مع جدول categories في Supabase لترتيب وتصنيف المنتجات'
-                    : 'Synchronisées en direct avec la table categories de Supabase pour organiser le catalogue'}
+                    ? 'الأقسام المعتمدة لتنظيم وتصنيف المنتجات في المتجر'
+                    : 'Synchronisées en direct pour organiser le catalogue'}
                 </p>
               </div>
 
@@ -967,20 +984,35 @@ export default function AdminDashboardPage() {
 
               <form onSubmit={handleManualBanPhone} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end text-xs">
                 <div>
-                  <label className="block text-[#A1A1AA] mb-1 font-semibold">
-                    {lang === 'ar' ? 'رقم الهاتف المراد حظره *' : 'Numéro à bloquer *'}
+                  <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
+                    <span>{lang === 'ar' ? 'رقم الهاتف المراد حظره *' : 'Numéro à bloquer *'}</span>
+                    <span className="text-[10px] font-mono text-[#A1A1AA]">
+                      {banPhoneInput.length}/10 {lang === 'ar' ? 'أرقام' : 'chiffres'}
+                    </span>
                   </label>
                   <div className="relative">
-                    <PhoneOff className="w-4 h-4 text-red-400 absolute left-3 top-3" />
+                    <PhoneOff className="w-4 h-4 text-red-400 absolute left-3 top-3 pointer-events-none" />
                     <input
-                      type="text"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="tel"
                       required
+                      maxLength={10}
                       value={banPhoneInput}
-                      onChange={(e) => setBanPhoneInput(e.target.value)}
-                      placeholder="0550123456 ou +213..."
-                      className="w-full bg-[#14141B] border border-white/15 focus:border-red-500 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white font-mono outline-none"
+                      onChange={(e) => {
+                        // Strictly numbers only: strip letters, spaces, special chars, max 10 digits
+                        const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setBanPhoneInput(cleaned);
+                        if (banError) setBanError(null);
+                      }}
+                      placeholder="0677898762"
+                      className="w-full bg-[#14141B] border border-white/15 focus:border-red-500 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white font-mono outline-none tracking-wider"
                     />
                   </div>
+                  <p className="text-[10px] text-[#A1A1AA] mt-1 font-mono">
+                    {lang === 'ar' ? '10 أرقام تبدأ بـ 05 أو 06 أو 07 (مثال: 0677898762)' : '10 chiffres : 05, 06 ou 07 (Ex: 0677898762)'}
+                  </p>
                 </div>
 
                 <div>
@@ -1214,7 +1246,7 @@ export default function AdminDashboardPage() {
                     type="submit"
                     className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-blue-600/30 transition-all cursor-pointer mt-4"
                   >
-                    {lang === 'ar' ? 'حفظ القسم في Supabase' : 'Enregistrer la catégorie'}
+                    {lang === 'ar' ? 'حفظ القسم' : 'Enregistrer la catégorie'}
                   </button>
                 </form>
               )}
@@ -1252,33 +1284,20 @@ export default function AdminDashboardPage() {
                 </div>
               ) : (
                 <form onSubmit={handleAddProduct} className="space-y-4 text-xs">
-                  {/* Name FR */}
+                  {/* Unified Product Name */}
                   <div>
-                    <label className="block text-[#A1A1AA] mb-1 font-semibold">
-                      {t('admin.lbl_name_fr')}
+                    <label className="block text-[#A1A1AA] mb-1 font-semibold flex items-center justify-between">
+                      <span>{lang === 'ar' ? 'اسم المنتج *' : 'Nom du Produit *'}</span>
+                      <span className="text-[10px] text-[#FFAA2C] font-normal">
+                        {lang === 'ar' ? 'اسم موحد لجميع اللغات' : 'Nom unique de l’article'}
+                      </span>
                     </label>
                     <input
                       type="text"
                       required
-                      value={newProdNameFr}
-                      onChange={(e) => setNewProdNameFr(e.target.value)}
-                      placeholder="Ex: Cyberbuds X9 — Écouteurs ANC 2026"
-                      className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white outline-none focus:border-[#FF6B00]"
-                    />
-                  </div>
-
-                  {/* Name AR */}
-                  <div>
-                    <label className="block text-[#A1A1AA] mb-1 font-semibold">
-                      {t('admin.lbl_name_ar')}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      dir="rtl"
-                      value={newProdNameAr}
-                      onChange={(e) => setNewProdNameAr(e.target.value)}
-                      placeholder="مثال: سايبر بادز X9 — سماعات لاسلكية احترافية"
+                      value={newProdName}
+                      onChange={(e) => setNewProdName(e.target.value)}
+                      placeholder={lang === 'ar' ? 'مثال: Cyberbuds X9 — سماعات ANC 2026' : 'Ex: Cyberbuds X9 — Écouteurs ANC 2026'}
                       className="w-full bg-[#18181F] border border-white/15 rounded-xl px-3 py-2.5 text-white outline-none focus:border-[#FF6B00]"
                     />
                   </div>
@@ -1323,6 +1342,7 @@ export default function AdminDashboardPage() {
                       </label>
                       <input
                         type="number"
+                        inputMode="numeric"
                         required
                         value={newProdPrice}
                         onChange={(e) => setNewProdPrice(e.target.value)}
@@ -1332,20 +1352,20 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
 
-                  {/* Image Upload to Supabase Bucket (products_images) & URL */}
+                  {/* Image Upload & URL */}
                   <div className="space-y-2">
                     <label className="block text-[#A1A1AA] font-semibold">
-                      {lang === 'ar' ? 'صورة المنتج (رفع إلى Supabase Storage أو رابط)' : 'Image du produit (Téléversement Supabase ou Lien URL)'}
+                      {lang === 'ar' ? 'صورة المنتج (رفع صورة أو رابط مباشر)' : 'Image du produit (Téléversement ou Lien URL)'}
                     </label>
 
-                    {/* File Upload Button to products_images bucket */}
+                    {/* File Upload Button */}
                     <div>
                       <label className="flex items-center justify-center gap-2 p-3 bg-[#18181F] hover:bg-[#22222B] border border-dashed border-white/20 hover:border-[#FF6B00] rounded-xl text-xs cursor-pointer transition-colors text-[#F5F5F7]">
                         <UploadCloud className={`w-4 h-4 ${isUploading ? 'animate-bounce text-[#FF6B00]' : 'text-[#FFAA2C]'}`} />
                         <span className="font-semibold">
                           {isUploading
-                            ? (lang === 'ar' ? 'جارٍ رفع الصورة إلى products_images...' : 'Téléversement vers products_images...')
-                            : (lang === 'ar' ? 'رفع صورة من جهازك إلى products_images' : 'Téléverser un fichier vers products_images')}
+                            ? (lang === 'ar' ? 'جارٍ رفع الصورة...' : 'Téléversement en cours...')
+                            : (lang === 'ar' ? 'رفع صورة من جهازك' : 'Téléverser une image')}
                         </span>
                         <input
                           type="file"
