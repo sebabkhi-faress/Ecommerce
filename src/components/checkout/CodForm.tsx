@@ -152,8 +152,8 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
         const reasonText = banCheck.reason ? ` (${banCheck.reason})` : '';
         setBannedError(
           lang === 'ar'
-            ? `⚠️ هذا الرقم محظور من الطلب نظراً لتكرار إلغاء الطلبيات أو رفض الاستلام${reasonText}. يرجى التواصل مع إدارة المتجر.`
-            : `⚠️ Ce numéro de téléphone est suspendu pour commandes${reasonText}. Veuillez contacter notre service client.`
+            ? `هذا الرقم محظور من الطلب نظراً لتكرار إلغاء الطلبيات أو رفض الاستلام${reasonText}. يرجى التواصل مع إدارة المتجر.`
+            : `Ce numéro de téléphone est suspendu pour commandes${reasonText}. Veuillez contacter notre service client.`
         );
         return;
       }
@@ -162,8 +162,8 @@ export default function CodForm({ items, onSuccess, isModal = false }: CodFormPr
         setIsSubmitting(false);
         setBannedError(
           lang === 'ar'
-            ? '⚠️ هذا الرقم محظور من إتمام الطلبيات.'
-            : '⚠️ Ce numéro de téléphone est suspendu pour commandes.'
+            ? 'هذا الرقم محظور من إتمام الطلبيات.'
+            : 'Ce numéro de téléphone est suspendu pour commandes.'
         );
         return;
       }

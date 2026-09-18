@@ -59,6 +59,12 @@ import {
   ArrowRight,
   ArrowLeft,
   Loader2,
+  Shirt,
+  Footprints,
+  Smartphone,
+  Watch,
+  PenTool,
+  CircleOff,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured, uploadProductImage } from '@/lib/supabase';
 import { useProducts, usePromotions, Promotion } from '@/context/ProductContext';
@@ -1111,8 +1117,9 @@ export default function AdminDashboardPage() {
         );
       case 'retour':
         return (
-          <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30">
-            🔄 {t('admin.status_retour')}
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+            <RotateCcw className="w-3 h-3 shrink-0" />
+            <span>{t('admin.status_retour')}</span>
           </span>
         );
     }
@@ -1720,8 +1727,9 @@ export default function AdminDashboardPage() {
                           <td className="p-4 font-semibold text-[#F5F5F7]">
                             <div>{order.fullName}</div>
                             {order.notes && (
-                              <div className="text-[10px] text-[#FFAA2C] mt-0.5 max-w-[180px] truncate font-normal" title={order.notes}>
-                                📝 {order.notes}
+                              <div className="text-[10px] text-[#FFAA2C] mt-0.5 max-w-[180px] truncate font-normal flex items-center gap-1" title={order.notes}>
+                                <Edit3 className="w-3 h-3 shrink-0" />
+                                <span>{order.notes}</span>
                               </div>
                             )}
                           </td>
@@ -3020,7 +3028,7 @@ export default function AdminDashboardPage() {
                               ? 'bg-emerald-500 text-black'
                               : 'bg-white/10 text-[#A1A1AA]'
                           }`}>
-                            {newProdStep > 1 ? '✓' : '1'}
+                            {newProdStep > 1 ? <Check className="w-3 h-3 stroke-[3]" /> : '1'}
                           </span>
                           <span className="font-bold text-[10px] sm:text-xs truncate">
                             {lang === 'ar' ? 'الاسم والمخزون' : 'Infos & Stock'}
@@ -3052,7 +3060,7 @@ export default function AdminDashboardPage() {
                               ? 'bg-emerald-500 text-black'
                               : 'bg-white/10 text-[#A1A1AA]'
                           }`}>
-                            {newProdStep > 2 ? '✓' : '2'}
+                            {newProdStep > 2 ? <Check className="w-3 h-3 stroke-[3]" /> : '2'}
                           </span>
                           <span className="font-bold text-[10px] sm:text-xs truncate">
                             {lang === 'ar' ? 'السعر والصورة' : 'Prix & Photo'}
@@ -3458,26 +3466,27 @@ export default function AdminDashboardPage() {
                           {/* Category Variant Type Selector Tabs */}
                           <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 p-1 bg-black/40 rounded-xl border border-white/10 text-xs">
                             {[
-                              { id: 'clothing' as VariantCategoryType, icon: '👕', labelFr: 'Vêtements', labelAr: 'ملابس' },
-                              { id: 'shoes' as VariantCategoryType, icon: '👟', labelFr: 'Chaussures', labelAr: 'أحذية' },
-                              { id: 'storage' as VariantCategoryType, icon: '📱', labelFr: 'Stockage', labelAr: 'سعة / Go' },
-                              { id: 'watch' as VariantCategoryType, icon: '⌚', labelFr: 'Montres', labelAr: 'ساعات' },
-                              { id: 'custom' as VariantCategoryType, icon: '✏️', labelFr: 'Autre', labelAr: 'مخصص' },
-                              { id: 'none' as VariantCategoryType, icon: '🚫', labelFr: 'Standard', labelAr: 'حجم موحد' },
+                              { id: 'clothing' as VariantCategoryType, Icon: Shirt, labelFr: 'Vêtements', labelAr: 'ملابس' },
+                              { id: 'shoes' as VariantCategoryType, Icon: Footprints, labelFr: 'Chaussures', labelAr: 'أحذية' },
+                              { id: 'storage' as VariantCategoryType, Icon: Smartphone, labelFr: 'Stockage', labelAr: 'سعة / Go' },
+                              { id: 'watch' as VariantCategoryType, Icon: Watch, labelFr: 'Montres', labelAr: 'ساعات' },
+                              { id: 'custom' as VariantCategoryType, Icon: PenTool, labelFr: 'Autre', labelAr: 'مخصص' },
+                              { id: 'none' as VariantCategoryType, Icon: CircleOff, labelFr: 'Standard', labelAr: 'حجم موحد' },
                             ].map((tab) => {
                               const isActive = newProdVariantType === tab.id;
+                              const TabIcon = tab.Icon;
                               return (
                                 <button
                                   key={tab.id}
                                   type="button"
                                   onClick={() => setNewProdVariantType(tab.id)}
-                                  className={`px-2 py-1.5 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                                  className={`px-2 py-1.5 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                                     isActive
                                       ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black shadow-md'
                                       : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
                                   }`}
                                 >
-                                  <span>{tab.icon}</span>
+                                  <TabIcon className="w-3.5 h-3.5 shrink-0" />
                                   <span>{lang === 'ar' ? tab.labelAr : tab.labelFr}</span>
                                 </button>
                               );
@@ -3659,10 +3668,13 @@ export default function AdminDashboardPage() {
 
                           {newProdVariantType === 'none' && (
                             <div className="p-3 bg-white/5 border border-dashed border-white/15 rounded-xl text-center space-y-1.5">
-                              <p className="text-xs font-semibold text-[#A1A1AA]">
-                                {lang === 'ar'
-                                  ? '✓ هذا المنتج بحجم موحد / قياسي (مثل: سماعات، شاحن، كابل، عطر). لن يُطلب من الزبون اختيار مقاس في المتجر.'
-                                  : '✓ Produit standard / Taille unique (ex: écouteurs, chargeur, câble, parfum). Aucun sélecteur de taille ne sera requis sur la boutique.'}
+                              <p className="text-xs font-semibold text-[#A1A1AA] flex items-center justify-center gap-1.5">
+                                <CheckCircle className="w-3.5 h-3.5 text-[#FFAA2C] shrink-0" />
+                                <span>
+                                  {lang === 'ar'
+                                    ? 'هذا المنتج بحجم موحد / قياسي (مثل: سماعات، شاحن، كابل، عطر). لن يُطلب من الزبون اختيار مقاس في المتجر.'
+                                    : 'Produit standard / Taille unique (ex: écouteurs, chargeur, câble, parfum). Aucun sélecteur de taille ne sera requis sur la boutique.'}
+                                </span>
                               </p>
                               {newProdSizes.length > 0 && (
                                 <button
@@ -4228,26 +4240,27 @@ export default function AdminDashboardPage() {
                     {/* Category Variant Type Selector Tabs in Edit Modal */}
                     <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 p-1 bg-black/5 dark:bg-black/40 rounded-xl border border-black/10 dark:border-white/10 text-xs">
                       {[
-                        { id: 'clothing' as VariantCategoryType, icon: '👕', labelFr: 'Vêtements', labelAr: 'ملابس' },
-                        { id: 'shoes' as VariantCategoryType, icon: '👟', labelFr: 'Chaussures', labelAr: 'أحذية' },
-                        { id: 'storage' as VariantCategoryType, icon: '📱', labelFr: 'Stockage', labelAr: 'سعة / Go' },
-                        { id: 'watch' as VariantCategoryType, icon: '⌚', labelFr: 'Montres', labelAr: 'ساعات' },
-                        { id: 'custom' as VariantCategoryType, icon: '✏️', labelFr: 'Autre', labelAr: 'مخصص' },
-                        { id: 'none' as VariantCategoryType, icon: '🚫', labelFr: 'Standard', labelAr: 'حجم موحد' },
+                        { id: 'clothing' as VariantCategoryType, Icon: Shirt, labelFr: 'Vêtements', labelAr: 'ملابس' },
+                        { id: 'shoes' as VariantCategoryType, Icon: Footprints, labelFr: 'Chaussures', labelAr: 'أحذية' },
+                        { id: 'storage' as VariantCategoryType, Icon: Smartphone, labelFr: 'Stockage', labelAr: 'سعة / Go' },
+                        { id: 'watch' as VariantCategoryType, Icon: Watch, labelFr: 'Montres', labelAr: 'ساعات' },
+                        { id: 'custom' as VariantCategoryType, Icon: PenTool, labelFr: 'Autre', labelAr: 'مخصص' },
+                        { id: 'none' as VariantCategoryType, Icon: CircleOff, labelFr: 'Standard', labelAr: 'حجم موحد' },
                       ].map((tab) => {
                         const isActive = editVariantType === tab.id;
+                        const TabIcon = tab.Icon;
                         return (
                           <button
                             key={tab.id}
                             type="button"
                             onClick={() => setEditVariantType(tab.id)}
-                            className={`px-1.5 py-1.5 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                            className={`px-1.5 py-1.5 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                               isActive
                                 ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black shadow-md'
                                 : 'text-[#64748B] dark:text-[#A1A1AA] hover:text-[#0F172A] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
                             }`}
                           >
-                            <span>{tab.icon}</span>
+                            <TabIcon className="w-3.5 h-3.5 shrink-0" />
                             <span>{lang === 'ar' ? tab.labelAr : tab.labelFr}</span>
                           </button>
                         );
@@ -4433,10 +4446,13 @@ export default function AdminDashboardPage() {
                     {/* None Banner */}
                     {editVariantType === 'none' && (
                       <div className="p-3 bg-black/5 dark:bg-white/5 border border-dashed border-black/10 dark:border-white/15 rounded-xl text-center space-y-1">
-                        <p className="text-xs font-semibold text-[#64748B] dark:text-[#A1A1AA]">
-                          {lang === 'ar'
-                            ? '✓ هذا المنتج بحجم موحد / قياسي. لن يُطلب من الزبون اختيار مقاس في المتجر.'
-                            : '✓ Produit standard / Taille unique. Aucun sélecteur de taille ne sera requis sur la boutique.'}
+                        <p className="text-xs font-semibold text-[#64748B] dark:text-[#A1A1AA] flex items-center justify-center gap-1.5">
+                          <CheckCircle className="w-3.5 h-3.5 text-[#FFAA2C] shrink-0" />
+                          <span>
+                            {lang === 'ar'
+                              ? 'هذا المنتج بحجم موحد / قياسي. لن يُطلب من الزبون اختيار مقاس في المتجر.'
+                              : 'Produit standard / Taille unique. Aucun sélecteur de taille ne sera requis sur la boutique.'}
+                          </span>
                         </p>
                         {editSizes.length > 0 && (
                           <button
@@ -5096,10 +5112,13 @@ export default function AdminDashboardPage() {
                   />
                 </div>
 
-                <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[11px] text-[#A1A1AA] leading-relaxed">
-                  ⚠️ {lang === 'ar'
-                    ? 'سيتم تطبيق هذا التعديل مباشرة على جميع الولايات الـ 68 وحفظه في قاعدة البيانات.'
-                    : 'Cette opération s’appliquera immédiatement aux 68 Wilayas dans la base de données.'}
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[11px] text-[#A1A1AA] leading-relaxed flex items-center gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>
+                    {lang === 'ar'
+                      ? 'سيتم تطبيق هذا التعديل مباشرة على جميع الولايات الـ 68 وحفظه في قاعدة البيانات.'
+                      : 'Cette opération s’appliquera immédiatement aux 68 Wilayas dans la base de données.'}
+                  </span>
                 </div>
 
                 <button
@@ -5211,8 +5230,8 @@ export default function AdminDashboardPage() {
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     <span>
                       {lang === 'ar'
-                        ? `⚠️ تحذير: هذا المنتج مرتبط بـ ${deleteModal.linkedOrders.length} طلبية مسجلة!`
-                        : `⚠️ ATTENTION : Lié à ${deleteModal.linkedOrders.length} commande(s) active(s) !`}
+                        ? `تحذير: هذا المنتج مرتبط بـ ${deleteModal.linkedOrders.length} طلبية مسجلة!`
+                        : `ATTENTION : Lié à ${deleteModal.linkedOrders.length} commande(s) active(s) !`}
                     </span>
                   </div>
                   <p className="text-xs text-red-200/90 leading-relaxed font-medium">

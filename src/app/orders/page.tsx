@@ -257,8 +257,9 @@ export default function CustomerOrdersPage() {
                   : `Commandes Trouvées (${matchingOrders.length})`}
               </h2>
               {matchingOrders.length > 0 && (
-                <span className="text-xs font-mono text-[#25D366]">
-                  {lang === 'ar' ? '✓ نتائج مطابقة للرقم' : '✓ Résultats correspondants'}
+                <span className="text-xs font-mono text-[#25D366] inline-flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{lang === 'ar' ? 'نتائج مطابقة للرقم' : 'Résultats correspondants'}</span>
                 </span>
               )}
             </div>
@@ -371,7 +372,7 @@ export default function CustomerOrdersPage() {
                                         : 'bg-white/10 text-[#A1A1AA]'
                                     }`}
                                   >
-                                    {isCompleted ? '✓' : step.num}
+                                    {isCompleted ? <Check className="w-4 h-4 stroke-[3]" /> : step.num}
                                   </div>
                                   <span
                                     className={`block font-semibold ${

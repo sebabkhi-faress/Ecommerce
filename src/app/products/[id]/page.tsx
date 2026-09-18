@@ -217,12 +217,13 @@ export default function ProductDetailPage() {
                       <span>PROMO -{promo.discountPercent}%</span>
                     </span>
                   ) : (
-                    <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FF6B00]/20 text-[#FFAA2C] border border-[#FF6B00]/30 text-[10px] font-mono font-bold uppercase tracking-wider">
-                      {lang === 'ar' ? 'عرض خاص محدود ⚡' : 'OFFRE LIMITÉE ⚡'}
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FF6B00]/20 text-[#FFAA2C] border border-[#FF6B00]/30 text-[10px] font-mono font-bold uppercase tracking-wider">
+                      <Zap className="w-3 h-3 text-[#FFAA2C]" />
+                      <span>{lang === 'ar' ? 'عرض خاص محدود' : 'OFFRE LIMITÉE'}</span>
                     </span>
                   )}
                   <h1 className="text-xl font-black text-[#F5F5F7] leading-tight">
-                    {lang === 'ar' ? product.nameAr : product.nameFr} ⚡
+                    {lang === 'ar' ? product.nameAr : product.nameFr}
                   </h1>
                 </div>
 

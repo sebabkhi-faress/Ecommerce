@@ -245,9 +245,23 @@ export default function Navbar() {
                       >
                         <div className="px-3 py-2 border-b border-white/10">
                           <p className="font-bold text-xs text-[#F5F5F7] truncate">{user.name}</p>
-                          <p className="text-[10px] text-[#A1A1AA] truncate font-mono">{user.email}</p>
-                          <span className="inline-block mt-1 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FF6B00]/15 text-[#FF6B00] uppercase">
-                            {role === 'admin' ? '👑 Admin' : role === 'delivery' ? '🚚 Livreur' : '👤 Client'}
+                          <span className="inline-flex items-center gap-1 mt-1 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FF6B00]/15 text-[#FF6B00] uppercase">
+                            {role === 'admin' ? (
+                              <>
+                                <ShieldAlert className="w-3 h-3" />
+                                <span>Admin</span>
+                              </>
+                            ) : role === 'delivery' ? (
+                              <>
+                                <Truck className="w-3 h-3" />
+                                <span>Livreur</span>
+                              </>
+                            ) : (
+                              <>
+                                <UserIcon className="w-3 h-3" />
+                                <span>Client</span>
+                              </>
+                            )}
                           </span>
                         </div>
 

@@ -15,7 +15,7 @@ interface LanguageContextType {
 const translations: Record<Language, Record<string, string>> = {
   fr: {
     // Header & Navigation
-    'announcement.marquee': '🔥 LIVRAISON EXPRESS SUR 68 WILAYAS — PAIEMENT À LA LIVRAISON (COD) — GARANTIE 1 AN 🔥',
+    'announcement.marquee': 'LIVRAISON EXPRESS SUR 68 WILAYAS — PAIEMENT À LA LIVRAISON (COD) — GARANTIE 1 AN',
     'nav.home': 'Accueil',
     'nav.products': 'Produits',
     'nav.categories': 'Catégories',
@@ -106,7 +106,7 @@ const translations: Record<Language, Record<string, string>> = {
     'checkout.delivery_fee': 'Frais de livraison :',
     'checkout.total': 'Total à payer à la livraison :',
     'checkout.confirm_button': 'CONFIRMER LA COMMANDE — PAIEMENT À LA LIVRAISON',
-    'checkout.security_note': '🔒 Aucun paiement en ligne requis. Vos informations sont strictement confidentielles.',
+    'checkout.security_note': 'Aucun paiement en ligne requis. Vos informations sont strictement confidentielles.',
     'checkout.select_wilaya_alert': 'Veuillez choisir votre wilaya.',
     'checkout.phone_error': 'Numéro invalide. Format algérien requis : 05/06/07 suivi de 8 chiffres.',
 
@@ -198,7 +198,7 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.lbl_category': 'Catégorie',
     'admin.lbl_price': 'Prix en DZD *',
     'admin.lbl_image': 'URL de l’image',
-    'admin.img_validated': '✓ Aperçu instantané validé',
+    'admin.img_validated': 'Aperçu instantané validé',
     'admin.btn_save': 'Valider et Enregistrer',
 
     // Footer
@@ -270,7 +270,7 @@ const translations: Record<Language, Record<string, string>> = {
   },
   ar: {
     // Header & Navigation
-    'announcement.marquee': '🔥 توصيل سريع لجميع الـ 68 ولاية — الدفع عند الاستلام — ضمان حقيقي لمدة سنة كاملة 🔥',
+    'announcement.marquee': 'توصيل سريع لجميع الـ 68 ولاية — الدفع عند الاستلام — ضمان حقيقي لمدة سنة كاملة',
     'announcement.badge_cod': 'الدفع عند الاستلام الجزائر 2026',
     'announcement.badge_aesthetic': 'تكنولوجيا فائقة وتصميم استثنائي',
     'categories.eyebrow': 'منظومة الأجهزة الذكية',
@@ -321,7 +321,7 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.lbl_category': 'القسم',
     'admin.lbl_price': 'السعر بالدينار (د.ج) *',
     'admin.lbl_image': 'رابط صورة المنتج',
-    'admin.img_validated': '✓ تم التحقق من معاينة الصورة',
+    'admin.img_validated': 'تم التحقق من معاينة الصورة',
     'admin.btn_save': 'حفظ وإضافة للمتجر',
     'nav.home': 'الرئيسية',
     'nav.products': 'المنتجات',
@@ -414,7 +414,7 @@ const translations: Record<Language, Record<string, string>> = {
     'checkout.delivery_fee': 'تكلفة التوصيل :',
     'checkout.total': 'المبلغ الإجمالي عند الاستلام :',
     'checkout.confirm_button': 'تأكيد الطلب — الدفع عند الاستلام',
-    'checkout.security_note': '🔒 لا يوجد أي دفع عبر الإنترنت. بياناتك محمية وتستخدم للتوصيل فقط.',
+    'checkout.security_note': 'لا يوجد أي دفع عبر الإنترنت. بياناتك محمية وتستخدم للتوصيل فقط.',
     'checkout.select_wilaya_alert': 'يرجى تحديد الولاية للاستمرار.',
     'checkout.phone_error': 'رقم الهاتف غير صالح. يرجى إدخال رقم جزائري صحيح يبدأ بـ 05 أو 06 أو 07.',
 

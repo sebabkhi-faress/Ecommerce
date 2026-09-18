@@ -15,6 +15,7 @@ import {
   Zap,
   Loader2,
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   ShieldCheck,
   X,
@@ -207,8 +208,9 @@ function LoginForm() {
                     <span>{lang === 'ar' ? 'كلمة المرور' : 'Mot de passe'}</span>
                   </span>
                   {isCapsLockOn && (
-                    <span className="text-[10px] font-mono text-amber-500 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded animate-pulse">
-                      {lang === 'ar' ? '⚠️ VERR MAJ' : '⚠️ CAPS LOCK'}
+                    <span className="text-[10px] font-mono text-amber-500 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded animate-pulse inline-flex items-center gap-1">
+                      <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                      <span>{lang === 'ar' ? 'VERR MAJ' : 'CAPS LOCK'}</span>
                     </span>
                   )}
                 </label>

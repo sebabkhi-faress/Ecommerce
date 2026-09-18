@@ -41,11 +41,12 @@ export default function HeroSection() {
           >
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1 flex-1">
-                <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FF6B00]/20 text-[#FFAA2C] border border-[#FF6B00]/30 text-[10px] font-mono font-bold uppercase tracking-wider">
-                  {lang === 'ar' ? 'العرض الحصري الأكثر طلباً في الجزائر 🔥' : 'OFFRE PHARE EN ALGÉRIE 🔥'}
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FF6B00]/20 text-[#FFAA2C] border border-[#FF6B00]/30 text-[10px] font-mono font-bold uppercase tracking-wider">
+                  <Flame className="w-3 h-3 text-[#FF6B00]" />
+                  <span>{lang === 'ar' ? 'العرض الحصري الأكثر طلباً في الجزائر' : 'OFFRE PHARE EN ALGÉRIE'}</span>
                 </span>
                 <h1 className="text-xl font-black text-[#F5F5F7] group-hover:text-[#FFAA2C] transition-colors leading-tight">
-                  {lang === 'ar' ? heroProduct.nameAr : heroProduct.nameFr} ⚡
+                  {lang === 'ar' ? heroProduct.nameAr : heroProduct.nameFr}
                 </h1>
               </div>
 
@@ -100,8 +101,9 @@ export default function HeroSection() {
             />
             {/* Guarantee Tag */}
             <div className="absolute bottom-3 inset-x-3 flex items-center justify-between pointer-events-none">
-              <span className="px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-[10px] font-bold text-[#25D366]">
-                ✓ {lang === 'ar' ? 'معاينة الطرد قبل الدفع' : 'Vérification avant paiement'}
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-[10px] font-bold text-[#25D366]">
+                <CheckCircle2 className="w-3 h-3 text-[#25D366]" />
+                <span>{lang === 'ar' ? 'معاينة الطرد قبل الدفع' : 'Vérification avant paiement'}</span>
               </span>
               <span className="px-3 py-1 rounded-full bg-[#FF6B00]/90 text-black text-[10px] font-black uppercase">
                 {lang === 'ar' ? '68 ولاية الدفع عند الاستلام' : '68 Wilayas COD'}

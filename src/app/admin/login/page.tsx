@@ -133,8 +133,8 @@ export default function AdminLoginPage() {
 
               {/* 7-Week Session Notice */}
               <div className="pt-2 text-center">
-                <span className="text-[10px] font-mono text-[#A1A1AA] flex items-center justify-center gap-1">
-                  <span>🔒</span>
+                <span className="text-[10px] font-mono text-[#A1A1AA] flex items-center justify-center gap-1.5">
+                  <Lock className="w-3 h-3 text-[#FFAA2C] shrink-0" />
                   <span>
                     {lang === 'ar'
                       ? 'جلسة آمنة محفوظة لمدة 7 أسابيع للمشرفين'
