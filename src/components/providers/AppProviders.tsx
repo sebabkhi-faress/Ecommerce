@@ -23,7 +23,7 @@ export default function AppProviders({ children }: { children: React.ReactNode }
           <ProductProvider>
             <CartProvider>
               <OrderProvider>
-                <div className="min-h-screen flex flex-col bg-[var(--obsidian)] text-[var(--white-titanium)] selection:bg-[#FF6B00] selection:text-white transition-colors duration-200">
+                <div className="min-h-screen flex flex-col w-full max-w-full overflow-x-clip bg-[var(--obsidian)] text-[var(--white-titanium)] selection:bg-[#FF6B00] selection:text-white transition-colors duration-200">
                   <AnnouncementBar />
                   <Navbar />
                   <main className="flex-1">{children}</main>

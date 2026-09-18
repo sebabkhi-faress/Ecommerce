@@ -72,19 +72,19 @@ export default function Navbar() {
             : 'backdrop-blur-md bg-[#0D0D11]/70 border-b border-white/5'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Brand Logo */}
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-4 lg:gap-8 shrink-0">
               <Link href="/" className="group flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF6B00] to-[#FFAA2C] flex items-center justify-center shadow-lg shadow-[#FF6B00]/25 group-hover:scale-105 transition-transform">
-                  <Zap className="w-5 h-5 text-black fill-black" />
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-[#FF6B00] to-[#FFAA2C] flex items-center justify-center shadow-lg shadow-[#FF6B00]/25 group-hover:scale-105 transition-transform shrink-0">
+                  <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-black fill-black" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xl sm:text-2xl font-black tracking-tighter text-[#F5F5F7] group-hover:text-white transition-colors flex items-center">
+                  <span className="text-base sm:text-2xl font-black tracking-tighter text-[#F5F5F7] group-hover:text-white transition-colors flex items-center">
                     ELECTRONICS<span className="text-[#FF6B00] animate-pulse">.</span>
                   </span>
-                  <span className="text-[9px] font-mono uppercase tracking-widest text-[#FFAA2C]/80 -mt-1 font-semibold">
+                  <span className="text-[8px] sm:text-[9px] font-mono uppercase tracking-widest text-[#FFAA2C]/80 -mt-0.5 sm:-mt-1 font-semibold">
                     {lang === 'ar' ? 'الجزائر 2026' : 'ALGERIA 2026'}
                   </span>
                 </div>
@@ -146,11 +146,11 @@ export default function Navbar() {
             </div>
 
             {/* Right Actions: Search, Language Pill, Theme, User, Cart */}
-            <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               {/* Quick Search Button */}
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs text-[#A1A1AA] bg-[#18181F]/90 hover:bg-[#22222B] border border-white/10 hover:border-white/20 rounded-full transition-all group"
+                className="flex items-center justify-center p-2 sm:px-4 sm:py-2 text-xs text-[#A1A1AA] bg-[#18181F]/90 hover:bg-[#22222B] border border-white/10 hover:border-white/20 rounded-full transition-all group shrink-0"
                 aria-label="Search"
               >
                 <Search className="w-3.5 h-3.5 text-[#FFAA2C] group-hover:scale-110 transition-transform" />
@@ -160,13 +160,10 @@ export default function Navbar() {
                 </kbd>
               </button>
 
-              {/* Language Switcher Pill (AR ⇄ FR) */}
-              <button
-                onClick={toggleLanguage}
-                className="relative flex items-center p-1 bg-[#18181F] border border-white/10 rounded-full hover:border-[#FF6B00]/40 transition-all group"
-                title={lang === 'fr' ? 'Changer en Arabe' : 'Changer en Français'}
-              >
-                <div
+              {/* Language Switcher Pill (Desktop: Dual pill, Mobile: Compact toggle) */}
+              <div className="hidden sm:flex items-center p-1 bg-[#18181F] border border-white/10 rounded-full hover:border-[#FF6B00]/40 transition-all group shrink-0">
+                <button
+                  onClick={() => lang !== 'ar' && toggleLanguage()}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all ${
                     lang === 'ar'
                       ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black shadow-md'
@@ -175,8 +172,9 @@ export default function Navbar() {
                 >
                   <Globe className="w-3 h-3" />
                   <span>العربية</span>
-                </div>
-                <div
+                </button>
+                <button
+                  onClick={() => lang !== 'fr' && toggleLanguage()}
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all ${
                     lang === 'fr'
                       ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black shadow-md'
@@ -184,31 +182,41 @@ export default function Navbar() {
                   }`}
                 >
                   <span>FR</span>
-                </div>
+                </button>
+              </div>
+
+              {/* Compact Mobile Language Switcher */}
+              <button
+                onClick={toggleLanguage}
+                className="sm:hidden flex items-center justify-center gap-1 px-2 py-1.5 bg-[#18181F] border border-white/10 rounded-full text-xs font-bold text-[#F5F5F7] shrink-0"
+                title={lang === 'fr' ? 'Changer en Arabe' : 'Changer en Français'}
+              >
+                <Globe className="w-3 h-3 text-[#FFAA2C]" />
+                <span className="font-mono text-[11px] font-extrabold">{lang === 'ar' ? 'FR' : 'عر'}</span>
               </button>
 
               {/* Theme Toggle Button (Light ⇄ Dark) */}
               <button
                 onClick={toggleTheme}
-                className="relative flex items-center justify-center w-10 h-10 rounded-full bg-[#18181F] hover:bg-[#22222B] border border-white/10 hover:border-[#FFAA2C]/50 transition-all text-[#F5F5F7] group shadow-inner shrink-0"
+                className="relative flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#18181F] hover:bg-[#22222B] border border-white/10 hover:border-[#FFAA2C]/50 transition-all text-[#F5F5F7] group shadow-inner shrink-0"
                 title={theme === 'light' ? (lang === 'ar' ? 'الوضع الداكن' : 'Mode sombre') : (lang === 'ar' ? 'الوضع الفاتح' : 'Mode clair')}
                 aria-label="Toggle theme"
               >
                 {theme === 'light' ? (
-                  <Moon className="w-4 h-4 text-[#64748B] group-hover:text-[#0F172A] transition-colors" />
+                  <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#64748B] group-hover:text-[#0F172A] transition-colors" />
                 ) : (
-                  <Sun className="w-4 h-4 text-[#FFAA2C] group-hover:rotate-45 transition-transform" />
+                  <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#FFAA2C] group-hover:rotate-45 transition-transform" />
                 )}
               </button>
 
               {/* User Account / Role Pill & Dropdown */}
               {isAuthenticated && user ? (
-                <div className="relative">
+                <div className="relative shrink-0">
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="flex items-center gap-1.5 p-1 sm:px-3 sm:py-1.5 bg-[#18181F] hover:bg-[#22222B] border border-white/10 hover:border-[#FF6B00]/40 rounded-full transition-all text-xs cursor-pointer"
                   >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#FF6B00] to-[#FFAA2C] text-black font-black text-xs flex items-center justify-center shrink-0 shadow-md">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-[#FF6B00] to-[#FFAA2C] text-black font-black text-[10px] sm:text-xs flex items-center justify-center shrink-0 shadow-md">
                       {user.name.charAt(0).toUpperCase()}
                     </div>
                     <span className="hidden md:inline font-bold text-[#F5F5F7] max-w-[80px] truncate">
@@ -278,22 +286,23 @@ export default function Navbar() {
               ) : (
                 <Link
                   href="/login"
-                  className="flex items-center gap-1.5 px-3 py-2 bg-[#18181F] hover:bg-[#22222B] border border-white/10 hover:border-[#FF6B00]/40 rounded-full text-xs font-semibold text-[#F5F5F7] transition-all shrink-0"
+                  className="flex items-center justify-center p-1.5 sm:px-3 sm:py-2 bg-[#18181F] hover:bg-[#22222B] border border-white/10 hover:border-[#FF6B00]/40 rounded-full text-xs font-semibold text-[#F5F5F7] transition-all shrink-0"
+                  title={lang === 'ar' ? 'دخول' : 'Connexion'}
                 >
                   <UserIcon className="w-3.5 h-3.5 text-[#FFAA2C]" />
-                  <span className="hidden sm:inline">{lang === 'ar' ? 'دخول' : 'Connexion'}</span>
+                  <span className="hidden sm:inline ms-1">{lang === 'ar' ? 'دخول' : 'Connexion'}</span>
                 </Link>
               )}
 
               {/* Cart Drawer Trigger Button */}
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="relative flex items-center justify-center w-11 h-11 rounded-full bg-[#18181F] hover:bg-[#22222B] border border-white/10 hover:border-[#FF6B00]/50 transition-all text-[#F5F5F7] group shadow-inner shrink-0 cursor-pointer"
+                className="relative flex items-center justify-center w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-[#18181F] hover:bg-[#22222B] border border-white/10 hover:border-[#FF6B00]/50 transition-all text-[#F5F5F7] group shadow-inner shrink-0 cursor-pointer"
                 aria-label="Cart"
               >
-                <ShoppingBag className="w-5 h-5 text-[#F5F5F7] group-hover:text-[#FF6B00] transition-colors" />
+                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-[#F5F5F7] group-hover:text-[#FF6B00] transition-colors" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[#FF6B00] text-black font-extrabold text-[11px] w-5 h-5 rounded-full flex items-center justify-center shadow-lg shadow-[#FF6B00]/50 animate-bounce">
+                  <span className="absolute -top-1 -right-1 bg-[#FF6B00] text-black font-extrabold text-[9px] sm:text-[11px] w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shadow-lg shadow-[#FF6B00]/50 animate-bounce">
                     {totalItems}
                   </span>
                 )}

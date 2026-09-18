@@ -39,7 +39,7 @@ export default function TrustPillars() {
   ];
 
   return (
-    <section id="guarantees" className="py-16 bg-[#121217]/50 border-t border-white/5">
+    <section id="guarantees" className="py-16 bg-slate-100/60 dark:bg-[#121217]/50 border-t border-black/5 dark:border-white/5 w-full max-w-full overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#FFAA2C]">

@@ -67,12 +67,18 @@ html {
   color: var(--white-titanium);
   -webkit-overflow-scrolling: touch;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
 }
 
 body {
   background-color: var(--obsidian);
   color: var(--white-titanium);
-  overflow-x: hidden;
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
+  position: relative;
 }
 
 /* Fluid Custom Scrollbar with Warm Amber/Sunset Glow */
@@ -314,6 +320,15 @@ html:not(.dark) .bg-\[\#14141B\] {
 
 html:not(.dark) .bg-\[\#121217\] {
   background-color: #EAECEF !important;
+}
+
+html:not(.dark) .bg-\[\#121217\]\/50,
+html:not(.dark) .bg-\[\#121217\]\/60 {
+  background-color: rgba(241, 243, 247, 0.75) !important;
+}
+
+html:not(.dark) .bg-\[\#09090D\] {
+  background-color: #F8F9FA !important;
 }
 
 html:not(.dark) .from-\[\#22222B\] {

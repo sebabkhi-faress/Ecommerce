@@ -26,10 +26,10 @@ export default function HeroSection() {
   const heroProduct = products[0] || PRODUCTS[0];
 
   return (
-    <section className="relative pt-8 pb-16 md:pt-14 md:pb-24 overflow-hidden">
+    <section className="relative pt-6 pb-14 md:pt-14 md:pb-24 overflow-hidden w-full max-w-full">
       {/* Background Ambience & Glow Aura */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#FF6B00]/15 rounded-full blur-[140px] pointer-events-none animate-pulse-warm" />
-      <div className="absolute top-1/3 right-10 w-[400px] h-[400px] bg-[#FFAA2C]/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] sm:w-[600px] h-[350px] sm:h-[600px] bg-[#FF6B00]/15 rounded-full blur-[100px] sm:blur-[140px] pointer-events-none animate-pulse-warm" />
+      <div className="absolute top-1/3 end-4 sm:end-10 w-[250px] sm:w-[400px] h-[250px] sm:h-[400px] bg-[#FFAA2C]/10 rounded-full blur-[90px] sm:blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* MOBILE-FIRST PRODUCT & PRICE ATTENTION SHOWCASE (Matching screenshot for instant conversion) */}

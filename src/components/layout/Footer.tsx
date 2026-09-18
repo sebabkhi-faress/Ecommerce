@@ -9,7 +9,7 @@ export default function Footer() {
   const { lang, t } = useLanguage();
 
   return (
-    <footer className="relative bg-[#09090D] border-t border-white/10 text-[#A1A1AA] pt-16 pb-24 sm:pb-16 overflow-hidden">
+    <footer className="relative bg-slate-100 dark:bg-[#09090D] border-t border-black/10 dark:border-white/10 text-slate-600 dark:text-[#A1A1AA] pt-16 pb-24 sm:pb-16 overflow-hidden w-full max-w-full">
       {/* Ambient background glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 bg-[#FF6B00]/5 blur-3xl pointer-events-none" />
 

@@ -8,10 +8,10 @@ export default function AnnouncementBar() {
   const { t, lang } = useLanguage();
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-[#0D0D11] text-xs font-bold py-2 border-b border-[#FF6B00]/40 tracking-wider shadow-sm z-50">
-      <div className="flex items-center space-x-8 animate-marquee whitespace-nowrap">
+    <div className="relative w-full max-w-full overflow-hidden bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-[#0D0D11] text-xs font-bold py-2 border-b border-[#FF6B00]/40 tracking-wider shadow-sm z-50">
+      <div className="flex items-center gap-8 animate-marquee whitespace-nowrap">
         {Array.from({ length: 6 }).map((_, idx) => (
-          <div key={idx} className="flex items-center space-x-6 mx-4">
+          <div key={idx} className="flex items-center gap-6 shrink-0">
             <span className="flex items-center gap-1.5 font-extrabold text-[12px] uppercase">
               <Truck className="w-3.5 h-3.5 inline-block text-black stroke-[2.5]" />
               {t('announcement.marquee')}
