@@ -130,6 +130,18 @@ export default function AdminLoginPage() {
                   {loading ? t('admin.logging_in') : t('admin.btn_login')}
                 </span>
               </button>
+
+              {/* 7-Week Session Notice */}
+              <div className="pt-2 text-center">
+                <span className="text-[10px] font-mono text-[#A1A1AA] flex items-center justify-center gap-1">
+                  <span>🔒</span>
+                  <span>
+                    {lang === 'ar'
+                      ? 'جلسة آمنة محفوظة لمدة 7 أسابيع للمشرفين'
+                      : 'Session sécurisée active 7 semaines pour les administrateurs'}
+                  </span>
+                </span>
+              </div>
             </form>
           </div>
         </div>

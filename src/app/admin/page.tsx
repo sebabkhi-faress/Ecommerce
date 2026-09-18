@@ -30,6 +30,7 @@ import {
   Layers,
   Trash2,
   ExternalLink,
+  ShieldCheck,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured, uploadProductImage } from '@/lib/supabase';
 import { useProducts } from '@/context/ProductContext';
@@ -77,9 +78,7 @@ export default function AdminDashboardPage() {
   }, [router, authRole]);
 
   const handleLogout = () => {
-    authLogout();
-    localStorage.removeItem('electronics_admin_auth');
-    router.push('/login');
+    authLogout('/login');
   };
 
   const handleAddProduct = async (e: React.FormEvent) => {
@@ -191,6 +190,13 @@ export default function AdminDashboardPage() {
                   {isSupabaseConnected
                     ? (lang === 'ar' ? 'قاعدة بيانات Supabase متصلة' : 'Supabase DB Connecté')
                     : (lang === 'ar' ? 'وضع التخزين المحلي (Local)' : 'Stockage Local')}
+                </span>
+              </span>
+              <span className="text-white/20">•</span>
+              <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-0.5 rounded-full border bg-orange-500/10 text-[#FFAA2C] border-[#FF6B00]/30">
+                <ShieldCheck className="w-3 h-3 text-[#FF6B00]" />
+                <span>
+                  {lang === 'ar' ? 'جلسة نشطة 7 أسابيع (49 يوماً)' : 'Session 7 semaines active'}
                 </span>
               </span>
             </div>

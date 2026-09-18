@@ -48,38 +48,90 @@ export interface User {
   createdAt?: string;
 }
 
+// 7 Weeks = 49 Days session duration (4,233,600 seconds)
+export const ADMIN_SESSION_WEEKS = 7;
+export const ADMIN_SESSION_DAYS = 49;
+export const ADMIN_SESSION_DURATION_MS = 49 * 24 * 60 * 60 * 1000;
+export const ADMIN_SESSION_DURATION_SEC = 49 * 24 * 60 * 60;
+
+export interface AuthSession {
+  user: User;
+  createdAt: number;
+  expiresAt: number; // timestamp in ms
+  durationDays: number;
+}
+
 interface AuthContextType {
   user: User | null;
+  session: AuthSession | null;
+  sessionExpiresAt: number | null;
   role: UserRole | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>;
-  register: (userData: {
-    name: string;
-    email: string;
-    password: string;
-    phone?: string;
-    role?: UserRole;
-  }) => Promise<{ success: boolean; error?: string; user?: User }>;
-  logout: () => void;
+  logout: (redirectTo?: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load session from localStorage on mount
+  const logout = useCallback((redirectTo?: string) => {
+    setUser(null);
+    setSession(null);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('electronics_auth_user');
+        localStorage.removeItem('electronics_auth_session');
+        localStorage.removeItem('electronics_admin_auth');
+        document.cookie = 'electronics_session_role=; max-age=0; path=/; SameSite=Lax';
+        document.cookie = 'electronics_session_expires=; max-age=0; path=/; SameSite=Lax';
+      } catch (e) {
+        console.warn('Logout cleanup error', e);
+      }
+      if (redirectTo) {
+        window.location.href = redirectTo;
+      }
+    }
+  }, []);
+
+  // Load session from localStorage with 7-week validity check on mount
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('electronics_auth_user');
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const sessionStr = localStorage.getItem('electronics_auth_session');
+      const userStr = localStorage.getItem('electronics_auth_user');
+
+      let currentSession: AuthSession | null = null;
+
+      if (sessionStr) {
+        currentSession = JSON.parse(sessionStr);
+      } else if (userStr) {
+        // Migration: ensure user has 7 weeks active session
+        const parsed = JSON.parse(userStr);
         if (parsed && parsed.email && parsed.role) {
-          setUser(parsed);
-          // Keep legacy admin key in sync for backwards compatibility
-          if (parsed.role === 'admin') {
+          const now = Date.now();
+          currentSession = {
+            user: parsed,
+            createdAt: now,
+            expiresAt: now + ADMIN_SESSION_DURATION_MS,
+            durationDays: ADMIN_SESSION_DAYS,
+          };
+          localStorage.setItem('electronics_auth_session', JSON.stringify(currentSession));
+        }
+      }
+
+      if (currentSession && currentSession.user && currentSession.expiresAt) {
+        // Check 7-week expiration
+        if (Date.now() > currentSession.expiresAt) {
+          console.warn('Session expired after 7 weeks');
+          logout();
+        } else {
+          setUser(currentSession.user);
+          setSession(currentSession);
+          if (currentSession.user.role === 'admin') {
             localStorage.setItem('electronics_admin_auth', 'true');
           }
         }
@@ -89,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [logout]);
 
   const login = useCallback(
     async (
@@ -162,12 +214,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 createdAt: userRow.created_at,
               };
 
+              const now = Date.now();
+              const expiresAt = now + ADMIN_SESSION_DURATION_MS; // 7 Weeks (49 days)
+              const authSession: AuthSession = {
+                user: loggedInUser,
+                createdAt: now,
+                expiresAt,
+                durationDays: ADMIN_SESSION_DAYS,
+              };
+
               setUser(loggedInUser);
+              setSession(authSession);
+
               localStorage.setItem('electronics_auth_user', JSON.stringify(loggedInUser));
+              localStorage.setItem('electronics_auth_session', JSON.stringify(authSession));
+
               if (loggedInUser.role === 'admin') {
                 localStorage.setItem('electronics_admin_auth', 'true');
               } else {
                 localStorage.removeItem('electronics_admin_auth');
+              }
+
+              // Set browser cookie with 7-week expiry (4,233,600 seconds)
+              if (typeof document !== 'undefined') {
+                document.cookie = `electronics_session_role=${loggedInUser.role}; max-age=${ADMIN_SESSION_DURATION_SEC}; path=/; SameSite=Lax`;
+                document.cookie = `electronics_session_expires=${expiresAt}; max-age=${ADMIN_SESSION_DURATION_SEC}; path=/; SameSite=Lax`;
               }
 
               return { success: true, user: loggedInUser };
@@ -186,79 +257,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const register = useCallback(
-    async (userData: {
-      name: string;
-      email: string;
-      password: string;
-      phone?: string;
-      role?: UserRole;
-    }): Promise<{ success: boolean; error?: string; user?: User }> => {
-      const email = userData.email.trim().toLowerCase();
-      const role = userData.role || 'customer';
-      const id = `usr-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
-      const hashedPassword = hashPassword(userData.password);
-
-      const newUser: User = {
-        id,
-        email,
-        name: userData.name.trim(),
-        phone: userData.phone?.trim() || '',
-        role,
-        createdAt: new Date().toISOString(),
-      };
-
-      // Insert directly into Supabase public.users
-      if (isSupabaseConfigured && supabase) {
-        try {
-          const { error } = await supabase.from('users').insert({
-            id: newUser.id,
-            email: newUser.email,
-            password: hashedPassword,
-            name: newUser.name,
-            phone: newUser.phone,
-            role: newUser.role,
-          });
-
-          if (error) {
-            console.error('Supabase user register error:', error.message);
-            if (error.code === '23505') {
-              return { success: false, error: 'Cet email est déjà enregistré' };
-            }
-            return { success: false, error: error.message };
-          }
-        } catch (err: any) {
-          console.warn('Failed to insert user into Supabase', err);
-          return { success: false, error: 'Erreur de connexion à la base de données' };
-        }
-      }
-
-      setUser(newUser);
-      localStorage.setItem('electronics_auth_user', JSON.stringify(newUser));
-      if (newUser.role === 'admin') {
-        localStorage.setItem('electronics_admin_auth', 'true');
-      }
-
-      return { success: true, user: newUser };
-    },
-    []
-  );
-
-  const logout = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem('electronics_auth_user');
-    localStorage.removeItem('electronics_admin_auth');
-  }, []);
-
   return (
     <AuthContext.Provider
       value={{
         user,
+        session,
+        sessionExpiresAt: session?.expiresAt || null,
         role: user ? user.role : null,
         isAuthenticated: !!user,
         isLoading,
         login,
-        register,
         logout,
       }}
     >

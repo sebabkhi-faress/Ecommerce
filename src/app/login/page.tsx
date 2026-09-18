@@ -4,7 +4,7 @@ import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAuth, UserRole } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import {
   Lock,
   Mail,
@@ -13,9 +13,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Zap,
-  Sparkles,
-  Phone,
-  User as UserIcon,
   Loader2,
 } from 'lucide-react';
 
@@ -24,14 +21,10 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectParam = searchParams.get('redirect');
   const { lang, t } = useLanguage();
-  const { login, register, isAuthenticated, role: currentRole } = useAuth();
+  const { login } = useAuth();
 
-  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [regRole, setRegRole] = useState<UserRole>('customer');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,53 +34,26 @@ function LoginForm() {
     setLoading(true);
     setError('');
 
-    if (mode === 'login') {
-      const result = await login(email, password);
-      setLoading(false);
-      if (result.success && result.user) {
-        if (redirectParam) {
-          router.push(redirectParam);
-        } else if (result.user.role === 'admin') {
-          router.push('/admin');
-        } else if (result.user.role === 'delivery') {
-          router.push('/delivery');
-        } else {
-          router.push('/account');
-        }
+    const result = await login(email, password);
+    setLoading(false);
+
+    if (result.success && result.user) {
+      if (redirectParam) {
+        router.push(redirectParam);
+      } else if (result.user.role === 'admin') {
+        router.push('/admin');
+      } else if (result.user.role === 'delivery') {
+        router.push('/delivery');
       } else {
-        setError(
-          result.error ||
-            (lang === 'ar'
-              ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
-              : 'Identifiants invalides')
-        );
+        router.push('/account');
       }
     } else {
-      // Register
-      if (!name.trim()) {
-        setError(lang === 'ar' ? 'يرجى إدخال الاسم' : 'Veuillez saisir votre nom');
-        setLoading(false);
-        return;
-      }
-      const result = await register({
-        name,
-        email,
-        password,
-        phone,
-        role: regRole,
-      });
-      setLoading(false);
-      if (result.success && result.user) {
-        if (result.user.role === 'admin') {
-          router.push('/admin');
-        } else if (result.user.role === 'delivery') {
-          router.push('/delivery');
-        } else {
-          router.push('/account');
-        }
-      } else {
-        setError(result.error || 'Erreur lors de l’inscription');
-      }
+      setError(
+        result.error ||
+          (lang === 'ar'
+            ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
+            : 'Identifiants invalides')
+      );
     }
   };
 
@@ -110,43 +76,18 @@ function LoginForm() {
         {/* Main Card */}
         <div className="relative rounded-3xl p-[1px] bg-gradient-to-b from-[#FF6B00]/40 via-white/10 to-transparent shadow-2xl shadow-black/90">
           <div className="bg-[#14141B] rounded-[23px] p-6 sm:p-8 space-y-6 backdrop-blur-2xl">
-            {/* Mode Switcher Tabs */}
-            <div className="flex bg-[#18181F] p-1 rounded-2xl border border-white/10">
-              <button
-                type="button"
-                onClick={() => setMode('login')}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  mode === 'login'
-                    ? 'bg-[#FF6B00] text-black shadow-md'
-                    : 'text-[#A1A1AA] hover:text-white'
-                }`}
-              >
-                {lang === 'ar' ? 'تسجيل الدخول' : 'Connexion'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('register')}
-                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  mode === 'register'
-                    ? 'bg-[#FFAA2C] text-black shadow-md'
-                    : 'text-[#A1A1AA] hover:text-white'
-                }`}
-              >
-                {lang === 'ar' ? 'حساب جديد' : 'Créer un compte'}
-              </button>
-            </div>
-
-            {/* Title Header */}
-            <div className="text-center space-y-1">
+            {/* Title Header (Pure Login - No Signup) */}
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#FF6B00] to-[#FFAA2C] mx-auto flex items-center justify-center shadow-lg shadow-[#FF6B00]/30">
+                <Lock className="w-6 h-6 text-black" />
+              </div>
               <h1 className="text-xl font-black text-[#F5F5F7] tracking-tight">
-                {mode === 'login'
-                  ? (lang === 'ar' ? 'مرحباً بك مجدداً' : 'Espace Utilisateur')
-                  : (lang === 'ar' ? 'إنشاء حساب جديد' : 'Nouveau Compte')}
+                {lang === 'ar' ? 'تسجيل الدخول' : 'Connexion'}
               </h1>
               <p className="text-xs text-[#A1A1AA]">
-                {mode === 'login'
-                  ? (lang === 'ar' ? 'سجّل الدخول للوصول إلى لوحة التحكم أو متابعة طلبياتك' : 'Connectez-vous avec vos identifiants ou compte public')
-                  : (lang === 'ar' ? 'اختر نوع الحساب للانضمام إلى الفريق' : 'Rejoignez la plateforme Electronics DZ')}
+                {lang === 'ar'
+                  ? 'أدخل بيانات حسابك للوصول إلى لوحة التحكم أو متابعة طلبياتك'
+                  : 'Connectez-vous pour accéder à votre tableau de bord ou vos commandes'}
               </p>
             </div>
 
@@ -156,56 +97,8 @@ function LoginForm() {
               </div>
             )}
 
-            {/* Form */}
+            {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-              {mode === 'register' && (
-                <>
-                  <div>
-                    <label className="block font-semibold text-[#F5F5F7] mb-1.5 flex items-center gap-1.5">
-                      <UserIcon className="w-3.5 h-3.5 text-[#FFAA2C]" />
-                      <span>{lang === 'ar' ? 'الاسم الكامل' : 'Nom complet'}</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Ex: Yacine Benali"
-                      className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-4 py-3 text-[#F5F5F7] outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-[#F5F5F7] mb-1.5 flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-[#25D366]" />
-                      <span>{lang === 'ar' ? 'رقم الهاتف' : 'Numéro de téléphone'}</span>
-                    </label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="0550123456"
-                      className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-4 py-3 text-[#F5F5F7] font-mono outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-[#F5F5F7] mb-1.5">
-                      {lang === 'ar' ? 'الدور / الوظيفة' : 'Rôle souhaité'}
-                    </label>
-                    <select
-                      value={regRole}
-                      onChange={(e) => setRegRole(e.target.value as UserRole)}
-                      className="w-full bg-[#18181F] border border-white/15 focus:border-[#FFAA2C] rounded-xl px-3 py-2.5 text-[#F5F5F7] outline-none"
-                    >
-                      <option value="customer">{lang === 'ar' ? 'زبون (متابعة الطلبات)' : 'Client (Suivi commandes)'}</option>
-                      <option value="delivery">{lang === 'ar' ? 'عامل توصيل (Livreur Express)' : 'Livreur (Gestion livraisons)'}</option>
-                      <option value="admin">{lang === 'ar' ? 'مشرف إدارة (Admin)' : 'Administrateur'}</option>
-                    </select>
-                  </div>
-                </>
-              )}
-
               {/* Email */}
               <div>
                 <label className="block font-semibold text-[#F5F5F7] mb-1.5 flex items-center gap-1.5">
@@ -256,12 +149,22 @@ function LoginForm() {
                 <Zap className="w-4 h-4 fill-black" />
                 <span>
                   {loading
-                    ? (lang === 'ar' ? 'جارٍ المعالجة...' : 'Traitement...')
-                    : mode === 'login'
-                    ? (lang === 'ar' ? 'دخول فوري' : 'Se Connecter')
-                    : (lang === 'ar' ? 'تأكيد الحساب' : 'Créer le compte')}
+                    ? (lang === 'ar' ? 'جارٍ التحقق...' : 'Vérification...')
+                    : (lang === 'ar' ? 'تسجيل الدخول' : 'Se Connecter')}
                 </span>
               </button>
+
+              {/* 7-Week Session Notice for Admins */}
+              <div className="pt-2 text-center">
+                <span className="text-[10px] font-mono text-[#A1A1AA] flex items-center justify-center gap-1">
+                  <span>🔒</span>
+                  <span>
+                    {lang === 'ar'
+                      ? 'جلسة آمنة محفوظة لمدة 7 أسابيع للمشرفين'
+                      : 'Session sécurisée active 7 semaines pour les administrateurs'}
+                  </span>
+                </span>
+              </div>
             </form>
           </div>
         </div>
