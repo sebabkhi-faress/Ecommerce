@@ -260,7 +260,10 @@ export default function ProductDetailPage() {
     );
   }
 
-  const selectedColor = product.colors[selectedColorIndex];
+  const hasColors = Array.isArray(product.colors) && product.colors.length > 0;
+  const selectedColor = hasColors ? (product.colors[selectedColorIndex] || product.colors[0]) : undefined;
+  const hasSizes = Array.isArray(product.sizes) && product.sizes.length > 0;
+  const activeSize = hasSizes ? (selectedSize || product.sizes?.[0]) : undefined;
   const promo = getPromotionForProduct(product);
   const displayPrice = promo ? promo.finalPrice : product.price;
   const originalPrice = promo ? product.price : product.originalPrice;
@@ -526,8 +529,8 @@ export default function ProductDetailPage() {
                 {lang === 'ar' ? product.descriptionAr : product.descriptionFr}
               </p>
 
-              {/* Color Picker */}
-              {product.colors && product.colors.length > 0 && (
+              {/* Color Picker (Only shown when product has colors) */}
+              {hasColors && (
                 <div className="space-y-2">
                   <label className="block text-xs font-semibold text-[#F5F5F7]">
                     {t('pdp.color')} <span className="text-[#FFAA2C]">{lang === 'ar' ? selectedColor?.nameAr : selectedColor?.nameFr}</span>
@@ -554,12 +557,12 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Size / Storage / Variant Selector */}
-              {product.sizes && product.sizes.length > 0 && (
+              {/* Size / Storage / Variant Selector (Only shown when product has sizes) */}
+              {hasSizes && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-semibold text-[#F5F5F7]">
-                      {variantLabel} <span className="text-[#FFAA2C] font-mono font-bold uppercase">{selectedSize}</span>
+                      {variantLabel} <span className="text-[#FFAA2C] font-mono font-bold uppercase">{activeSize}</span>
                     </label>
                     <span className="text-[10px] text-[#A1A1AA] uppercase tracking-wider font-mono">
                       {variantType === 'storage'
@@ -570,13 +573,13 @@ export default function ProductDetailPage() {
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {product.sizes.map((size) => (
+                    {(product.sizes || []).map((size) => (
                       <button
                         key={size}
                         type="button"
                         onClick={() => setSelectedSize(size)}
                         className={`min-w-[42px] h-9 px-3 rounded-xl border font-mono text-xs font-black transition-all cursor-pointer flex items-center justify-center ${
-                          selectedSize === size
+                          (selectedSize || product.sizes?.[0]) === size
                             ? 'border-[#FF6B00] bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black shadow-lg shadow-[#FF6B00]/25 scale-105'
                             : 'border-white/10 bg-[#14141B] text-[#F5F5F7] hover:border-white/30 hover:bg-[#18181F]'
                         }`}
@@ -629,7 +632,7 @@ export default function ProductDetailPage() {
               {/* Action Buttons: Fast Buy & Add to Cart */}
               <div className="grid grid-cols-5 gap-3 pt-1">
                 <button
-                  onClick={() => openDirectCheckout(product, quantity, selectedColor?.nameFr, selectedSize)}
+                  onClick={() => openDirectCheckout(product, quantity, hasColors ? selectedColor?.nameFr : undefined, activeSize)}
                   className="col-span-4 py-3.5 px-4 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Zap className="w-4 h-4 fill-black" />
@@ -637,7 +640,7 @@ export default function ProductDetailPage() {
                 </button>
 
                 <button
-                  onClick={() => addToCart(product, quantity, selectedColor?.nameFr, selectedSize)}
+                  onClick={() => addToCart(product, quantity, hasColors ? selectedColor?.nameFr : undefined, activeSize)}
                   className="col-span-1 flex items-center justify-center rounded-xl bg-[#22222B] hover:bg-white/10 border border-white/10 text-white hover:text-[#FFAA2C] transition-all cursor-pointer"
                   title={t('products.add_to_cart')}
                 >
@@ -660,8 +663,8 @@ export default function ProductDetailPage() {
                   {
                     product,
                     quantity,
-                    selectedColor: selectedColor?.nameFr,
-                    selectedSize: selectedSize || undefined,
+                    selectedColor: hasColors ? selectedColor?.nameFr : undefined,
+                    selectedSize: activeSize,
                   },
                 ]}
               />
@@ -691,7 +694,7 @@ export default function ProductDetailPage() {
               const nameInput = formElement.querySelector('input');
               if (nameInput) nameInput.focus();
             } else {
-              openDirectCheckout(product, quantity, selectedColor?.nameFr, selectedSize);
+              openDirectCheckout(product, quantity, hasColors ? selectedColor?.nameFr : undefined, activeSize);
             }
           }}
           className="flex-1 py-3 px-3 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-[#FF6B00]/40 flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
@@ -741,7 +744,7 @@ export default function ProductDetailPage() {
           </a>
 
           <button
-            onClick={() => addToCart(product, quantity, selectedColor?.nameFr, selectedSize)}
+            onClick={() => addToCart(product, quantity, hasColors ? selectedColor?.nameFr : undefined, activeSize)}
             className="h-11 px-4 rounded-xl bg-slate-100 dark:bg-[#22222B] hover:bg-slate-200 dark:hover:bg-white/10 border border-black/10 dark:border-white/15 text-xs font-bold text-slate-700 dark:text-[#F5F5F7] flex items-center gap-2 transition-all cursor-pointer"
             title={t('products.add_to_cart')}
           >
@@ -757,7 +760,7 @@ export default function ProductDetailPage() {
                 const nameInput = formElement.querySelector('input');
                 if (nameInput) nameInput.focus();
               } else {
-                openDirectCheckout(product, quantity, selectedColor?.nameFr, selectedSize);
+                openDirectCheckout(product, quantity, hasColors ? selectedColor?.nameFr : undefined, activeSize);
               }
             }}
             className="h-11 py-2.5 px-6 bg-gradient-to-r from-[#FF6B00] via-[#FFAA2C] to-[#FF6B00] text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#FF6B00]/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"

@@ -59,11 +59,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [cart]);
 
   const addToCart = (product: Product, quantity = 1, selectedColor?: string, selectedSize?: string) => {
+    const hasColors = Array.isArray(product.colors) && product.colors.length > 0;
+    const hasSizes = Array.isArray(product.sizes) && product.sizes.length > 0;
+
+    const finalColor = selectedColor !== undefined
+      ? selectedColor
+      : (hasColors ? product.colors[0]?.nameFr : undefined);
+
+    const finalSize = selectedSize !== undefined
+      ? selectedSize
+      : (hasSizes ? product.sizes?.[0] : undefined);
+
     setCart((prev) => {
       const existingIndex = prev.findIndex(
         (item) => item.product.id === product.id &&
-          item.selectedColor === (selectedColor || product.colors[0]?.nameFr) &&
-          item.selectedSize === (selectedSize || product.sizes?.[0])
+          (item.selectedColor || '') === (finalColor || '') &&
+          (item.selectedSize || '') === (finalSize || '')
       );
       if (existingIndex > -1) {
         const updated = [...prev];
@@ -75,8 +86,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         {
           product,
           quantity,
-          selectedColor: selectedColor || product.colors[0]?.nameFr,
-          selectedSize: selectedSize || product.sizes?.[0],
+          selectedColor: finalColor,
+          selectedSize: finalSize,
         },
       ];
     });
@@ -102,11 +113,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const openDirectCheckout = (product: Product, quantity = 1, selectedColor?: string, selectedSize?: string) => {
+    const hasColors = Array.isArray(product.colors) && product.colors.length > 0;
+    const hasSizes = Array.isArray(product.sizes) && product.sizes.length > 0;
+
+    const finalColor = selectedColor !== undefined
+      ? selectedColor
+      : (hasColors ? product.colors[0]?.nameFr : undefined);
+
+    const finalSize = selectedSize !== undefined
+      ? selectedSize
+      : (hasSizes ? product.sizes?.[0] : undefined);
+
     setDirectCheckoutItem({
       product,
       quantity,
-      selectedColor: selectedColor || product.colors[0]?.nameFr,
-      selectedSize: selectedSize || product.sizes?.[0],
+      selectedColor: finalColor,
+      selectedSize: finalSize,
     });
   };
 

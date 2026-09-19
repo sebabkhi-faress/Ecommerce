@@ -24,7 +24,8 @@ export default function CheckoutPage() {
           {
             product: fallbackProduct,
             quantity: 1,
-            selectedColor: fallbackProduct.colors[0]?.nameFr,
+            selectedColor: Array.isArray(fallbackProduct.colors) && fallbackProduct.colors.length > 0 ? fallbackProduct.colors[0]?.nameFr : undefined,
+            selectedSize: Array.isArray(fallbackProduct.sizes) && fallbackProduct.sizes.length > 0 ? fallbackProduct.sizes[0] : undefined,
           },
         ]
       : [];
