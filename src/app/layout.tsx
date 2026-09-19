@@ -67,11 +67,17 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   let initialLang: 'fr' | 'ar' = 'fr';
+  let initialTheme: 'light' | 'dark' = 'light';
+
   try {
     const cookieStore = await cookies();
-    const cookieVal = cookieStore.get('electronics_lang')?.value;
-    if (cookieVal === 'ar' || cookieVal === 'fr') {
-      initialLang = cookieVal;
+    const cookieLang = cookieStore.get('electronics_lang')?.value;
+    if (cookieLang === 'ar' || cookieLang === 'fr') {
+      initialLang = cookieLang;
+    }
+    const cookieTheme = cookieStore.get('electronics_theme')?.value;
+    if (cookieTheme === 'dark' || cookieTheme === 'light') {
+      initialTheme = cookieTheme;
     }
   } catch (e) {
     // Ignore error
@@ -83,8 +89,8 @@ export default async function RootLayout({
     <html
       lang={initialLang}
       dir={isArabic ? 'rtl' : 'ltr'}
-      className={`light ${isArabic ? 'font-arabic' : 'font-latin'} ${plusJakartaSans.variable} ${readexPro.variable} ${jetbrainsMono.variable} scroll-smooth`}
-      data-theme="light"
+      className={`${initialTheme} ${isArabic ? 'font-arabic' : 'font-latin'} ${plusJakartaSans.variable} ${readexPro.variable} ${jetbrainsMono.variable} scroll-smooth`}
+      data-theme={initialTheme}
       data-lang={initialLang}
       suppressHydrationWarning
     >
@@ -94,17 +100,31 @@ export default async function RootLayout({
             __html: `
               (function() {
                 try {
-                  var t = localStorage.getItem('electronics_theme');
-                  if (t === 'dark') {
+                  var storedTheme = null;
+                  var m = document.cookie.match(/(?:^|; )electronics_theme=([^;]*)/);
+                  if (m && (m[1] === 'dark' || m[1] === 'light')) {
+                    storedTheme = m[1];
+                  } else {
+                    var ls = localStorage.getItem('electronics_theme');
+                    if (ls === 'dark' || ls === 'light') {
+                      storedTheme = ls;
+                    }
+                  }
+
+                  if (storedTheme === 'dark') {
                     document.documentElement.classList.add('dark');
                     document.documentElement.classList.remove('light');
                     document.documentElement.setAttribute('data-theme', 'dark');
                     document.documentElement.style.colorScheme = 'dark';
-                  } else {
+                  } else if (storedTheme === 'light') {
                     document.documentElement.classList.add('light');
                     document.documentElement.classList.remove('dark');
                     document.documentElement.setAttribute('data-theme', 'light');
                     document.documentElement.style.colorScheme = 'light';
+                  }
+
+                  if (storedTheme && !document.cookie.includes('electronics_theme=' + storedTheme)) {
+                    document.cookie = 'electronics_theme=' + storedTheme + '; path=/; max-age=31536000; SameSite=Lax';
                   }
 
                   var l = localStorage.getItem('electronics_lang');
@@ -135,7 +155,7 @@ export default async function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[var(--obsidian)] text-[var(--white-titanium)] min-h-screen transition-colors duration-200">
+      <body className="bg-[var(--obsidian)] text-[var(--white-titanium)] min-h-screen">
         <AppProviders initialLang={initialLang}>{children}</AppProviders>
       </body>
     </html>

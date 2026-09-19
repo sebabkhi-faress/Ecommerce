@@ -53,16 +53,16 @@ export default function Testimonials() {
   ];
 
   return (
-    <section className="py-16 bg-[#0D0D11]">
+    <section className="py-16 bg-[var(--obsidian)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#FFAA2C]">
             {t('testimonials.eyebrow')}
           </span>
-          <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-[#F5F5F7]">
+          <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-[#F5F5F7]">
             {t('testimonials.title')}
           </h2>
-          <p className="text-xs sm:text-sm text-[#A1A1AA]">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-[#A1A1AA]">
             {t('testimonials.subtitle')}
           </p>
         </div>
@@ -71,7 +71,7 @@ export default function Testimonials() {
           {reviews.map((rev, idx) => (
             <div
               key={idx}
-              className="bg-[#18181F] border border-white/10 rounded-3xl p-6 flex flex-col justify-between hover:border-[#FF6B00]/40 transition-colors relative"
+              className="bg-white dark:bg-[#18181F] border border-black/10 dark:border-white/10 rounded-3xl p-6 flex flex-col justify-between hover:border-[#FF6B00]/40 transition-colors relative shadow-sm dark:shadow-none"
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -83,19 +83,19 @@ export default function Testimonials() {
                       />
                     ))}
                   </div>
-                  <span className="text-[11px] font-mono text-[#A1A1AA]">
+                  <span className="text-[11px] font-mono text-slate-500 dark:text-[#A1A1AA]">
                     {lang === 'ar' ? rev.dateAr : rev.dateFr}
                   </span>
                 </div>
 
-                <p className="text-xs sm:text-sm text-[#F5F5F7] leading-relaxed italic mb-4">
+                <p className="text-xs sm:text-sm text-slate-800 dark:text-[#F5F5F7] leading-relaxed italic mb-4">
                   &ldquo;{lang === 'ar' ? rev.commentAr : rev.commentFr}&rdquo;
                 </p>
               </div>
 
-              <div className="pt-4 border-t border-white/5 space-y-1">
+              <div className="pt-4 border-t border-black/5 dark:border-white/5 space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#F5F5F7] flex items-center gap-1">
+                  <span className="text-xs font-bold text-slate-900 dark:text-[#F5F5F7] flex items-center gap-1">
                     <span>{rev.name}</span>
                     <CheckCircle className="w-3.5 h-3.5 text-[#25D366]" />
                   </span>
@@ -104,7 +104,7 @@ export default function Testimonials() {
                     <span>{lang === 'ar' ? rev.cityAr : rev.cityFr}</span>
                   </span>
                 </div>
-                <p className="text-[11px] text-[#A1A1AA] truncate">
+                <p className="text-[11px] text-slate-500 dark:text-[#A1A1AA] truncate">
                   {lang === 'ar' ? rev.productAr : rev.productFr}
                 </p>
               </div>

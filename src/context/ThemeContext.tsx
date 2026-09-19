@@ -16,12 +16,18 @@ function getInitialTheme(): Theme {
   if (typeof document !== 'undefined') {
     const attr = document.documentElement.getAttribute('data-theme');
     if (attr === 'dark' || attr === 'light') return attr;
+    try {
+      const m = document.cookie.match(/(?:^|; )electronics_theme=([^;]*)/);
+      if (m && (m[1] === 'dark' || m[1] === 'light')) return m[1] as Theme;
+      const ls = localStorage.getItem('electronics_theme');
+      if (ls === 'dark' || ls === 'light') return ls as Theme;
+    } catch (e) {}
   }
   return 'light';
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Read the theme already applied by the blocking inline script — no flash
+  // Read the theme already applied by the blocking inline script — zero flash
   const [theme, setThemeState] = useState<Theme>(getInitialTheme);
 
   const applyTheme = (newTheme: Theme) => {
@@ -41,7 +47,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('electronics_theme', newTheme);
+    try {
+      localStorage.setItem('electronics_theme', newTheme);
+      document.cookie = `electronics_theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`;
+    } catch (e) {}
     applyTheme(newTheme);
   };
 

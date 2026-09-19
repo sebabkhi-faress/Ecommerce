@@ -27,7 +27,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <div
       onClick={() => router.push(productUrl)}
-      className="group relative bg-[#18181F] border border-white/10 hover:border-[#FF6B00]/50 rounded-3xl p-4 sm:p-5 transition-all duration-300 hover:shadow-2xl hover:shadow-[#FF6B00]/10 flex flex-col justify-between overflow-hidden cursor-pointer"
+      className="group relative bg-white dark:bg-[#18181F] border border-black/10 dark:border-white/10 hover:border-[#FF6B00]/50 rounded-3xl p-4 sm:p-5 transition-all duration-300 shadow-sm dark:shadow-none hover:shadow-2xl hover:shadow-[#FF6B00]/10 flex flex-col justify-between overflow-hidden cursor-pointer"
     >
       {/* Top Badges */}
       <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between pointer-events-none">
@@ -42,14 +42,14 @@ export default function ProductCard({ product }: ProductCardProps) {
             {lang === 'ar' ? product.badgeAr || 'عرض حصري' : product.badgeFr || 'VENTE FLASH'}
           </span>
         ) : product.badgeFr ? (
-          <span className="px-2.5 py-1 rounded-full bg-[#22222B] border border-white/15 text-[#FFAA2C] font-mono font-bold text-[10px] uppercase tracking-wider">
+          <span className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-[#22222B] border border-black/10 dark:border-white/15 text-slate-800 dark:text-[#FFAA2C] font-mono font-bold text-[10px] uppercase tracking-wider">
             {lang === 'ar' ? product.badgeAr : product.badgeFr}
           </span>
         ) : (
           <span />
         )}
 
-        <div className="flex items-center gap-1 bg-[#0D0D11]/80 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10 text-[11px] font-mono text-[#FFAA2C]">
+        <div className="flex items-center gap-1 bg-slate-100/90 dark:bg-[#0D0D11]/80 backdrop-blur-md px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10 text-[11px] font-mono text-[#FFAA2C]">
           <Star className="w-3 h-3 fill-[#FFAA2C] text-[#FFAA2C]" />
           <span>{product.rating.toFixed(1)}</span>
         </div>
@@ -59,7 +59,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       <Link
         href={productUrl}
         onClick={(e) => e.stopPropagation()}
-        className="relative block w-full aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-[#22222B]/60 to-[#121217] my-3"
+        className="relative block w-full aspect-square rounded-2xl overflow-hidden bg-slate-100 dark:bg-gradient-to-b dark:from-[#22222B]/60 dark:to-[#121217] my-3"
       >
         <div className="absolute inset-0 bg-radial-gradient from-[#FF6B00]/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         <img
@@ -70,7 +70,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Quick view hint */}
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-opacity flex items-center justify-center">
-          <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#18181F]/90 border border-white/20 text-xs font-semibold text-white shadow-xl">
+          <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/90 dark:bg-[#18181F]/90 border border-black/10 dark:border-white/20 text-xs font-semibold text-slate-900 dark:text-white shadow-xl">
             <Eye className="w-3.5 h-3.5 text-[#FFAA2C]" />
             <span>{lang === 'ar' ? 'معاينة المنتج والتفاصيل' : 'Voir le produit'}</span>
           </span>
@@ -94,10 +94,10 @@ export default function ProductCard({ product }: ProductCardProps) {
           onClick={(e) => e.stopPropagation()}
           className="block"
         >
-          <h3 className="text-sm sm:text-base font-bold text-[#F5F5F7] group-hover:text-[#FF6B00] transition-colors line-clamp-1">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-[#F5F5F7] group-hover:text-[#FF6B00] transition-colors line-clamp-1">
             {lang === 'ar' ? product.nameAr : product.nameFr}
           </h3>
-          <p className="text-xs text-[#A1A1AA] line-clamp-1 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-[#A1A1AA] line-clamp-1 mt-0.5">
             {lang === 'ar' ? product.taglineAr : product.taglineFr}
           </p>
         </Link>
@@ -108,7 +108,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             {formatDZD(displayPrice, lang)}
           </span>
           {originalPrice && originalPrice > displayPrice && (
-            <span className="text-xs font-mono text-[#A1A1AA]/60 line-through">
+            <span className="text-xs font-mono text-slate-400 dark:text-[#A1A1AA]/60 line-through">
               {formatDZD(originalPrice, lang)}
             </span>
           )}
@@ -116,7 +116,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
 
       {/* Action Buttons: 1-Click Fast Buy + Add to Cart */}
-      <div className="grid grid-cols-5 gap-2 mt-4 pt-3 border-t border-white/5">
+      <div className="grid grid-cols-5 gap-2 mt-4 pt-3 border-t border-black/5 dark:border-white/5">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -133,7 +133,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             e.stopPropagation();
             addToCart(product);
           }}
-          className="col-span-1 flex items-center justify-center rounded-xl bg-[#22222B] hover:bg-white/10 border border-white/10 text-[#F5F5F7] hover:text-[#FFAA2C] transition-all cursor-pointer"
+          className="col-span-1 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#22222B] dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-slate-800 dark:text-[#F5F5F7] hover:text-[#FF6B00] dark:hover:text-[#FFAA2C] transition-all cursor-pointer"
           title={t('products.add_to_cart')}
         >
           <ShoppingBag className="w-4 h-4" />

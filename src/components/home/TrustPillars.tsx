@@ -38,10 +38,10 @@ export default function TrustPillars() {
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#FFAA2C]">
             {t('trust.eyebrow')}
           </span>
-          <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-[#F5F5F7]">
+          <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-[#F5F5F7]">
             {t('trust.title')}
           </h2>
-          <p className="text-xs sm:text-sm text-[#A1A1AA]">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-[#A1A1AA]">
             {t('trust.subtitle')}
           </p>
         </div>
@@ -52,11 +52,11 @@ export default function TrustPillars() {
             return (
               <div
                 key={idx}
-                className="bg-[#18181F] border border-white/10 hover:border-white/25 rounded-3xl p-6 transition-all duration-300 relative group overflow-hidden"
+                className="bg-white dark:bg-[#18181F] border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/25 rounded-3xl p-6 transition-all duration-300 relative group overflow-hidden shadow-sm dark:shadow-none"
               >
                 <div className="flex items-center justify-between mb-5">
                   <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-md"
                     style={{
                       backgroundColor: `${pillar.color}15`,
                       border: `1px solid ${pillar.color}40`,
@@ -65,19 +65,19 @@ export default function TrustPillars() {
                   >
                     <Icon className="w-6 h-6" />
                   </div>
-                  <span className="text-[10px] font-mono font-bold tracking-widest px-2.5 py-1 rounded-full bg-white/5 text-[#A1A1AA] border border-white/10">
+                  <span className="text-[10px] font-mono font-bold tracking-widest px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#A1A1AA] border border-black/5 dark:border-white/10">
                     {pillar.tag}
                   </span>
                 </div>
 
-                <h3 className="text-base font-bold text-[#F5F5F7] mb-2">
+                <h3 className="text-base font-bold text-slate-900 dark:text-[#F5F5F7] mb-2">
                   {pillar.title}
                 </h3>
-                <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                <p className="text-xs text-slate-600 dark:text-[#A1A1AA] leading-relaxed">
                   {pillar.desc}
                 </p>
 
-                <div className="mt-4 pt-3 border-t border-white/5 flex items-center gap-1.5 text-[11px] text-[#25D366]">
+                <div className="mt-4 pt-3 border-t border-black/5 dark:border-white/5 flex items-center gap-1.5 text-[11px] text-[#25D366]">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>{lang === 'ar' ? 'معتمد رسمياً' : 'Garanti & Vérifié'}</span>
                 </div>

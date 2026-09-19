@@ -20,28 +20,28 @@ export default function Footer() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 bg-[#FF6B00]/5 blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-white/10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-black/10 dark:border-white/10">
           {/* Col 1 & 2: Brand & DZ Mission */}
           <div className="lg:col-span-2 space-y-4">
             <Link href="/" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#FF6B00] to-[#FFAA2C] flex items-center justify-center">
                 <Zap className="w-4 h-4 text-black fill-black" />
               </div>
-              <span className="text-xl font-black tracking-tighter text-[#F5F5F7]">
+              <span className="text-xl font-black tracking-tighter text-slate-900 dark:text-[#F5F5F7]">
                 Bika Store<span className="text-[#FF6B00]">.</span>
               </span>
             </Link>
 
-            <p className="text-xs leading-relaxed max-w-sm text-[#A1A1AA]">
+            <p className="text-xs leading-relaxed max-w-sm text-slate-600 dark:text-[#A1A1AA]">
               {t('footer.description')}
             </p>
 
             <div className="pt-2 flex flex-wrap gap-2 text-xs">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#18181F] border border-white/10 text-[#F5F5F7]">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-[#18181F] border border-black/10 dark:border-white/10 text-slate-800 dark:text-[#F5F5F7] shadow-sm dark:shadow-none">
                 <Truck className="w-3.5 h-3.5 text-[#FF6B00]" />
                 <span>{t('footer.wilayas_badge')}</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#18181F] border border-white/10 text-[#F5F5F7]">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-[#18181F] border border-black/10 dark:border-white/10 text-slate-800 dark:text-[#F5F5F7] shadow-sm dark:shadow-none">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#FFAA2C]" />
                 <span>{t('footer.cod_badge')}</span>
               </span>
@@ -50,7 +50,7 @@ export default function Footer() {
 
           {/* Col 3: Categories */}
           <div>
-            <h4 className="text-xs font-mono font-bold tracking-widest uppercase text-[#F5F5F7] mb-4">
+            <h4 className="text-xs font-mono font-bold tracking-widest uppercase text-slate-900 dark:text-[#F5F5F7] mb-4">
               {t('nav.categories')}
             </h4>
             <ul className="space-y-2.5 text-xs">
@@ -84,7 +84,7 @@ export default function Footer() {
 
           {/* Col 4: Trust & Admin */}
           <div>
-            <h4 className="text-xs font-mono font-bold tracking-widest uppercase text-[#F5F5F7] mb-4">
+            <h4 className="text-xs font-mono font-bold tracking-widest uppercase text-slate-900 dark:text-[#F5F5F7] mb-4">
               {t('footer.support')}
             </h4>
             <ul className="space-y-2.5 text-xs">
@@ -108,7 +108,7 @@ export default function Footer() {
 
           {/* Col 5: Contact & Location DZ */}
           <div>
-            <h4 className="text-xs font-mono font-bold tracking-widest uppercase text-[#F5F5F7] mb-4">
+            <h4 className="text-xs font-mono font-bold tracking-widest uppercase text-slate-900 dark:text-[#F5F5F7] mb-4">
               {t('footer.contact_title')}
             </h4>
             <div className="space-y-2.5 text-xs">

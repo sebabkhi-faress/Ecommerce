@@ -52,7 +52,7 @@ export default function ThemeToggle({
       <button
         type="button"
         disabled
-        className={`relative inline-flex items-center justify-center rounded-xl border transition-all cursor-pointer group select-none ${sizeClasses} bg-white/5 border-white/10 ${className}`}
+        className={`relative inline-flex items-center justify-center rounded-xl border transition-all cursor-pointer group select-none ${sizeClasses} bg-slate-100 dark:bg-white/5 border-black/10 dark:border-white/10 ${className}`}
         aria-label="Theme toggle"
       >
         <span className={`${iconSizes} opacity-0`} />

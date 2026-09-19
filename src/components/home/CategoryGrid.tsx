@@ -31,10 +31,10 @@ export default function CategoryGrid({ onSelectCategory, activeCategory }: Categ
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#FFAA2C]">
             {t('categories.eyebrow')}
           </span>
-          <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-[#F5F5F7]">
+          <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-[#F5F5F7]">
             {t('categories.title')}
           </h2>
-          <p className="text-xs sm:text-sm text-[#A1A1AA]">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-[#A1A1AA]">
             {t('categories.subtitle')}
           </p>
         </div>
@@ -49,27 +49,27 @@ export default function CategoryGrid({ onSelectCategory, activeCategory }: Categ
               <div
                 key={cat.id || cat.slug}
                 onClick={() => onSelectCategory && onSelectCategory(cat.slug)}
-                className={`group cursor-pointer bg-[#18181F] border ${
-                  isSelected ? 'border-[#FF6B00] shadow-lg shadow-[#FF6B00]/20' : 'border-white/10'
-                } hover:border-[#FF6B00]/50 rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between`}
+                className={`group cursor-pointer bg-white dark:bg-[#18181F] border ${
+                  isSelected ? 'border-[#FF6B00] shadow-lg shadow-[#FF6B00]/20' : 'border-black/10 dark:border-white/10'
+                } hover:border-[#FF6B00]/50 rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between shadow-sm dark:shadow-none`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-[#22222B] border border-white/10 group-hover:bg-[#FF6B00]/20 group-hover:border-[#FF6B00]/40 flex items-center justify-center text-[#FFAA2C] group-hover:text-[#FF6B00] transition-colors">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-[#22222B] border border-black/5 dark:border-white/10 group-hover:bg-[#FF6B00]/20 group-hover:border-[#FF6B00]/40 flex items-center justify-center text-slate-800 dark:text-[#FFAA2C] group-hover:text-[#FF6B00] transition-colors">
                       <Icon className="w-6 h-6" />
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-[#A1A1AA] group-hover:text-[#FFAA2C] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    <ArrowUpRight className="w-4 h-4 text-slate-400 dark:text-[#A1A1AA] group-hover:text-[#FFAA2C] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                   </div>
 
-                  <h3 className="text-base font-bold text-[#F5F5F7] group-hover:text-white transition-colors">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-[#F5F5F7] group-hover:text-[#FF6B00] dark:group-hover:text-white transition-colors">
                     {lang === 'ar' ? cat.nameAr : cat.nameFr}
                   </h3>
-                  <p className="text-xs text-[#A1A1AA] mt-1 line-clamp-2">
+                  <p className="text-xs text-slate-500 dark:text-[#A1A1AA] mt-1 line-clamp-2">
                     {lang === 'ar' ? cat.descriptionAr : cat.descriptionFr}
                   </p>
                 </div>
 
-                <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-[#A1A1AA]">
+                <div className="pt-4 mt-4 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-[#A1A1AA]">
                   <span>{count} {lang === 'ar' ? 'أجهزة' : 'produits'}</span>
                   <span className="text-[#FF6B00] font-bold group-hover:underline">
                     {lang === 'ar' ? 'عرض ←' : 'Explorer →'}

@@ -81,8 +81,8 @@ export default function Navbar() {
       <header
         className={`sticky top-0 z-40 transition-all duration-300 ${
           isScrolled
-            ? 'backdrop-blur-xl bg-[#0D0D11]/85 border-b border-white/10 shadow-2xl shadow-black/60'
-            : 'backdrop-blur-md bg-[#0D0D11]/70 border-b border-white/5'
+            ? 'backdrop-blur-xl bg-white/90 dark:bg-[#0D0D11]/85 border-b border-black/10 dark:border-white/10 shadow-md dark:shadow-2xl dark:shadow-black/60'
+            : 'backdrop-blur-md bg-white/80 dark:bg-[#0D0D11]/70 border-b border-black/5 dark:border-white/5'
         }`}
       >
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
@@ -94,10 +94,10 @@ export default function Navbar() {
                   <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-black fill-black" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-base sm:text-2xl font-black tracking-tighter text-[#F5F5F7] group-hover:text-white transition-colors flex items-center">
+                  <span className="text-base sm:text-2xl font-black tracking-tighter text-slate-900 dark:text-[#F5F5F7] group-hover:text-[#FF6B00] dark:group-hover:text-white transition-colors flex items-center">
                     Bika Store<span className="text-[#FF6B00] animate-pulse">.</span>
                   </span>
-                  <span className="text-[8px] sm:text-[9px] font-mono uppercase tracking-widest text-[#FFAA2C]/80 -mt-0.5 sm:-mt-1 font-semibold">
+                  <span className="text-[8px] sm:text-[9px] font-mono uppercase tracking-widest text-[#FFAA2C] -mt-0.5 sm:-mt-1 font-semibold">
                     {lang === 'ar' ? 'الجزائر 2026' : 'ALGERIA 2026'}
                   </span>
                 </div>
@@ -107,13 +107,13 @@ export default function Navbar() {
               <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
                 <Link
                   href="/"
-                  className="px-3.5 py-2 text-sm font-medium text-[#A1A1AA] hover:text-[#F5F5F7] hover:bg-white/5 rounded-full transition-colors"
+                  className="px-3.5 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-black/5 dark:text-[#A1A1AA] dark:hover:text-[#F5F5F7] dark:hover:bg-white/5 rounded-full transition-colors"
                 >
                   {t('nav.home')}
                 </Link>
                 <Link
                   href="/#products"
-                  className="px-3.5 py-2 text-sm font-medium text-[#A1A1AA] hover:text-[#F5F5F7] hover:bg-white/5 rounded-full transition-colors"
+                  className="px-3.5 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-black/5 dark:text-[#A1A1AA] dark:hover:text-[#F5F5F7] dark:hover:bg-white/5 rounded-full transition-colors"
                 >
                   {t('nav.products')}
                 </Link>
@@ -126,7 +126,7 @@ export default function Navbar() {
                 </Link>
                 <Link
                   href="/#guarantees"
-                  className="px-3.5 py-2 text-sm font-medium text-[#A1A1AA] hover:text-[#F5F5F7] hover:bg-white/5 rounded-full transition-colors"
+                  className="px-3.5 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-black/5 dark:text-[#A1A1AA] dark:hover:text-[#F5F5F7] dark:hover:bg-white/5 rounded-full transition-colors"
                 >
                   {t('nav.guarantees')}
                 </Link>
@@ -163,24 +163,24 @@ export default function Navbar() {
               {/* Quick Search Button */}
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="flex items-center justify-center p-2 sm:px-4 sm:py-2 text-xs text-[#A1A1AA] bg-[#18181F]/90 hover:bg-[#22222B] border border-white/10 hover:border-white/20 rounded-full transition-all group shrink-0"
+                className="flex items-center justify-center p-2 sm:px-4 sm:py-2 text-xs text-slate-600 dark:text-[#A1A1AA] bg-slate-100 hover:bg-slate-200 dark:bg-[#18181F]/90 dark:hover:bg-[#22222B] border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 rounded-full transition-all group shrink-0"
                 aria-label="Search"
               >
                 <Search className="w-3.5 h-3.5 text-[#FFAA2C] group-hover:scale-110 transition-transform" />
                 <span className="hidden md:inline font-medium">{t('nav.search')}</span>
-                <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-black/40 text-neutral-400 rounded border border-white/10">
+                <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-black/10 dark:bg-black/40 text-slate-500 dark:text-neutral-400 rounded border border-black/10 dark:border-white/10">
                   ⌘K
                 </kbd>
               </button>
 
               {/* Language Switcher Pill (Desktop: Dual pill, Mobile: Compact toggle) */}
-              <div className="hidden sm:flex items-center p-1 bg-[#18181F] border border-white/10 rounded-full hover:border-[#FF6B00]/40 transition-all group shrink-0">
+              <div className="hidden sm:flex items-center p-1 bg-slate-100 dark:bg-[#18181F] border border-black/10 dark:border-white/10 rounded-full hover:border-[#FF6B00]/40 transition-all group shrink-0">
                 <button
                   onClick={() => lang !== 'ar' && toggleLanguage()}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all ${
                     lang === 'ar'
                       ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black shadow-md'
-                      : 'text-[#A1A1AA] hover:text-white'
+                      : 'text-slate-600 hover:text-slate-900 dark:text-[#A1A1AA] dark:hover:text-white'
                   }`}
                 >
                   <Globe className="w-3 h-3" />
@@ -191,7 +191,7 @@ export default function Navbar() {
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all ${
                     lang === 'fr'
                       ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black shadow-md'
-                      : 'text-[#A1A1AA] hover:text-white'
+                      : 'text-slate-600 hover:text-slate-900 dark:text-[#A1A1AA] dark:hover:text-white'
                   }`}
                 >
                   <span>FR</span>
@@ -201,7 +201,7 @@ export default function Navbar() {
               {/* Compact Mobile Language Switcher */}
               <button
                 onClick={toggleLanguage}
-                className="sm:hidden flex items-center justify-center gap-1 px-2 py-1.5 bg-[#18181F] border border-white/10 rounded-full text-xs font-bold text-[#F5F5F7] shrink-0"
+                className="sm:hidden flex items-center justify-center gap-1 px-2 py-1.5 bg-slate-100 dark:bg-[#18181F] border border-black/10 dark:border-white/10 rounded-full text-xs font-bold text-slate-900 dark:text-[#F5F5F7] shrink-0"
                 title={lang === 'fr' ? 'Changer en Arabe' : 'Changer en Français'}
               >
                 <Globe className="w-3 h-3 text-[#FFAA2C]" />
@@ -216,18 +216,18 @@ export default function Navbar() {
                 <div className="relative shrink-0">
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-1.5 p-1 sm:px-3 sm:py-1.5 bg-[#18181F] hover:bg-[#22222B] border border-white/10 hover:border-[#FF6B00]/40 rounded-full transition-all text-xs cursor-pointer"
+                    className="flex items-center gap-1.5 p-1 sm:px-3 sm:py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#18181F] dark:hover:bg-[#22222B] border border-black/10 dark:border-white/10 hover:border-[#FF6B00]/40 rounded-full transition-all text-xs cursor-pointer"
                   >
                     <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-[#FF6B00] to-[#FFAA2C] text-black font-black text-[10px] sm:text-xs flex items-center justify-center shrink-0 shadow-md">
                       {user.name.charAt(0).toUpperCase()}
                     </div>
-                    <span className="hidden md:inline font-bold text-[#F5F5F7] max-w-[80px] truncate">
+                    <span className="hidden md:inline font-bold text-slate-900 dark:text-[#F5F5F7] max-w-[80px] truncate">
                       {user.name.split(' ')[0]}
                     </span>
-                    <span className="hidden sm:inline text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-[#FFAA2C] uppercase">
+                    <span className="hidden sm:inline text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-[#FFAA2C] uppercase">
                       {role === 'admin' ? 'Admin' : role === 'delivery' ? 'Livreur' : 'Client'}
                     </span>
-                    <ChevronDown className="w-3 h-3 text-[#A1A1AA] hidden sm:inline" />
+                    <ChevronDown className="w-3 h-3 text-slate-500 dark:text-[#A1A1AA] hidden sm:inline" />
                   </button>
 
                   {/* Dropdown Menu */}
@@ -239,12 +239,12 @@ export default function Navbar() {
                         onClick={() => setIsUserMenuOpen(false)}
                       />
                       <div
-                        className={`absolute mt-2 w-60 sm:w-56 max-w-[calc(100vw-24px)] bg-[#18181F] border border-white/15 rounded-2xl p-2 shadow-2xl z-50 animate-fadeIn space-y-1 ${
+                        className={`absolute mt-2 w-60 sm:w-56 max-w-[calc(100vw-24px)] bg-white dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-2xl p-2 shadow-2xl z-50 animate-fadeIn space-y-1 ${
                           lang === 'ar' ? 'left-0 right-auto' : 'right-0 left-auto'
                         }`}
                       >
-                        <div className="px-3 py-2 border-b border-white/10">
-                          <p className="font-bold text-xs text-[#F5F5F7] truncate">{user.name}</p>
+                        <div className="px-3 py-2 border-b border-black/10 dark:border-white/10">
+                          <p className="font-bold text-xs text-slate-900 dark:text-[#F5F5F7] truncate">{user.name}</p>
                           <span className="inline-flex items-center gap-1 mt-1 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FF6B00]/15 text-[#FF6B00] uppercase">
                             {role === 'admin' ? (
                               <>
@@ -269,7 +269,7 @@ export default function Navbar() {
                           <Link
                             href="/admin"
                             onClick={() => setIsUserMenuOpen(false)}
-                            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#F5F5F7] hover:bg-white/5 rounded-xl transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 dark:text-[#F5F5F7] dark:hover:bg-white/5 rounded-xl transition-colors"
                           >
                             <LayoutDashboard className="w-4 h-4 text-[#FF6B00]" />
                             <span>{lang === 'ar' ? 'لوحة تحكم المدير' : 'Tableau de bord Admin'}</span>
@@ -280,7 +280,7 @@ export default function Navbar() {
                           <Link
                             href="/delivery"
                             onClick={() => setIsUserMenuOpen(false)}
-                            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#FFAA2C] hover:bg-white/5 rounded-xl transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#FFAA2C] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
                           >
                             <Truck className="w-4 h-4 text-[#FFAA2C]" />
                             <span>{lang === 'ar' ? 'لوحة التوصيل والرتور' : 'Livraisons & Retours (Dashboard)'}</span>
@@ -290,7 +290,7 @@ export default function Navbar() {
                         <Link
                           href="/account"
                           onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#F5F5F7] hover:bg-white/5 rounded-xl transition-colors"
+                          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 dark:text-[#F5F5F7] dark:hover:bg-white/5 rounded-xl transition-colors"
                         >
                           <UserIcon className="w-4 h-4 text-[#25D366]" />
                           <span>{lang === 'ar' ? 'حسابي وطلبياتي' : 'Mon Compte & Commandes'}</span>
@@ -301,7 +301,7 @@ export default function Navbar() {
                             logout();
                             setIsUserMenuOpen(false);
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer text-left rtl:text-right"
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer text-left rtl:text-right"
                         >
                           <LogOut className="w-4 h-4" />
                           <span>{lang === 'ar' ? 'تسجيل الخروج' : 'Déconnexion'}</span>
@@ -311,11 +311,11 @@ export default function Navbar() {
                   )}
                 </div>
               ) : isLoading ? (
-                <div className="w-8 h-8 sm:w-20 sm:h-8 rounded-full bg-white/5 border border-white/10 animate-pulse shrink-0" />
+                <div className="w-8 h-8 sm:w-20 sm:h-8 rounded-full bg-slate-200 dark:bg-white/5 border border-black/10 dark:border-white/10 animate-pulse shrink-0" />
               ) : (
                 <Link
                   href="/login"
-                  className="flex items-center justify-center p-1.5 sm:px-3 sm:py-2 bg-[#18181F] hover:bg-[#22222B] border border-white/10 hover:border-[#FF6B00]/40 rounded-full text-xs font-semibold text-[#F5F5F7] transition-all shrink-0"
+                  className="flex items-center justify-center p-1.5 sm:px-3 sm:py-2 bg-slate-100 hover:bg-slate-200 dark:bg-[#18181F] dark:hover:bg-[#22222B] border border-black/10 dark:border-white/10 hover:border-[#FF6B00]/40 rounded-full text-xs font-semibold text-slate-900 dark:text-[#F5F5F7] transition-all shrink-0"
                   title={lang === 'ar' ? 'دخول' : 'Connexion'}
                 >
                   <UserIcon className="w-3.5 h-3.5 text-[#FFAA2C]" />
@@ -326,10 +326,10 @@ export default function Navbar() {
               {/* Cart Drawer Trigger Button */}
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="relative flex items-center justify-center w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-[#18181F] hover:bg-[#22222B] border border-white/10 hover:border-[#FF6B00]/50 transition-all text-[#F5F5F7] group shadow-inner shrink-0 cursor-pointer"
+                className="relative flex items-center justify-center w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-[#18181F] dark:hover:bg-[#22222B] border border-black/10 dark:border-white/10 hover:border-[#FF6B00]/50 transition-all text-slate-900 dark:text-[#F5F5F7] group shadow-sm dark:shadow-inner shrink-0 cursor-pointer"
                 aria-label="Cart"
               >
-                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-[#F5F5F7] group-hover:text-[#FF6B00] transition-colors" />
+                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-slate-800 dark:text-[#F5F5F7] group-hover:text-[#FF6B00] transition-colors" />
                 {totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 bg-[#FF6B00] text-black font-extrabold text-[9px] sm:text-[11px] w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shadow-lg shadow-[#FF6B00]/50 animate-bounce">
                     {totalItems}
@@ -343,9 +343,9 @@ export default function Navbar() {
 
       {/* Minimalist Search Overlay Modal */}
       {isSearchOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-          <div className="w-full max-w-2xl bg-[#18181F] border border-white/15 rounded-2xl shadow-2xl shadow-black/80 overflow-hidden">
-            <div className="flex items-center px-4 py-3 border-b border-white/10">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/60 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-2xl bg-white dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-center px-4 py-3 border-b border-black/10 dark:border-white/10">
               <Search className="w-5 h-5 text-[#FF6B00]" />
               <input
                 type="text"
@@ -353,11 +353,11 @@ export default function Navbar() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('nav.search')}
-                className="w-full bg-transparent px-3 text-sm text-[#F5F5F7] placeholder-[#A1A1AA] focus:outline-none"
+                className="w-full bg-transparent px-3 text-sm text-slate-900 dark:text-[#F5F5F7] placeholder-slate-400 dark:placeholder-[#A1A1AA] focus:outline-none"
               />
               <button
                 onClick={() => setIsSearchOpen(false)}
-                className="p-1 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/10"
+                className="p-1 rounded-lg text-slate-400 dark:text-[#A1A1AA] hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -365,7 +365,7 @@ export default function Navbar() {
 
             <div className="max-h-96 overflow-y-auto p-4">
               {searchQuery.trim() === '' ? (
-                <div className="py-8 text-center text-[#A1A1AA] text-sm">
+                <div className="py-8 text-center text-slate-500 dark:text-[#A1A1AA] text-sm">
                   <p className="font-mono text-xs uppercase tracking-widest text-[#FFAA2C] mb-2">
                     {lang === 'ar' ? 'بحث سريع عن المنتجات أو الأقسام' : 'RECHERCHE RAPIDE PAR PRODUIT OU CATÉGORIE'}
                   </p>
@@ -374,7 +374,7 @@ export default function Navbar() {
                       <button
                         key={tag}
                         onClick={() => setSearchQuery(tag)}
-                        className="px-3 py-1 bg-white/5 hover:bg-[#FF6B00]/20 hover:border-[#FF6B00]/40 border border-white/10 rounded-full text-xs text-[#F5F5F7] transition-all"
+                        className="px-3 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-[#FF6B00]/20 hover:border-[#FF6B00]/40 border border-black/10 dark:border-white/10 rounded-full text-xs text-slate-800 dark:text-[#F5F5F7] transition-all"
                       >
                         {tag}
                       </button>
@@ -388,32 +388,32 @@ export default function Navbar() {
                       key={product.id}
                       href={`/products/${product.slug}`}
                       onClick={() => setIsSearchOpen(false)}
-                      className="flex items-center gap-4 p-2.5 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all group"
+                      className="flex items-center gap-4 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent hover:border-black/10 dark:hover:border-white/10 transition-all group"
                     >
                       <img
                         src={product.images[0]}
                         alt={product.nameFr}
-                        className="w-14 h-14 object-cover rounded-lg bg-black/40 border border-white/10"
+                        className="w-14 h-14 object-cover rounded-lg bg-slate-100 dark:bg-black/40 border border-black/10 dark:border-white/10"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-semibold text-[#F5F5F7] group-hover:text-[#FFAA2C] truncate">
+                          <h4 className="text-sm font-semibold text-slate-900 dark:text-[#F5F5F7] group-hover:text-[#FFAA2C] truncate">
                             {lang === 'ar' ? product.nameAr : product.nameFr}
                           </h4>
                           <span className="text-xs font-mono font-bold text-[#FF6B00]">
                             {product.price.toLocaleString('fr-DZ')} {lang === 'ar' ? 'د.ج' : 'DZD'}
                           </span>
                         </div>
-                        <p className="text-xs text-[#A1A1AA] truncate mt-0.5">
+                        <p className="text-xs text-slate-500 dark:text-[#A1A1AA] truncate mt-0.5">
                           {lang === 'ar' ? product.taglineAr : product.taglineFr}
                         </p>
                       </div>
-                      <ArrowUpRight className="w-4 h-4 text-[#A1A1AA] group-hover:text-[#FFAA2C] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                      <ArrowUpRight className="w-4 h-4 text-slate-400 dark:text-[#A1A1AA] group-hover:text-[#FFAA2C] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                     </Link>
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-[#A1A1AA] text-sm">
+                <div className="py-8 text-center text-slate-500 dark:text-[#A1A1AA] text-sm">
                   {lang === 'ar' ? `لا توجد نتائج لـ "${searchQuery}"` : `Aucun produit trouvé pour "${searchQuery}"`}
                 </div>
               )}
