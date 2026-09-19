@@ -4,7 +4,20 @@ import React from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import { useProducts } from '@/context/ProductContext';
-import { Headphones, Radio, Volume2, Zap, BatteryCharging, ArrowUpRight, Layers } from 'lucide-react';
+import {
+  Headphones,
+  Radio,
+  Volume2,
+  Zap,
+  BatteryCharging,
+  ArrowUpRight,
+  Layers,
+  Shirt,
+  Footprints,
+  Smartphone,
+  Watch,
+  Speaker,
+} from 'lucide-react';
 
 const iconMap = {
   Headphones,
@@ -13,6 +26,11 @@ const iconMap = {
   Zap,
   BatteryCharging,
   Layers,
+  Shirt,
+  Footprints,
+  Smartphone,
+  Watch,
+  Speaker,
 };
 
 interface CategoryGridProps {

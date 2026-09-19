@@ -14,6 +14,9 @@ export interface Category {
   descriptionFr?: string;
   descriptionAr?: string;
   icon?: string;
+  variantType?: 'clothing' | 'shoes' | 'storage' | 'watch' | 'custom' | 'none';
+  sizes?: string[];
+  colors?: { nameFr: string; nameAr: string; hex: string }[];
   createdAt?: string;
 }
 
@@ -65,6 +68,28 @@ export function mapRowToPromotion(row: any): Promotion {
 }
 
 export function mapRowToCategory(row: any): Category {
+  let parsedSizes: string[] = [];
+  try {
+    if (Array.isArray(row.sizes)) {
+      parsedSizes = row.sizes;
+    } else if (typeof row.sizes === 'string') {
+      parsedSizes = JSON.parse(row.sizes);
+    }
+  } catch (e) {
+    parsedSizes = [];
+  }
+
+  let parsedColors: { nameFr: string; nameAr: string; hex: string }[] = [];
+  try {
+    if (Array.isArray(row.colors)) {
+      parsedColors = row.colors;
+    } else if (typeof row.colors === 'string') {
+      parsedColors = JSON.parse(row.colors);
+    }
+  } catch (e) {
+    parsedColors = [];
+  }
+
   return {
     id: row.id,
     slug: row.slug || row.id,
@@ -73,6 +98,9 @@ export function mapRowToCategory(row: any): Category {
     descriptionFr: row.description_fr || row.descriptionFr || '',
     descriptionAr: row.description_ar || row.descriptionAr || '',
     icon: row.icon || 'Layers',
+    variantType: row.variant_type || row.variantType || 'none',
+    sizes: parsedSizes,
+    colors: parsedColors,
     createdAt: row.created_at,
   };
 }
@@ -98,6 +126,9 @@ interface ProductContextType {
     descriptionFr?: string;
     descriptionAr?: string;
     icon?: string;
+    variantType?: 'clothing' | 'shoes' | 'storage' | 'watch' | 'custom' | 'none';
+    sizes?: string[];
+    colors?: { nameFr: string; nameAr: string; hex: string }[];
   }) => Promise<{ success: boolean; error?: string }>;
   deleteCategory: (id: string) => Promise<{ success: boolean; error?: string }>;
   refreshCategories: () => Promise<void>;
@@ -581,6 +612,9 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     descriptionFr?: string;
     descriptionAr?: string;
     icon?: string;
+    variantType?: 'clothing' | 'shoes' | 'storage' | 'watch' | 'custom' | 'none';
+    sizes?: string[];
+    colors?: { nameFr: string; nameAr: string; hex: string }[];
   }): Promise<{ success: boolean; error?: string }> => {
     const cleanSlug = categoryData.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
     const newCategory: Category = {
@@ -591,6 +625,9 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       descriptionFr: categoryData.descriptionFr?.trim() || '',
       descriptionAr: categoryData.descriptionAr?.trim() || '',
       icon: categoryData.icon || 'Layers',
+      variantType: categoryData.variantType || 'none',
+      sizes: categoryData.sizes || [],
+      colors: categoryData.colors || [],
       createdAt: new Date().toISOString(),
     };
 
@@ -604,7 +641,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const { error } = await supabase.from('categories').upsert({
+        const rowPayload: Record<string, any> = {
           id: newCategory.id,
           slug: newCategory.slug,
           name_fr: newCategory.nameFr,
@@ -612,7 +649,20 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           description_fr: newCategory.descriptionFr,
           description_ar: newCategory.descriptionAr,
           icon: newCategory.icon,
-        });
+          variant_type: newCategory.variantType,
+          sizes: newCategory.sizes,
+          colors: newCategory.colors,
+        };
+
+        let { error } = await supabase.from('categories').upsert(rowPayload);
+        if (error && (error.message?.includes('sizes') || error.message?.includes('variant_type'))) {
+          // Fallback if migration hasn't been run yet in remote
+          delete rowPayload.sizes;
+          delete rowPayload.colors;
+          delete rowPayload.variant_type;
+          const retry = await supabase.from('categories').upsert(rowPayload);
+          error = retry.error;
+        }
 
         if (error) {
           console.error('Error inserting category into Supabase:', error.message);

@@ -108,7 +108,8 @@ function detectDefaultVariantType(categorySlug: string): VariantCategoryType {
     cat.includes('sneaker') ||
     cat.includes('basket') ||
     cat.includes('sandale') ||
-    cat.includes('botte')
+    cat.includes('botte') ||
+    cat.includes('pointure')
   ) {
     return 'shoes';
   }
@@ -237,6 +238,7 @@ export default function AdminDashboardPage() {
     const pSizes = p.sizes ? [...p.sizes] : [];
     setEditColors(pColors);
     setEditSizes(pSizes);
+    const foundCat = categories.find((c) => c.slug === p.category || c.id === p.category);
     const detected: VariantCategoryType = pSizes.length > 0
       ? (pSizes.some((s) => /go|gb|to|tb/i.test(s))
           ? 'storage'
@@ -247,7 +249,7 @@ export default function AdminDashboardPage() {
           : pSizes.some((s) => ['xs', 's', 'm', 'l', 'xl', 'xxl', '3xl', '2xl'].includes(s.toLowerCase()))
           ? 'clothing'
           : 'custom')
-      : detectDefaultVariantType(p.category);
+      : (foundCat?.variantType && foundCat.variantType !== 'none' ? foundCat.variantType : detectDefaultVariantType(p.category));
     setEditVariantType(detected);
     setEditCustomColorNameFr('');
     setEditCustomColorNameAr('');
@@ -403,6 +405,9 @@ export default function AdminDashboardPage() {
   const [newCatDescFr, setNewCatDescFr] = useState('');
   const [newCatDescAr, setNewCatDescAr] = useState('');
   const [newCatIcon, setNewCatIcon] = useState('Layers');
+  const [newCatVariantType, setNewCatVariantType] = useState<VariantCategoryType>('none');
+  const [newCatSizes, setNewCatSizes] = useState<string[]>([]);
+  const [newCatCustomSize, setNewCatCustomSize] = useState('');
   const [newCatError, setNewCatError] = useState<string | null>(null);
   const [newCatSuccess, setNewCatSuccess] = useState(false);
 
@@ -705,6 +710,8 @@ export default function AdminDashboardPage() {
         descriptionFr: newCatDescFr,
         descriptionAr: newCatDescAr,
         icon: newCatIcon,
+        variantType: newCatVariantType,
+        sizes: newCatSizes,
       });
 
       if (res.success) {
@@ -717,6 +724,10 @@ export default function AdminDashboardPage() {
           setNewCatNameAr('');
           setNewCatDescFr('');
           setNewCatDescAr('');
+          setNewCatIcon('Layers');
+          setNewCatVariantType('none');
+          setNewCatSizes([]);
+          setNewCatCustomSize('');
         }, 1000);
       } else {
         setNewCatError(res.error || 'Erreur lors de la création');
@@ -2103,6 +2114,42 @@ export default function AdminDashboardPage() {
                           {cat.descriptionFr}
                         </p>
                       )}
+
+                      {/* Category Variant Type & Predefined Sizes Badge */}
+                      <div className="mb-2 space-y-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-white/5 border border-white/10 text-[#FFAA2C]">
+                            {cat.variantType === 'clothing'
+                              ? (lang === 'ar' ? 'ملابس' : 'Vêtements')
+                              : cat.variantType === 'shoes'
+                              ? (lang === 'ar' ? 'أحذية' : 'Chaussures')
+                              : cat.variantType === 'storage'
+                              ? (lang === 'ar' ? 'سعة تخزين' : 'Stockage')
+                              : cat.variantType === 'watch'
+                              ? (lang === 'ar' ? 'ساعات' : 'Montres')
+                              : cat.variantType === 'custom'
+                              ? (lang === 'ar' ? 'مخصص' : 'Custom')
+                              : (lang === 'ar' ? 'حجم موحد' : 'Standard')}
+                          </span>
+                        </div>
+                        {cat.sizes && cat.sizes.length > 0 && (
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {cat.sizes.slice(0, 7).map((s) => (
+                              <span
+                                key={s}
+                                className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] font-mono font-bold text-slate-300"
+                              >
+                                {s}
+                              </span>
+                            ))}
+                            {cat.sizes.length > 7 && (
+                              <span className="text-[10px] text-[#A1A1AA] font-mono self-center">
+                                +{cat.sizes.length - 7}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="pt-3 border-t border-white/5 flex items-center justify-between mt-3">
@@ -2940,6 +2987,110 @@ export default function AdminDashboardPage() {
                     />
                   </div>
 
+                  {/* Category Variant Type & Default Sizes */}
+                  <div className="space-y-2 pt-1 border-t border-white/10">
+                    <label className="block text-[#A1A1AA] font-semibold">
+                      {lang === 'ar' ? 'نوع مقاسات القسم (Variants) :' : 'Type de tailles & variantes :'}
+                    </label>
+                    <div className="grid grid-cols-3 gap-1 p-1 bg-black/40 rounded-xl border border-white/10 text-xs">
+                      {[
+                        { id: 'clothing' as VariantCategoryType, icon: 'Shirt', labelFr: 'Vêtements', labelAr: 'ملابس', defaultSizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'] },
+                        { id: 'shoes' as VariantCategoryType, icon: 'Footprints', labelFr: 'Chaussures', labelAr: 'أحذية', defaultSizes: ['39', '40', '41', '42', '43', '44', '45'] },
+                        { id: 'storage' as VariantCategoryType, icon: 'Smartphone', labelFr: 'Stockage', labelAr: 'سعة Go', defaultSizes: ['64 Go', '128 Go', '256 Go', '512 Go', '1 To'] },
+                        { id: 'watch' as VariantCategoryType, icon: 'Watch', labelFr: 'Montres', labelAr: 'ساعات', defaultSizes: ['40mm', '41mm', '44mm', '45mm', '49mm Ultra'] },
+                        { id: 'custom' as VariantCategoryType, icon: 'Layers', labelFr: 'Autre', labelAr: 'مخصص', defaultSizes: [] },
+                        { id: 'none' as VariantCategoryType, icon: 'Layers', labelFr: 'Standard', labelAr: 'حجم موحد', defaultSizes: [] },
+                      ].map((item) => {
+                        const isSelected = newCatVariantType === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                              setNewCatVariantType(item.id);
+                              setNewCatSizes(item.defaultSizes);
+                              setNewCatIcon(item.icon);
+                            }}
+                            className={`px-2 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer text-center ${
+                              isSelected
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'text-[#A1A1AA] hover:text-white hover:bg-white/5'
+                            }`}
+                          >
+                            {lang === 'ar' ? item.labelAr : item.labelFr}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Preset sizes pills for new category */}
+                    {newCatVariantType !== 'none' && (
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-[11px] text-[#A1A1AA]">
+                          <span>{lang === 'ar' ? 'المقاسات المعتمدة لهذا القسم :' : 'Tailles par défaut :'}</span>
+                          {newCatSizes.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setNewCatSizes([])}
+                              className="text-red-400 hover:underline font-bold text-[10px] cursor-pointer"
+                            >
+                              {lang === 'ar' ? 'مسح' : 'Effacer'}
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {newCatSizes.map((s) => (
+                            <span
+                              key={s}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white/5 border border-white/10 text-xs font-mono font-bold text-white"
+                            >
+                              <span>{s}</span>
+                              <button
+                                type="button"
+                                onClick={() => setNewCatSizes(newCatSizes.filter((x) => x !== s))}
+                                className="text-[#A1A1AA] hover:text-red-400 cursor-pointer text-xs"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex gap-1.5 pt-1">
+                          <input
+                            type="text"
+                            value={newCatCustomSize}
+                            onChange={(e) => setNewCatCustomSize(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const val = newCatCustomSize.trim();
+                                if (val && !newCatSizes.includes(val)) {
+                                  setNewCatSizes([...newCatSizes, val]);
+                                  setNewCatCustomSize('');
+                                }
+                              }
+                            }}
+                            placeholder={lang === 'ar' ? 'أضف مقاساً آخر واضغط Enter...' : 'Ajouter une taille (ex: 46, 2 To)...'}
+                            className="flex-1 bg-[#18181F] border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none focus:border-blue-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const val = newCatCustomSize.trim();
+                              if (val && !newCatSizes.includes(val)) {
+                                setNewCatSizes([...newCatSizes, val]);
+                                setNewCatCustomSize('');
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs cursor-pointer"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     type="submit"
                     disabled={isSubmittingCategory}
@@ -3180,7 +3331,22 @@ export default function AdminDashboardPage() {
                               onChange={(e) => {
                                 const cat = e.target.value;
                                 setNewProdCategory(cat);
-                                setNewProdVariantType(detectDefaultVariantType(cat));
+                                const foundCat = categories.find((c) => c.slug === cat || c.id === cat);
+                                if (foundCat) {
+                                  if (foundCat.variantType && foundCat.variantType !== 'none') {
+                                    setNewProdVariantType(foundCat.variantType);
+                                  } else {
+                                    setNewProdVariantType(detectDefaultVariantType(cat));
+                                  }
+                                  if (foundCat.sizes && foundCat.sizes.length > 0 && newProdSizes.length === 0) {
+                                    setNewProdSizes([...foundCat.sizes]);
+                                  }
+                                  if (foundCat.colors && foundCat.colors.length > 0 && newProdColors.length === 0) {
+                                    setNewProdColors([...foundCat.colors]);
+                                  }
+                                } else {
+                                  setNewProdVariantType(detectDefaultVariantType(cat));
+                                }
                               }}
                               className="w-full appearance-none bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-xs text-white outline-none cursor-pointer"
                             >
@@ -4132,7 +4298,15 @@ export default function AdminDashboardPage() {
                         onChange={(e) => {
                           const cat = e.target.value;
                           setEditCategory(cat);
-                          setEditVariantType(detectDefaultVariantType(cat));
+                          const foundCat = categories.find((c) => c.slug === cat || c.id === cat);
+                          if (foundCat?.variantType && foundCat.variantType !== 'none') {
+                            setEditVariantType(foundCat.variantType);
+                          } else {
+                            setEditVariantType(detectDefaultVariantType(cat));
+                          }
+                          if (foundCat?.sizes && foundCat.sizes.length > 0 && editSizes.length === 0) {
+                            setEditSizes([...foundCat.sizes]);
+                          }
                         }}
                         className="w-full appearance-none bg-slate-50 dark:bg-[#18181F] border border-black/10 dark:border-white/15 rounded-xl px-3 py-2.5 ltr:pr-8 rtl:pl-8 text-xs text-[#0F172A] dark:text-white outline-none cursor-pointer"
                       >

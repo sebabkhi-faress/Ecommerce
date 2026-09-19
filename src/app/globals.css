@@ -180,12 +180,14 @@ html[dir="rtl"] body,
 .text-gradient-warm {
   background: linear-gradient(135deg, var(--white-titanium) 20%, #FFAA2C 60%, #FF6B00 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .text-gradient-sunset {
   background: linear-gradient(135deg, #FF6B00 0%, #FFAA2C 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
