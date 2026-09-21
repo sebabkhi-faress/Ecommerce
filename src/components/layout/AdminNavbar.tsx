@@ -238,6 +238,24 @@ export default function AdminNavbar({ onToggleSidebar, isDbConnected = true }: A
                     </div>
                   </button>
 
+                  {/* Admins Management Option */}
+                  <Link
+                    href="/admin/admins"
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      window.dispatchEvent(new CustomEvent('open-admin-tab', { detail: { tab: 'admins' } }));
+                    }}
+                    className="w-full px-3 py-2.5 rounded-xl text-left flex items-center gap-2.5 text-[#F5F5F7] hover:bg-white/10 transition-colors cursor-pointer group"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-[#FF6B00] group-hover:scale-110 transition-transform" />
+                    <div className="flex-1">
+                      <span className="font-semibold block text-[#FFAA2C]">{lang === 'ar' ? 'إدارة المسؤولين' : 'Gestion des Admins'}</span>
+                      <span className="text-[10px] text-[#A1A1AA] block">
+                        {lang === 'ar' ? 'إضافة وتعديل حسابات المشرفين' : 'Ajouter et gérer les administrateurs'}
+                      </span>
+                    </div>
+                  </Link>
+
                   {/* Account Settings Option */}
                   <button
                     type="button"

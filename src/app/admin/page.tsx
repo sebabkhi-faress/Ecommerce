@@ -19,6 +19,10 @@ import {
   X,
   LogOut,
   Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  KeyRound,
   Phone,
   Home,
   Building2,
@@ -71,6 +75,7 @@ import { useProducts, usePromotions, Promotion } from '@/context/ProductContext'
 import { useAuth } from '@/context/AuthContext';
 import { getInitials } from '@/components/layout/AdminNavbar';
 import AdminStatistics from '@/components/admin/AdminStatistics';
+import AdminManagement from '@/components/admin/AdminManagement';
 
 type VariantCategoryType = 'clothing' | 'shoes' | 'storage' | 'watch' | 'custom' | 'none';
 
@@ -165,7 +170,7 @@ export default function AdminDashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  type AdminTabType = 'overview' | 'orders' | 'products' | 'categories' | 'promotions' | 'delivery_fees' | 'users' | 'banned' | 'statics';
+  type AdminTabType = 'overview' | 'orders' | 'products' | 'categories' | 'promotions' | 'delivery_fees' | 'users' | 'banned' | 'statics' | 'admins';
   const [adminTab, setAdminTabState] = useState<AdminTabType>('overview');
 
   const setAdminTab = useCallback((tab: AdminTabType) => {
@@ -186,7 +191,7 @@ export default function AdminDashboardPage() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get('tab') as AdminTabType | null;
-      const validTabs: AdminTabType[] = ['overview', 'orders', 'products', 'categories', 'promotions', 'delivery_fees', 'users', 'banned', 'statics'];
+      const validTabs: AdminTabType[] = ['overview', 'orders', 'products', 'categories', 'promotions', 'delivery_fees', 'users', 'banned', 'statics', 'admins'];
       if (tabParam && validTabs.includes(tabParam)) {
         setAdminTabState(tabParam);
       } else {
@@ -478,7 +483,77 @@ export default function AdminDashboardPage() {
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
   const [isSubmittingPromo, setIsSubmittingPromo] = useState(false);
 
-  const { user, role: authRole, logout: authLogout } = useAuth();
+  const { user, role: authRole, logout: authLogout, changeEmail: authChangeEmail, changePassword: authChangePassword } = useAuth();
+
+  // Admin Credentials Modal States
+  const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState(false);
+  const [adminCredTab, setAdminCredTab] = useState<'email' | 'password'>('email');
+  const [adminNewEmail, setAdminNewEmail] = useState('');
+  const [adminEmailPwd, setAdminEmailPwd] = useState('');
+  const [showAdminEmailPwd, setShowAdminEmailPwd] = useState(false);
+  const [adminEmailLoading, setAdminEmailLoading] = useState(false);
+  const [adminEmailError, setAdminEmailError] = useState<string | null>(null);
+  const [adminEmailSuccess, setAdminEmailSuccess] = useState<string | null>(null);
+
+  const [adminPwdCurrent, setAdminPwdCurrent] = useState('');
+  const [adminPwdNew, setAdminPwdNew] = useState('');
+  const [adminPwdConfirm, setAdminPwdConfirm] = useState('');
+  const [showAdminPwdCurrent, setShowAdminPwdCurrent] = useState(false);
+  const [showAdminPwdNew, setShowAdminPwdNew] = useState(false);
+  const [adminPwdLoading, setAdminPwdLoading] = useState(false);
+  const [adminPwdError, setAdminPwdError] = useState<string | null>(null);
+  const [adminPwdSuccess, setAdminPwdSuccess] = useState<string | null>(null);
+
+  const handleAdminUpdateEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminEmailError(null);
+    setAdminEmailSuccess(null);
+    setAdminEmailLoading(true);
+    const res = await authChangeEmail(adminNewEmail, adminEmailPwd);
+    setAdminEmailLoading(false);
+    if (res.success) {
+      setAdminEmailSuccess(lang === 'ar' ? 'تم تغيير البريد الإلكتروني بنجاح!' : 'Email modifié avec succès !');
+      showToast(lang === 'ar' ? 'تم تحديث البريد الإلكتروني بنجاح' : 'Email mis à jour avec succès', 'success');
+      setAdminNewEmail('');
+      setAdminEmailPwd('');
+      setTimeout(() => {
+        setIsCredentialsModalOpen(false);
+        setAdminEmailSuccess(null);
+      }, 1500);
+    } else {
+      setAdminEmailError(res.error || (lang === 'ar' ? 'حدث خطأ أثناء التحديث' : 'Erreur de mise à jour'));
+    }
+  };
+
+  const handleAdminUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminPwdError(null);
+    setAdminPwdSuccess(null);
+    if (adminPwdNew !== adminPwdConfirm) {
+      setAdminPwdError(lang === 'ar' ? 'كلمتا المرور غير متطابقتين' : 'Les mots de passe ne correspondent pas');
+      return;
+    }
+    if (adminPwdNew.length < 6) {
+      setAdminPwdError(lang === 'ar' ? 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل' : 'Au moins 6 caractères');
+      return;
+    }
+    setAdminPwdLoading(true);
+    const res = await authChangePassword(adminPwdCurrent, adminPwdNew);
+    setAdminPwdLoading(false);
+    if (res.success) {
+      setAdminPwdSuccess(lang === 'ar' ? 'تم تغيير كلمة المرور بنجاح!' : 'Mot de passe mis à jour !');
+      showToast(lang === 'ar' ? 'تم تغيير كلمة المرور بنجاح' : 'Mot de passe mis à jour avec succès', 'success');
+      setAdminPwdCurrent('');
+      setAdminPwdNew('');
+      setAdminPwdConfirm('');
+      setTimeout(() => {
+        setIsCredentialsModalOpen(false);
+        setAdminPwdSuccess(null);
+      }, 1500);
+    } else {
+      setAdminPwdError(res.error || (lang === 'ar' ? 'حدث خطأ أثناء التحديث' : 'Erreur de mise à jour'));
+    }
+  };
 
   useEffect(() => {
     const legacyAuth = typeof window !== 'undefined' ? localStorage.getItem('electronics_admin_auth') : null;
@@ -1352,6 +1427,28 @@ export default function AdminDashboardPage() {
               </div>
               <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${adminTab === 'users' || adminTab === 'banned' ? 'bg-black/20 text-black font-extrabold' : 'bg-white/5 text-[#A1A1AA]'}`}>
                 {bannedPhones.length > 0 ? (lang === 'ar' ? `${bannedPhones.length} محظور` : `${bannedPhones.length} bloqué${bannedPhones.length > 1 ? 's' : ''}`) : (lang === 'ar' ? 'الأمان' : 'Sécurité')}
+              </span>
+            </button>
+
+            {/* 7. Admins Management */}
+            <button
+              type="button"
+              onClick={() => {
+                setAdminTab('admins');
+                setIsMobileSidebarOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl font-bold text-xs transition-all cursor-pointer group ${
+                adminTab === 'admins'
+                  ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-black shadow-lg shadow-[#FF6B00]/25'
+                  : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.06]'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <ShieldCheck className={`w-4 h-4 transition-transform group-hover:scale-110 ${adminTab === 'admins' ? 'text-black' : 'text-[#FFAA2C]'}`} />
+                <span>{lang === 'ar' ? 'مسؤولو النظام' : 'Administrateurs'}</span>
+              </div>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${adminTab === 'admins' ? 'bg-black/20 text-black font-extrabold' : 'bg-white/5 text-[#A1A1AA]'}`}>
+                Admins
               </span>
             </button>
           </nav>
@@ -2234,11 +2331,35 @@ export default function AdminDashboardPage() {
                 <div className="flex items-center gap-3 flex-wrap">
                   <button
                     type="button"
+                    onClick={() => {
+                      setAdminEmailError(null);
+                      setAdminEmailSuccess(null);
+                      setAdminPwdError(null);
+                      setAdminPwdSuccess(null);
+                      setIsCredentialsModalOpen(true);
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] hover:opacity-95 text-black font-extrabold text-xs shadow-lg shadow-[#FF6B00]/20 flex items-center gap-2 transition-all cursor-pointer"
+                  >
+                    <KeyRound className="w-4 h-4 text-black" />
+                    <span>{lang === 'ar' ? 'تعديل بيانات الدخول (البريد وكلمة المرور)' : 'Modifier Email & Mot de Passe'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAdminTab('admins')}
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#F5F5F7] border border-white/10 text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-[#FFAA2C]" />
+                    <span>{lang === 'ar' ? 'إدارة مسؤولي النظام' : 'Gérer les Admins'}</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={handleLogout}
                     className="px-4 py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>{lang === 'ar' ? 'تسجيل الخروج من الحساب' : 'Déconnexion du compte'}</span>
+                    <span>{lang === 'ar' ? 'تسجيل الخروج' : 'Déconnexion'}</span>
                   </button>
                 </div>
               </div>
@@ -2477,6 +2598,11 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ==================== ADMINS MANAGEMENT SECTION ==================== */}
+        {adminTab === 'admins' && (
+          <AdminManagement />
         )}
 
         {/* TAB 4: PROMOTIONS & DISCOUNTS ENGINE */}
@@ -5910,6 +6036,40 @@ export default function AdminDashboardPage() {
               <button
                 type="button"
                 onClick={() => {
+                  setAdminEmailError(null);
+                  setAdminEmailSuccess(null);
+                  setAdminPwdError(null);
+                  setAdminPwdSuccess(null);
+                  setIsProfileModalOpen(false);
+                  setIsCredentialsModalOpen(true);
+                }}
+                className="w-full p-2.5 rounded-xl bg-[#FF6B00]/15 hover:bg-[#FF6B00]/25 text-xs font-semibold text-[#FFAA2C] border border-[#FF6B00]/30 flex items-center justify-between transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <KeyRound className="w-4 h-4 text-[#FFAA2C]" />
+                  <span>{lang === 'ar' ? 'تعديل بيانات الدخول (البريد وكلمة المرور)' : 'Modifier mes identifiants (Email & MDP)'}</span>
+                </div>
+                <span className="text-[10px] text-[#FFAA2C] font-mono">→</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setAdminTab('admins');
+                  setIsProfileModalOpen(false);
+                }}
+                className="w-full p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#F5F5F7] flex items-center justify-between transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#FF6B00]" />
+                  <span>{lang === 'ar' ? 'إدارة مسؤولي النظام (إضافة مسؤول)' : 'Gérer les administrateurs (Ajouter)'}</span>
+                </div>
+                <span className="text-[10px] text-[#A1A1AA] font-mono">→</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
                   setAdminTab('users');
                   setIsProfileModalOpen(false);
                 }}
@@ -5960,6 +6120,272 @@ export default function AdminDashboardPage() {
                 {lang === 'ar' ? 'إغلاق' : 'Fermer'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== ADMIN EDIT CREDENTIALS MODAL ==================== */}
+      {isCredentialsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#14141B] border border-white/15 rounded-3xl w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-5 sm:p-7 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150"
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#FF6B00]/15 border border-[#FF6B00]/30 flex items-center justify-center text-[#FF6B00] shrink-0">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#F5F5F7]">
+                    {lang === 'ar' ? 'تعديل بيانات الدخول' : 'Modifier mes Identifiants'}
+                  </h3>
+                  <p className="text-[11px] text-[#A1A1AA]">
+                    {lang === 'ar' ? 'تحديث البريد الإلكتروني أو كلمة المرور للمسؤول' : 'Modifier votre email ou mot de passe administrateur'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCredentialsModalOpen(false)}
+                className="p-1.5 text-[#A1A1AA] hover:text-white rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Credential Tab Switcher */}
+            <div className="grid grid-cols-2 gap-2 bg-white/5 p-1 rounded-2xl">
+              <button
+                type="button"
+                onClick={() => setAdminCredTab('email')}
+                className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  adminCredTab === 'email'
+                    ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black shadow-md font-black'
+                    : 'text-[#A1A1AA] hover:text-white'
+                }`}
+              >
+                {lang === 'ar' ? 'تغيير البريد' : 'Changer l’Email'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminCredTab('password')}
+                className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  adminCredTab === 'password'
+                    ? 'bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black shadow-md font-black'
+                    : 'text-[#A1A1AA] hover:text-white'
+                }`}
+              >
+                {lang === 'ar' ? 'كلمة المرور' : 'Mot de Passe'}
+              </button>
+            </div>
+
+            {/* TAB: CHANGE EMAIL */}
+            {adminCredTab === 'email' && (
+              <form onSubmit={handleAdminUpdateEmail} className="space-y-4 text-xs">
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between">
+                  <span className="text-[#A1A1AA]">{lang === 'ar' ? 'البريد الحالي:' : 'Email actuel :'}</span>
+                  <span className="font-mono text-[#FFAA2C] font-semibold">{user?.email}</span>
+                </div>
+
+                {adminEmailSuccess && (
+                  <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>{adminEmailSuccess}</span>
+                  </div>
+                )}
+
+                {adminEmailError && (
+                  <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 font-bold flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                    <span>{adminEmailError}</span>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[#A1A1AA] mb-1.5 font-semibold">
+                    {lang === 'ar' ? 'البريد الإلكتروني الجديد *' : 'Nouvelle adresse email *'}
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-[#A1A1AA] absolute left-3.5 top-3 pointer-events-none" />
+                    <input
+                      type="email"
+                      required
+                      value={adminNewEmail}
+                      onChange={(e) => setAdminNewEmail(e.target.value)}
+                      placeholder="admin.nouveau@bikastore.dz"
+                      className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white font-mono outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[#A1A1AA] mb-1.5 font-semibold">
+                    {lang === 'ar' ? 'كلمة المرور الحالية للتأكيد *' : 'Mot de passe actuel *'}
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-[#A1A1AA] absolute left-3.5 top-3 pointer-events-none" />
+                    <input
+                      type={showAdminEmailPwd ? 'text' : 'password'}
+                      required
+                      value={adminEmailPwd}
+                      onChange={(e) => setAdminEmailPwd(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl pl-10 pr-10 py-2.5 text-xs text-white font-mono outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAdminEmailPwd(!showAdminEmailPwd)}
+                      className="absolute right-3 top-2.5 text-[#A1A1AA] hover:text-white transition-colors"
+                    >
+                      {showAdminEmailPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setIsCredentialsModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                  >
+                    {lang === 'ar' ? 'إلغاء' : 'Annuler'}
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={adminEmailLoading}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-[#FF6B00]/25 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {adminEmailLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>{lang === 'ar' ? 'جارٍ التحديث...' : 'En cours...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>{lang === 'ar' ? 'حفظ البريد' : 'Enregistrer'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* TAB: CHANGE PASSWORD */}
+            {adminCredTab === 'password' && (
+              <form onSubmit={handleAdminUpdatePassword} className="space-y-4 text-xs">
+                {adminPwdSuccess && (
+                  <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>{adminPwdSuccess}</span>
+                  </div>
+                )}
+
+                {adminPwdError && (
+                  <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 font-bold flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                    <span>{adminPwdError}</span>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[#A1A1AA] mb-1.5 font-semibold">
+                    {lang === 'ar' ? 'كلمة المرور الحالية *' : 'Mot de passe actuel *'}
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-[#A1A1AA] absolute left-3.5 top-3 pointer-events-none" />
+                    <input
+                      type={showAdminPwdCurrent ? 'text' : 'password'}
+                      required
+                      value={adminPwdCurrent}
+                      onChange={(e) => setAdminPwdCurrent(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl pl-10 pr-10 py-2.5 text-xs text-white font-mono outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAdminPwdCurrent(!showAdminPwdCurrent)}
+                      className="absolute right-3 top-2.5 text-[#A1A1AA] hover:text-white transition-colors"
+                    >
+                      {showAdminPwdCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[#A1A1AA] mb-1.5 font-semibold">
+                    {lang === 'ar' ? 'كلمة المرور الجديدة *' : 'Nouveau mot de passe *'}
+                  </label>
+                  <div className="relative">
+                    <KeyRound className="w-4 h-4 text-[#FFAA2C] absolute left-3.5 top-3 pointer-events-none" />
+                    <input
+                      type={showAdminPwdNew ? 'text' : 'password'}
+                      required
+                      minLength={6}
+                      value={adminPwdNew}
+                      onChange={(e) => setAdminPwdNew(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl pl-10 pr-10 py-2.5 text-xs text-white font-mono outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAdminPwdNew(!showAdminPwdNew)}
+                      className="absolute right-3 top-2.5 text-[#A1A1AA] hover:text-white transition-colors"
+                    >
+                      {showAdminPwdNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[#A1A1AA] mb-1.5 font-semibold">
+                    {lang === 'ar' ? 'تأكيد كلمة المرور الجديدة *' : 'Confirmer le nouveau mot de passe *'}
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-[#A1A1AA] absolute left-3.5 top-3 pointer-events-none" />
+                    <input
+                      type="password"
+                      required
+                      value={adminPwdConfirm}
+                      onChange={(e) => setAdminPwdConfirm(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-[#18181F] border border-white/15 focus:border-[#FF6B00] rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white font-mono outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setIsCredentialsModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                  >
+                    {lang === 'ar' ? 'إلغاء' : 'Annuler'}
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={adminPwdLoading}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FFAA2C] text-black font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-[#FF6B00]/25 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {adminPwdLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>{lang === 'ar' ? 'جارٍ الحفظ...' : 'En cours...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>{lang === 'ar' ? 'حفظ كلمة المرور' : 'Sauvegarder'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

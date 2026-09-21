@@ -118,6 +118,9 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>;
   logout: (redirectTo?: string) => void;
+  changeEmail: (newEmail: string, currentPassword: string) => Promise<{ success: boolean; error?: string }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (data: { name?: string; phone?: string }) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -412,6 +415,196 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const changeEmail = useCallback(
+    async (
+      newEmailInput: string,
+      currentPasswordInput: string
+    ): Promise<{ success: boolean; error?: string }> => {
+      if (!user) {
+        return { success: false, error: 'Non authentifié / غير مسجل الدخول' };
+      }
+      const newEmail = newEmailInput.trim().toLowerCase();
+      const currentPassword = currentPasswordInput.trim();
+
+      if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+        return { success: false, error: 'Format d’email invalide / صيغة البريد الإلكتروني غير صحيحة' };
+      }
+
+      if (newEmail === user.email.toLowerCase()) {
+        return { success: false, error: 'Le nouvel email est identique à l’actuel / البريد الجديد مطابق للبريد الحالي' };
+      }
+
+      if (!currentPassword) {
+        return { success: false, error: 'Veuillez saisir votre mot de passe actuel / يرجى إدخال كلمة المرور الحالية' };
+      }
+
+      // Check current password & update in Supabase
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data: userRow } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
+
+          if (userRow) {
+            const isMatch = verifyPassword(currentPassword, userRow.password, userRow.email);
+            if (!isMatch) {
+              return { success: false, error: 'Mot de passe actuel incorrect / كلمة المرور الحالية غير صحيحة' };
+            }
+
+            // Check if new email is already taken
+            const { data: existingUser } = await supabase
+              .from('users')
+              .select('id')
+              .ilike('email', newEmail)
+              .neq('id', user.id)
+              .maybeSingle();
+
+            if (existingUser) {
+              return { success: false, error: 'Cette adresse email est déjà utilisée / هذا البريد الإلكتروني مستخدم بالفعل' };
+            }
+
+            const { error: updateErr } = await supabase
+              .from('users')
+              .update({ email: newEmail })
+              .eq('id', user.id);
+
+            if (updateErr) {
+              return { success: false, error: updateErr.message };
+            }
+          }
+        } catch (err: any) {
+          console.warn('Supabase changeEmail error:', err);
+        }
+      }
+
+      // Update local state and storage
+      const updatedUser: User = { ...user, email: newEmail };
+      setUser(updatedUser);
+      if (session) {
+        const updatedSession = { ...session, user: updatedUser };
+        setSession(updatedSession);
+        try {
+          localStorage.setItem('electronics_auth_session', JSON.stringify(updatedSession));
+        } catch {}
+      }
+      try {
+        localStorage.setItem('electronics_auth_user', JSON.stringify(updatedUser));
+      } catch {}
+
+      return { success: true };
+    },
+    [user, session]
+  );
+
+  const changePassword = useCallback(
+    async (
+      currentPasswordInput: string,
+      newPasswordInput: string
+    ): Promise<{ success: boolean; error?: string }> => {
+      if (!user) {
+        return { success: false, error: 'Non authentifié / غير مسجل الدخول' };
+      }
+      const currentPassword = currentPasswordInput.trim();
+      const newPassword = newPasswordInput.trim();
+
+      if (!currentPassword) {
+        return { success: false, error: 'Veuillez saisir votre mot de passe actuel / يرجى إدخال كلمة المرور الحالية' };
+      }
+
+      if (!newPassword || newPassword.length < 6) {
+        return {
+          success: false,
+          error: 'Le mot de passe doit comporter au moins 6 caractères / يجب أن تتكون كلمة المرور من 6 أحرف على الأقل',
+        };
+      }
+
+      if (currentPassword === newPassword) {
+        return {
+          success: false,
+          error: 'Le nouveau mot de passe doit être différent de l’actuel / يجب أن تكون كلمة المرور الجديدة مختلفة عن الحالية',
+        };
+      }
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data: userRow } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
+
+          if (userRow) {
+            const isMatch = verifyPassword(currentPassword, userRow.password, userRow.email);
+            if (!isMatch) {
+              return { success: false, error: 'Mot de passe actuel incorrect / كلمة المرور الحالية غير صحيحة' };
+            }
+
+            const newHash = hashPassword(newPassword);
+            const { error: updateErr } = await supabase
+              .from('users')
+              .update({ password: newHash })
+              .eq('id', user.id);
+
+            if (updateErr) {
+              return { success: false, error: updateErr.message };
+            }
+          }
+        } catch (err: any) {
+          console.warn('Supabase changePassword error:', err);
+        }
+      }
+
+      return { success: true };
+    },
+    [user]
+  );
+
+  const updateProfile = useCallback(
+    async (data: { name?: string; phone?: string }): Promise<{ success: boolean; error?: string }> => {
+      if (!user) {
+        return { success: false, error: 'Non authentifié / غير مسجل الدخول' };
+      }
+
+      const updates: { name?: string; phone?: string } = {};
+      if (data.name !== undefined && data.name.trim().length > 0) updates.name = data.name.trim();
+      if (data.phone !== undefined) updates.phone = data.phone.trim();
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { error } = await supabase.from('users').update(updates).eq('id', user.id);
+          if (error) {
+            console.warn('Supabase updateProfile error:', error);
+          }
+        } catch (err) {
+          console.warn('Supabase updateProfile catch:', err);
+        }
+      }
+
+      const updatedUser: User = {
+        ...user,
+        ...(updates.name !== undefined ? { name: updates.name } : {}),
+        ...(updates.phone !== undefined ? { phone: updates.phone } : {}),
+      };
+
+      setUser(updatedUser);
+      if (session) {
+        const updatedSession = { ...session, user: updatedUser };
+        setSession(updatedSession);
+        try {
+          localStorage.setItem('electronics_auth_session', JSON.stringify(updatedSession));
+        } catch {}
+      }
+      try {
+        localStorage.setItem('electronics_auth_user', JSON.stringify(updatedUser));
+      } catch {}
+
+      return { success: true };
+    },
+    [user, session]
+  );
+
   return (
     <AuthContext.Provider
       value={{
@@ -423,6 +616,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         logout,
+        changeEmail,
+        changePassword,
+        updateProfile,
       }}
     >
       {children}
